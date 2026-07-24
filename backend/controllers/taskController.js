@@ -21,14 +21,27 @@ exports.createTask = async (req, res) => {
     const user = await User.findById(req.user.id);
 
     const attachments = [];
-    if (req.files) {
-      req.files.forEach(file => {
-        attachments.push({
-          fileName: file.originalname,
-          fileUrl: `uploads/tasks/${file.filename}`,
-          fileType: file.mimetype
-        });
-      });
+    if (req.files && req.files.length > 0) {
+      const taskTitleSanitized = (title || 'general').replace(/[^a-zA-Z0-9]/g, '_');
+      const cloudinary = require('cloudinary').v2;
+      for (const file of req.files) {
+        try {
+          const uploadRes = await cloudinary.uploader.upload(file.path, {
+            folder: `hrm/tasks/${taskTitleSanitized}`,
+            resource_type: 'auto'
+          });
+          attachments.push({
+            fileName: file.originalname,
+            fileUrl: uploadRes.secure_url,
+            fileType: file.mimetype
+          });
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+        } catch (uploadErr) {
+          console.error('[TASK UPLOAD ERROR]', uploadErr);
+        }
+      }
     }
 
     const targetUserId = userId || req.user.id;
@@ -188,11 +201,27 @@ exports.updateTask = async (req, res) => {
     
     // Add new attachments if any
     if (req.files && req.files.length > 0) {
-      const newAttachments = req.files.map(file => ({
-        fileName: file.originalname,
-        fileUrl: file.path,
-        fileType: file.mimetype
-      }));
+      const taskTitleSanitized = (title || task.title || 'general').replace(/[^a-zA-Z0-9]/g, '_');
+      const cloudinary = require('cloudinary').v2;
+      const newAttachments = [];
+      for (const file of req.files) {
+        try {
+          const uploadRes = await cloudinary.uploader.upload(file.path, {
+            folder: `hrm/tasks/${taskTitleSanitized}`,
+            resource_type: 'auto'
+          });
+          newAttachments.push({
+            fileName: file.originalname,
+            fileUrl: uploadRes.secure_url,
+            fileType: file.mimetype
+          });
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+        } catch (uploadErr) {
+          console.error('[TASK UPDATE UPLOAD ERROR]', uploadErr);
+        }
+      }
       task.attachments.push(...newAttachments);
       await task.save();
     }

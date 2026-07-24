@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Bell, Send, Loader2, Users, Briefcase, UserCheck, ChevronDown, Trash2, Edit2 } from 'lucide-react';
+import { Bell, Send, Loader2, Users, Briefcase, UserCheck, ChevronDown, Trash2, Edit2, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const TYPE_COLORS = {
@@ -31,6 +31,8 @@ const Notifications = () => {
     _empSelectOpen: false
   });
   const [editingId, setEditingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   
   const formRef = useRef(null);
 
@@ -158,17 +160,19 @@ const Notifications = () => {
   };
 
   return (
-    <div className="px-6 md:px-10 pb-20 pt-0 max-w-7xl mx-auto">
+    <div className="px-3 md:px-5 pb-20 pt-0 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-[28px] font-black text-[#201515] tracking-tight">
-            Notification
-          </h1>
-          <button onClick={fetchNotifications} className="text-[11px] font-bold text-[#ff4f00] hover:underline uppercase tracking-widest mt-2">
-            Refresh
-          </button>
-        </div>
+      <div className="mb-8 flex items-center justify-between gap-4 w-full">
+        <h1 className="text-[28px] font-black text-[#201515] dark:text-white tracking-tight">
+          Notification
+        </h1>
+        <button 
+          onClick={fetchNotifications} 
+          className="px-5 py-2.5 bg-[#00a76b] hover:bg-[#00915c] text-white rounded-full font-bold text-xs transition-all cursor-pointer border-none shadow-sm flex items-center gap-2"
+        >
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          <span>Refresh</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -402,11 +406,11 @@ const Notifications = () => {
 
         {/* ── NOTIFICATIONS LIST ── */}
         <div className={role === 'employee' ? 'xl:col-span-3' : 'xl:col-span-2'}>
-          <div className="bg-white rounded-[5px] border border-[#eceae3] shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-[#0c1512] border border-[#e2eae7] dark:border-[#13221e] rounded-[24px] shadow-[0_4px_20px_rgba(0,0,0,0.01)] overflow-hidden">
 
             {loading ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 size={36} className="animate-spin text-[#ff4f00]" />
+                <Loader2 size={36} className="animate-spin text-[#00a76b]" />
               </div>
             ) : (() => {
               // Apply manager specific filter
@@ -417,78 +421,119 @@ const Notifications = () => {
               if (displayNotifications.length === 0) {
                 return (
                   <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-                    <div className="w-16 h-16 rounded-full bg-[#fffdf9] border border-[#eceae3] flex items-center justify-center mb-4">
-                      <Bell size={28} className="text-[#c5c0b1]" />
+                    <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center mb-4">
+                      <Bell size={28} className="text-[#00a76b]" />
                     </div>
-                    <h3 className="text-[16px] font-bold text-[#201515] mb-2">No announcements found</h3>
-                    <p className="text-[13px] font-medium text-[#939084]">Send an announcement using the form on the left</p>
+                    <h3 className="text-[16px] font-bold text-slate-800 dark:text-white mb-2">No announcements found</h3>
+                    <p className="text-[13px] font-medium text-slate-500 dark:text-[#829e92]">Send an announcement using the form on the left</p>
                   </div>
                 );
               }
 
               return (
-                <div className="divide-y divide-[#eceae3] max-h-[680px] overflow-y-auto">
-                  {displayNotifications.map((notif) => {
-                  const colorClass = TYPE_COLORS[notif.type] || TYPE_COLORS.default;
-                  const isCreator = notif.senderId && String(notif.senderId) === currentUserId;
-                  return (
-                    <div
-                      key={notif._id}
-                      className="p-5 flex items-start gap-4 transition-colors bg-white hover:bg-[#fffdf9] group relative"
-                    >
-                      {/* Icon */}
-                      <div className={`w-9 h-9 rounded-[5px] flex items-center justify-center shrink-0 ${colorClass}`}>
-                        <Bell size={16} />
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0 pr-16">
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="text-[13px] leading-snug font-medium text-[#36342e]">
-                            {notif.message}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3 mt-2 flex-wrap">
-                          <span className={`px-2 py-0.5 rounded-[3px] text-[9px] font-black uppercase tracking-widest ${colorClass}`}>
-                            {notif.type || 'general'}
-                          </span>
-                          {isCreator && notif.targetLabel && (
-                            <span className="px-2 py-0.5 rounded-[3px] text-[9px] font-black uppercase tracking-widest bg-[#f2efe9] text-[#939084]">
-                              Sent to: {notif.targetLabel}
-                            </span>
-                          )}
-                          <span className="text-[10px] font-bold text-[#c5c0b1] uppercase tracking-widest">
-                            {new Date(notif.createdAt).toLocaleString('en-US', {
-                              month: 'short', day: 'numeric',
-                              hour: '2-digit', minute: '2-digit'
-                            })}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Edit / Delete Actions */}
-                      {isCreator && (
-                        <div className="absolute right-5 top-5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                          <button 
-                            onClick={() => handleEdit(notif)}
-                            className="p-1.5 text-[#939084] hover:text-[#ff4f00] hover:bg-orange-50 rounded"
-                            title="Edit"
+                <div>
+                  <div className="divide-y divide-[#e2eae7] dark:divide-[#13221e]">
+                    {(() => {
+                      const totalPages = Math.ceil(displayNotifications.length / itemsPerPage);
+                      const indexOfLastItem = currentPage * itemsPerPage;
+                      const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+                      const currentItems = displayNotifications.slice(indexOfFirstItem, indexOfLastItem);
+                      
+                      return currentItems.map((notif) => {
+                        const colorClass = TYPE_COLORS[notif.type] || TYPE_COLORS.default;
+                        const isCreator = notif.senderId && String(notif.senderId) === currentUserId;
+                        return (
+                          <div
+                            key={notif._id}
+                            className="p-6 flex items-start gap-4 transition-colors bg-white dark:bg-[#0c1512] hover:bg-slate-50 dark:hover:bg-[#111c18] group relative"
                           >
-                            <Edit2 size={14} />
-                          </button>
-                          <button 
-                            onClick={() => handleDelete(notif._id)}
-                            className="p-1.5 text-[#939084] hover:text-red-500 hover:bg-red-50 rounded"
-                            title="Delete"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                            {/* Icon */}
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${colorClass}`}>
+                              <Bell size={16} />
+                            </div>
+
+                            {/* Content */}
+                            <div className="flex-1 min-w-0 pr-16">
+                              <div className="flex items-start justify-between gap-3">
+                                <p className="text-[14px] leading-snug font-bold text-slate-800 dark:text-white">
+                                  {notif.message}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                                <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${colorClass}`}>
+                                  {notif.type || 'general'}
+                                </span>
+                                {isCreator && notif.targetLabel && (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-slate-100 dark:bg-[#1a2d29] text-slate-500 dark:text-[#829e92]">
+                                    Sent to: {notif.targetLabel}
+                                  </span>
+                                )}
+                                <span className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-widest">
+                                  {new Date(notif.createdAt).toLocaleString('en-US', {
+                                    month: 'short', day: 'numeric',
+                                    hour: '2-digit', minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Edit / Delete Actions */}
+                            {isCreator && (
+                              <div className="absolute right-5 top-5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                                <button 
+                                  onClick={() => handleEdit(notif)}
+                                  className="p-1.5 text-slate-450 hover:text-[#ff4f00] hover:bg-orange-50 rounded"
+                                  title="Edit"
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                                <button 
+                                  onClick={() => handleDelete(notif._id)}
+                                  className="p-1.5 text-slate-450 hover:text-red-500 hover:bg-red-50 rounded"
+                                  title="Delete"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {(() => {
+                    const totalPages = Math.max(Math.ceil(displayNotifications.length / itemsPerPage), 1);
+                    return (
+                      <div className="px-6 py-4 bg-slate-50 dark:bg-[#111c18] border-t border-[#e2eae7] dark:border-[#13221e] flex items-center justify-between">
+                        <button
+                          onClick={() => {
+                            setCurrentPage(prev => Math.max(prev - 1, 1));
+                            document.querySelector('.max-h-\\[680px\\]')?.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          disabled={currentPage === 1}
+                          className="px-4 py-2 text-xs font-bold bg-white dark:bg-[#0c1512] border border-[#e2eae7] dark:border-[#13221e] rounded-xl text-slate-600 dark:text-[#a3b3af] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-[#111c18] transition-all cursor-pointer"
+                        >
+                          Previous
+                        </button>
+                        <span className="text-xs font-bold text-slate-500 dark:text-[#829e92]">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <button
+                          onClick={() => {
+                            setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                            document.querySelector('.max-h-\\[680px\\]')?.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          disabled={currentPage === totalPages}
+                          className="px-4 py-2 text-xs font-bold bg-white dark:bg-[#0c1512] border border-[#e2eae7] dark:border-[#13221e] rounded-xl text-slate-600 dark:text-[#a3b3af] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-[#111c18] transition-all cursor-pointer"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    );
+                  })()}
+                </div>
               );
             })()}
           </div>

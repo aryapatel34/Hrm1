@@ -270,7 +270,10 @@ exports.updateEmployeeProfileImage = async (req, res) => {
     if (!employee) return res.status(404).json({ message: 'Employee not found' });
     
     const { saveBase64Image } = require('../utils/fileUpload');
-    const imagePath = saveBase64Image(image, 'profile', `profile-${employee._id}`);
+    const roleFolder = employee.role || 'employee';
+    const nameFolder = (employee.fullName || employee.name || 'unknown').replace(/\s+/g, '_');
+    const folderPath = `profile/${roleFolder}/${nameFolder}`;
+    const imagePath = await saveBase64Image(image, folderPath, `profile-${employee._id}`);
     if (!imagePath) return res.status(400).json({ message: 'Invalid image data' });
     
     employee.profileImage = imagePath;
@@ -300,7 +303,10 @@ exports.updateEmployeeDocument = async (req, res, field) => {
     }
     
     const { saveBase64Image } = require('../utils/fileUpload');
-    const docPath = saveBase64Image(document, 'documents', `${field}-${employee._id}`);
+    const roleFolder = employee.role || 'employee';
+    const nameFolder = (employee.fullName || employee.name || 'unknown').replace(/\s+/g, '_');
+    const folderPath = `documents/${roleFolder}/${nameFolder}`;
+    const docPath = await saveBase64Image(document, folderPath, `${field}-${employee._id}`);
     if (!docPath) return res.status(400).json({ message: 'Invalid document data' });
     
     employee[field] = docPath;

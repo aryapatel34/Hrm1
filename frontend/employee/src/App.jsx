@@ -59,6 +59,7 @@ function App() {
           <Route path="task-management" element={<PlaceholderPage title="Task Management" />} />
           <Route path="profile" element={<PlaceholderPage title="My Profile" />} />
           <Route path="settings" element={<PlaceholderPage title="Settings" />} />
+          <Route path="notifications" element={<PlaceholderPage title="Notifications" />} />
           <Route path="employees/view/:id" element={<PlaceholderPage title="Employee Information" />} />
           <Route path="attendance" element={<Attendance />} />
           <Route path="leave" element={<PlaceholderPage title="My Leaves" />} />

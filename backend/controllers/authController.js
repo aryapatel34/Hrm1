@@ -178,10 +178,14 @@ exports.updateProfile = async (req, res) => {
     }
 
     const { saveBase64Image } = require('../utils/fileUpload');
-    
+    const roleFolder = user.role || 'employee';
+    const nameFolder = (user.name || user.fullName || 'unknown').replace(/\s+/g, '_');
+    const profileFolderPath = `profile/${roleFolder}/${nameFolder}`;
+    const docFolderPath = `documents/${roleFolder}/${nameFolder}`;
+
     let imagePath = user.profileImage;
     if (profileImage && profileImage.startsWith('data:')) {
-      const savedPath = saveBase64Image(profileImage, 'profile', `profile-${req.user.id}-${Date.now()}`);
+      const savedPath = await saveBase64Image(profileImage, profileFolderPath, `profile-${req.user.id}-${Date.now()}`);
       if (savedPath) imagePath = savedPath;
     }
 
@@ -189,15 +193,15 @@ exports.updateProfile = async (req, res) => {
 
     // New support for individual documents
     if (adharCard && adharCard.startsWith('data:')) {
-      const savedPath = saveBase64Image(adharCard, 'documents', `adhar-${req.user.id}-${Date.now()}`);
+      const savedPath = await saveBase64Image(adharCard, docFolderPath, `adhar-${req.user.id}-${Date.now()}`);
       if (savedPath) updateData.adharCard = savedPath;
     }
     if (bankDetails && bankDetails.startsWith('data:')) {
-      const savedPath = saveBase64Image(bankDetails, 'documents', `bank-${req.user.id}-${Date.now()}`);
+      const savedPath = await saveBase64Image(bankDetails, docFolderPath, `bank-${req.user.id}-${Date.now()}`);
       if (savedPath) updateData.bankDetails = savedPath;
     }
     if (panCard && panCard.startsWith('data:')) {
-      const savedPath = saveBase64Image(panCard, 'documents', `pan-${req.user.id}-${Date.now()}`);
+      const savedPath = await saveBase64Image(panCard, docFolderPath, `pan-${req.user.id}-${Date.now()}`);
       if (savedPath) updateData.panCard = savedPath;
     }
 
@@ -252,14 +256,21 @@ exports.uploadProfileImage = async (req, res) => {
       return res.status(400).json({ message: 'No image provided' });
     }
 
+    let user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    const roleFolder = user.role || 'employee';
+    const nameFolder = (user.name || user.fullName || 'unknown').replace(/\s+/g, '_');
+    const folderPath = `profile/${roleFolder}/${nameFolder}`;
+
     const { saveBase64Image } = require('../utils/fileUpload');
-    const imagePath = saveBase64Image(image, 'profile', `profile-${req.user.id}`);
+    const imagePath = await saveBase64Image(image, folderPath, `profile-${req.user.id}`);
     if (!imagePath) {
       return res.status(400).json({ message: 'Invalid image data' });
     }
 
     // Update User
-    const user = await User.findByIdAndUpdate(req.user.id, { profileImage: imagePath }, { new: true });
+    user = await User.findByIdAndUpdate(req.user.id, { profileImage: imagePath }, { new: true });
 
     // Update Shadow Registry (Employee/HR/Manager)
     let shadowModel;
