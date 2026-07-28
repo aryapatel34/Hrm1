@@ -6,7 +6,7 @@ import {
   Eye, RefreshCw, X, SlidersHorizontal, ChevronLeft, ChevronRight, UserPlus,
   Download, Upload, ShieldAlert, BarChart3, Activity, Info, FileText, Settings,
   ArrowLeft, Mail, Phone, MapPin, DollarSign, Award, ShieldCheck, GraduationCap,
-  ArrowUpRight, FileSpreadsheet, Lock
+  ArrowUpRight, FileSpreadsheet, Lock, FolderSync
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,

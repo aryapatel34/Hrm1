@@ -119,9 +119,29 @@ const EmployeeDocuments = () => {
   };
 
 
-  const triggerDownload = (fileName, url) => {
+  const triggerDownload = async (fileName, url) => {
     if (url) {
-      window.open(getImageUrl(url), '_blank');
+      try {
+        const fullUrl = getImageUrl(url);
+        const response = await fetch(fullUrl);
+        const blob = await response.blob();
+        const dummyUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = dummyUrl;
+        
+        const extMatch = url.match(/\.[0-9a-z]+$/i);
+        const ext = extMatch ? extMatch[0] : '';
+        const downloadName = fileName.replace(/\s+/g, '_') + ext;
+        link.download = downloadName;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(dummyUrl), 1000);
+      } catch (err) {
+        console.error('Download failed, opening in new tab', err);
+        window.open(getImageUrl(url), '_blank');
+      }
       return;
     }
     const cleanName = fileName.replace(/\.pdf$/i, '').replace(/_/g, ' ');
@@ -273,7 +293,10 @@ const EmployeeDocuments = () => {
                 }}
                 className={isDark ? "hover:bg-[#162722]" : "hover:bg-[#f9fdfc]"}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div 
+                  style={{ display: 'flex', alignItems: 'center', gap: 16, cursor: file.url ? 'pointer' : 'default' }}
+                  onClick={() => file.url && window.open(getImageUrl(file.url), '_blank')}
+                >
                   <div style={{ width: 40, height: 40, borderRadius: '50%', background: isDark ? 'rgba(0, 167, 107, 0.08)' : '#e6f7f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <FileText size={20} color="#00a76b" />
                   </div>

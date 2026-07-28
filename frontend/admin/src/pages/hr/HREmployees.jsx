@@ -18,8 +18,8 @@ const HREmployees = () => {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-      return ['active']; 
-    } catch { return ['active']; }
+      return []; 
+    } catch { return []; }
   });
   const [tempFilterRole, setTempFilterRole] = useState([]);
   const [tempFilterStatus, setTempFilterStatus] = useState([]);
@@ -80,9 +80,9 @@ const HREmployees = () => {
       dept.includes(search) ||
       desig.includes(search);
 
-    const matchesRole = filterRole.length > 0 ? (filterRole.includes(emp.role) || filterRole.includes(emp.userId?.role)) : true;
+    const matchesRole = filterRole.length > 0 && !filterRole.includes('all') ? (filterRole.includes(emp.role) || filterRole.includes(emp.userId?.role)) : true;
     const empStatus = emp.status?.toLowerCase() || emp.userId?.status?.toLowerCase() || 'active';
-    const matchesStatus = filterStatus.length > 0 ? filterStatus.includes(empStatus) : true;
+    const matchesStatus = filterStatus.length === 0 ? empStatus === 'active' : (filterStatus.includes('all') ? true : filterStatus.includes(empStatus));
 
     return matchesSearch && matchesRole && matchesStatus;
   });
@@ -197,9 +197,9 @@ const HREmployees = () => {
 
   const handleClearFilters = () => {
     setTempFilterRole([]);
-    setTempFilterStatus(['active']);
+    setTempFilterStatus([]);
     setFilterRole([]);
-    setFilterStatus(['active']);
+    setFilterStatus([]);
     setShowFiltersPanel(false);
   };
 
@@ -260,7 +260,7 @@ const HREmployees = () => {
                 }`}
             >
               <SlidersHorizontal size={15} />
-              <span>Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}</span>
+              <span>Filters</span>
             </button>
             
             {showFiltersPanel && (
@@ -270,7 +270,7 @@ const HREmployees = () => {
                     <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Roles</h4>
                     <div className="flex flex-col gap-2">
                       <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-200">
-                        <input type="checkbox" checked={tempFilterRole.length === 0} onChange={() => setTempFilterRole([])} className="accent-[#00a76b] cursor-pointer" />
+                        <input type="checkbox" checked={tempFilterRole.includes('all')} onChange={() => handleRoleToggle('all')} className="accent-[#00a76b] cursor-pointer" />
                         All Roles
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-200">
@@ -298,7 +298,7 @@ const HREmployees = () => {
                     <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Status</h4>
                     <div className="flex flex-col gap-2">
                       <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-200">
-                        <input type="checkbox" checked={tempFilterStatus.length === 0} onChange={() => setTempFilterStatus([])} className="accent-[#00a76b] cursor-pointer" />
+                        <input type="checkbox" checked={tempFilterStatus.includes('all')} onChange={() => handleStatusToggle('all')} className="accent-[#00a76b] cursor-pointer" />
                         All Statuses
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-200">
@@ -360,7 +360,7 @@ const HREmployees = () => {
                 </tr>
                 ) : (
                 paginatedEmployees.map((emp) => (
-                <tr key={emp._id} className="border-b border-[#c5c0b1] hover:bg-[#fffdf9] transition-colors group">
+                <tr key={emp._id} className="border-b border-[#c5c0b1] hover:bg-slate-50/50 dark:hover:bg-[#0d2a22]/50 transition-colors group">
                   <td className="py-6 px-4">
                     <span className="font-bold text-[#201515]">{emp.employeeId || 'NODE-UNDEF'}</span>
                   </td>

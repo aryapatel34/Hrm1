@@ -97,6 +97,7 @@ const EmployeeLayout = () => {
   const [profileError, setProfileError] = useState(null);
   const [timerActive, setTimerActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -149,7 +150,7 @@ const EmployeeLayout = () => {
     const fetch = () => axios.get('/api/notifications', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => {
         const items = Array.isArray(r.data) ? r.data : (r.data?.data || []);
-        setNotifications(items.slice(0, 5));
+        setNotifications(items.slice(0, 50));
       }).catch(() => { });
     fetch();
     const id = setInterval(fetch, 60000);
@@ -172,7 +173,7 @@ const EmployeeLayout = () => {
       const u = (() => { try { return JSON.parse(sessionStorage.getItem('user')); } catch { return null; } })();
       if (u) s.emit('join_notifications', { userId: u._id || u.id, role: 'employee' });
     });
-    s.on('notification', d => setNotifications(p => [d, ...p].slice(0, 5)));
+    s.on('notification', d => setNotifications(p => [d, ...p].slice(0, 50)));
     s.on('timer_paused', d => { setTimerActive(false); if (d.reason === 'inactivity') setIsPaused(true); });
     s.on('timer_resumed', () => { setTimerActive(true); setIsPaused(false); });
     return () => s.disconnect();
@@ -458,7 +459,9 @@ const EmployeeLayout = () => {
               >
                 <Bell size={18} />
                 {unreadCount > 0 && (
-                  <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-red-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-sm border border-white dark:border-[#111c18]">
+                    {unreadCount > 10 ? '10+' : unreadCount}
+                  </span>
                 )}
               </button>
 
@@ -577,10 +580,8 @@ const EmployeeLayout = () => {
                     <button
                       role="menuitem"
                       onClick={() => {
-                        if (window.confirm("Are you sure you want to sign out?")) {
-                          handleLogout();
-                          setIsProfileDropdownOpen(false);
-                        }
+                        setIsLogoutModalOpen(true);
+                        setIsProfileDropdownOpen(false);
                       }}
                       className="w-full px-6 py-3.5 flex items-center gap-3.5 text-left text-[14px] font-semibold text-[#EF4444] dark:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-colors duration-150 border-none bg-transparent cursor-pointer outline-none focus-visible:bg-red-50/50 dark:focus-visible:bg-red-950/20"
                     >
@@ -630,6 +631,44 @@ const EmployeeLayout = () => {
           )}
         </main>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in"
+            onClick={() => setIsLogoutModalOpen(false)}
+          />
+          <div className="relative bg-white dark:bg-[#0c1512] border border-[#eceae3] dark:border-[#1a2d29] rounded-[24px] shadow-2xl w-full max-w-sm p-6 sm:p-8 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-6">
+                <LogOut size={28} className="text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Sign Out</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
+                Are you sure you want to sign out?
+              </p>
+              <div className="flex w-full gap-3">
+                <button
+                  onClick={() => setIsLogoutModalOpen(false)}
+                  className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-[#162722] dark:hover:bg-[#1a2d29] text-gray-700 dark:text-gray-300 font-bold rounded-xl transition-colors border-none cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setIsLogoutModalOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex-1 py-3 px-4 bg-[#00a76b] hover:bg-[#00915c] text-white font-bold rounded-xl transition-colors shadow-lg shadow-[#00a76b]/20 border-none cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

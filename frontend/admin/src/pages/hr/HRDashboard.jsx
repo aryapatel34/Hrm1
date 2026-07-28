@@ -117,7 +117,7 @@ const HRDashboard = () => {
             icon: CheckSquare,
             text: `Task: ${t.title}`,
             time: new Date(t.createdAt).toLocaleDateString(),
-            color: 'bg-orange-100 text-orange-600',
+            color: 'bg-emerald-100 text-emerald-600',
             dateObj: new Date(t.createdAt)
           });
         });
@@ -130,7 +130,7 @@ const HRDashboard = () => {
           desc: n.message || n.description,
           time: n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
           icon: Bell,
-          color: 'text-orange-500 bg-orange-100'
+          color: 'text-emerald-500 bg-emerald-100'
         }));
 
         setStats({
@@ -150,7 +150,7 @@ const HRDashboard = () => {
           { id: 2, icon: CheckCircle, text: 'Approved leave for John Doe', time: '3 hours ago', color: 'bg-blue-100 text-blue-600' },
         ]);
         setNotifications(mappedNotifs.length > 0 ? mappedNotifs : [
-          { id: 1, title: 'Leave Alert', desc: '5 employees requested leave.', time: '10 min ago', icon: FileText, color: 'text-orange-500 bg-orange-100' },
+          { id: 1, title: 'Leave Alert', desc: '5 employees requested leave.', time: '10 min ago', icon: FileText, color: 'text-emerald-500 bg-emerald-100' },
           { id: 2, title: 'Task Reminder', desc: 'Q3 Appraisals due.', time: '3 hrs ago', icon: Bell, color: 'text-blue-500 bg-blue-100' }
         ]);
 
@@ -184,7 +184,7 @@ const HRDashboard = () => {
   const getStatusColor = (status) => {
     const s = (status || 'pending').toLowerCase();
     switch (s) {
-      case 'pending': return 'bg-orange-100 text-orange-700';
+      case 'pending': return 'bg-emerald-100 text-emerald-700';
       case 'approved':
       case 'completed': return 'bg-green-100 text-green-700';
       case 'rejected': return 'bg-red-100 text-red-700';
@@ -196,7 +196,7 @@ const HRDashboard = () => {
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'High': return 'bg-red-100 text-red-700';
-      case 'Medium': return 'bg-orange-100 text-orange-700';
+      case 'Medium': return 'bg-emerald-100 text-emerald-700';
       case 'Low': return 'bg-green-100 text-green-700';
       default: return 'bg-gray-100 text-gray-700';
     }
@@ -207,7 +207,7 @@ const HRDashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[500px]">
-        <Loader2 className="animate-spin text-[#ff4f00]" size={48} />
+        <Loader2 className="animate-spin text-[#00a76b]" size={48} />
       </div>
     );
   }
@@ -218,24 +218,19 @@ const HRDashboard = () => {
       {/* HERO SECTION */}
       <div className="mb-12 mt-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div className="w-full md:max-w-2xl">
-          <h1 className="text-[32px] md:text-[40px] font-black text-[#201515] tracking-tight leading-tight mb-3">
-            HR Operations <span className="text-[#ff4f00]">Dashboard</span>
-          </h1>
-          <p className="text-[14px] md:text-[16px] text-[#36342e] font-medium leading-relaxed">
-            Manage employees, attendance, leave approvals, payroll, tasks, and workforce operations from one centralized platform.
-          </p>
+          {/* Headlines removed as requested */}
         </div>
         <div className="flex gap-4 shrink-0">
           <button
             onClick={() => navigate('/hr/create-user')}
-            className="flex items-center gap-2 bg-[#ff4f00] hover:bg-[#e64600] text-white px-6 py-3 rounded-[5px] font-bold transition-all shadow-sm"
+            className="flex items-center gap-2 bg-[#00a76b] hover:bg-[#00915c] text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-sm"
           >
             <UserPlus size={18} />
             Add Employee
           </button>
           <button
             onClick={() => navigate('/hr/payroll')}
-            className="flex items-center gap-2 bg-white hover:bg-[#eceae3] border border-[#c5c0b1] text-[#201515] px-6 py-3 rounded-[5px] font-bold transition-all shadow-sm"
+            className="flex items-center gap-2 bg-white hover:bg-[#eceae3] border border-[#c5c0b1] text-[#201515] px-6 py-3 rounded-2xl font-bold transition-all shadow-sm"
           >
             <Wallet size={18} />
             Generate Payroll
@@ -246,30 +241,30 @@ const HRDashboard = () => {
       {/* ROW 1 - HR OVERVIEW CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {[
-          { label: 'Total Employees', val: stats.employees, icon: Users },
-          { label: 'Pending Leave Requests', val: stats.pendingLeaves.toString().padStart(2, '0'), icon: FileText },
-          { label: 'Attendance Today', val: stats.attendance, icon: CheckCircle },
-          { label: 'Open Tasks', val: stats.openTasks, icon: CheckSquare }
+          { label: 'Total Employees', val: stats.employees, icon: Users, bg: 'bg-[#fffdf9]', color: '#00a76b' },
+          { label: 'Pending Leave Requests', val: stats.pendingLeaves.toString().padStart(2, '0'), icon: FileText, bg: 'bg-[#fffdf9]', color: '#00a76b' },
+          { label: 'Attendance Today', val: stats.attendance, icon: CheckCircle, bg: 'bg-[#fffdf9]', color: '#00a76b' },
+          { label: 'Open Tasks', val: stats.openTasks, icon: CheckSquare, bg: 'bg-[#fffdf9]', color: '#00a76b' }
         ].map((stat, i) => (
-          <div key={i} className="bg-white rounded-[5px] border border-[#eceae3] p-6 shadow-sm hover:border-[#ff4f00] transition-colors group cursor-default">
-            <div className="flex justify-between items-start mb-6">
-              <div className="w-10 h-10 rounded-[5px] bg-[#fffdf9] border border-[#eceae3] flex items-center justify-center text-[#ff4f00] group-hover:bg-[#ff4f00] group-hover:text-white transition-colors">
-                <stat.icon size={20} />
+          <div key={i} className="bg-white rounded-[20px] border border-[#eceae3] p-4 shadow-sm group hover:border-[#00a76b] transition-all cursor-default flex flex-col">
+            <div className="flex justify-between items-start mb-3">
+              <div className="w-10 h-10 rounded-[14px] flex items-center justify-center border border-[#eceae3]" style={{ backgroundColor: stat.bg, color: stat.color }}>
+                <stat.icon size={18} />
               </div>
             </div>
             <div>
-              <h3 className="text-[36px] font-black text-[#201515] leading-none mb-2">{stat.val}</h3>
-              <p className="text-[12px] font-bold text-[#939084] uppercase tracking-widest">{stat.label}</p>
+              <h3 className="text-[24px] font-black text-[#201515] leading-none mb-1 tabular-nums">{stat.val}</h3>
+              <p className="text-[10px] font-bold text-[#939084] uppercase tracking-wider">{stat.label}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* ROW 2 - ATTENDANCE ANALYTICS */}
-      <div className="bg-white rounded-[5px] border border-[#eceae3] p-8 shadow-sm mb-12">
+      <div className="bg-white rounded-[24px] border border-[#eceae3] p-8 shadow-sm mb-12">
         <div className="flex justify-between items-center mb-8">
           <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-[#201515]">Attendance & Workforce Analytics</h3>
-          <select className="bg-[#fffdf9] border border-[#eceae3] text-[#201515] text-[12px] font-bold px-4 py-2 rounded-[5px] outline-none cursor-pointer focus:border-[#ff4f00]">
+          <select className="bg-[#fffdf9] border border-[#eceae3] text-[#201515] text-[12px] font-bold px-4 py-2 rounded-2xl outline-none cursor-pointer focus:border-[#00a76b]">
             <option>This Week</option>
             <option>Last Week</option>
             <option>This Month</option>
@@ -280,18 +275,18 @@ const HRDashboard = () => {
             <AreaChart data={attendanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorPresent" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ff4f00" stopOpacity={0.1} />
-                  <stop offset="95%" stopColor="#ff4f00" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#00a76b" stopOpacity={0.1} />
+                  <stop offset="95%" stopColor="#00a76b" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eceae3" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#939084', fontWeight: 'bold' }} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#939084', fontWeight: 'bold' }} />
               <RechartsTooltip
-                contentStyle={{ borderRadius: '5px', border: '1px solid #eceae3', fontWeight: 'bold', fontSize: '12px' }}
+                contentStyle={{ borderRadius: '12px', border: '1px solid #eceae3', fontWeight: 'bold', fontSize: '12px' }}
                 cursor={{ stroke: '#eceae3', strokeWidth: 2, strokeDasharray: '3 3' }}
               />
-              <Area type="monotone" dataKey="present" stroke="#ff4f00" strokeWidth={3} fillOpacity={1} fill="url(#colorPresent)" activeDot={{ r: 6, fill: '#ff4f00', stroke: '#fff', strokeWidth: 2 }} />
+              <Area type="monotone" dataKey="present" stroke="#00a76b" strokeWidth={3} fillOpacity={1} fill="url(#colorPresent)" activeDot={{ r: 6, fill: '#00a76b', stroke: '#fff', strokeWidth: 2 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -299,10 +294,10 @@ const HRDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         {/* ROW 3 LEFT - LEAVE APPROVAL */}
-        <div className="lg:col-span-2 bg-white rounded-[5px] border border-[#eceae3] shadow-sm flex flex-col">
+        <div className="lg:col-span-2 bg-white rounded-[24px] border border-[#eceae3] shadow-sm flex flex-col overflow-hidden">
           <div className="p-6 border-b border-[#eceae3] flex justify-between items-center">
             <h3 className="text-[13px] font-black uppercase tracking-[0.15em] text-[#201515]">Leave Approval Panel</h3>
-            <button onClick={() => navigate('/hr/leave')} className="text-[11px] font-bold text-[#ff4f00] uppercase tracking-widest hover:underline">View All</button>
+            <button onClick={() => navigate('/hr/leave')} className="text-[11px] font-bold text-[#00a76b] uppercase tracking-widest hover:underline">View All</button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -326,23 +321,23 @@ const HRDashboard = () => {
                     className="hover:bg-[#fffdf9] transition-colors cursor-pointer"
                     onClick={() => setSelectedLeave(req)}
                   >
-                    <td className="px-6 py-4 text-[13px] font-bold text-[#201515]">{req.employee?.name || req.employeeId || 'Employee'}</td>
+                    <td className="px-6 py-4 text-[13px] font-bold text-[#201515]">{req.user?.name || req.employee?.name || req.employeeId || 'Employee'}</td>
                     <td className="px-6 py-4 text-[12px] font-semibold text-[#36342e]">{req.leaveType || req.type || 'Leave'}</td>
                     <td className="px-6 py-4 text-[12px] font-medium text-[#939084]">
                       {new Date(req.startDate || req.date || req.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-[3px] text-[9px] font-black uppercase tracking-widest ${getStatusColor(req.status)}`}>
+                      <span className={`px-2 py-1 rounded-2xl text-[9px] font-black uppercase tracking-widest ${getStatusColor(req.status)}`}>
                         {req.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
                       {((req.status || '').toLowerCase() === 'pending') ? (
                         <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => handleApproveLeave(req._id || req.id)} className="w-7 h-7 rounded-[3px] bg-green-50 text-green-600 hover:bg-green-500 hover:text-white flex items-center justify-center transition-colors">
+                          <button onClick={() => handleApproveLeave(req._id || req.id)} className="w-7 h-7 rounded-2xl bg-green-50 text-green-600 hover:bg-green-500 hover:text-white flex items-center justify-center transition-colors">
                             <Check size={14} />
                           </button>
-                          <button onClick={() => handleRejectLeave(req._id || req.id)} className="w-7 h-7 rounded-[3px] bg-red-50 text-red-600 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors">
+                          <button onClick={() => handleRejectLeave(req._id || req.id)} className="w-7 h-7 rounded-2xl bg-red-50 text-red-600 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors">
                             <X size={14} />
                           </button>
                         </div>
@@ -358,7 +353,7 @@ const HRDashboard = () => {
         </div>
 
         {/* ROW 3 RIGHT - RECENT ACTIVITY */}
-        <div className="lg:col-span-1 bg-white rounded-[5px] border border-[#eceae3] shadow-sm flex flex-col">
+        <div className="lg:col-span-1 bg-white rounded-[24px] border border-[#eceae3] shadow-sm flex flex-col overflow-hidden">
           <div className="p-6 border-b border-[#eceae3]">
             <h3 className="text-[13px] font-black uppercase tracking-[0.15em] text-[#201515]">Recent Employee Activity</h3>
           </div>
@@ -382,22 +377,22 @@ const HRDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         {/* ROW 4 LEFT - TASK MANAGEMENT */}
-        <div className="lg:col-span-2 bg-white rounded-[5px] border border-[#eceae3] p-8 shadow-sm">
+        <div className="lg:col-span-2 bg-white rounded-[24px] border border-[#eceae3] p-8 shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-[13px] font-black uppercase tracking-[0.15em] text-[#201515]">Task Management Panel</h3>
-            <button onClick={() => navigate('/hr/tasks')} className="text-[11px] font-bold text-[#ff4f00] uppercase tracking-widest hover:underline">All Tasks</button>
+            <button onClick={() => navigate('/hr/tasks')} className="text-[11px] font-bold text-[#00a76b] uppercase tracking-widest hover:underline">All Tasks</button>
           </div>
           <div className="space-y-4">
             {tasks.length === 0 ? (
               <div className="py-8 text-center text-[12px] font-bold text-[#939084]">No tasks assigned.</div>
             ) : tasks.map((task) => (
-              <div key={task._id || task.id} className="p-4 rounded-[5px] border border-[#eceae3] hover:border-[#ff4f00]/30 hover:bg-[#fffdf9] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div key={task._id || task.id} className="p-4 rounded-2xl border border-[#eceae3] hover:border-[#00a76b]/30 hover:bg-[#fffdf9] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <span className={`px-2 py-0.5 rounded-[3px] text-[9px] font-black uppercase tracking-widest ${getPriorityColor(task.priority || 'Medium')}`}>
+                    <span className={`px-2 py-0.5 rounded-2xl text-[9px] font-black uppercase tracking-widest ${getPriorityColor(task.priority || 'Medium')}`}>
                       {task.priority || 'Medium'} Priority
                     </span>
-                    <span className={`px-2 py-0.5 rounded-[3px] text-[9px] font-black uppercase tracking-widest ${getStatusColor(task.status || 'Pending')}`}>
+                    <span className={`px-2 py-0.5 rounded-2xl text-[9px] font-black uppercase tracking-widest ${getStatusColor(task.status || 'Pending')}`}>
                       {task.status || 'Pending'}
                     </span>
                   </div>
@@ -409,9 +404,9 @@ const HRDashboard = () => {
                     <span>Progress</span>
                     <span>{task.progress || 0}%</span>
                   </div>
-                  <div className="h-1.5 w-full bg-[#eceae3] rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-[#eceae3] rounded-2xl overflow-hidden">
                     <div
-                      className="h-full bg-[#ff4f00] rounded-full transition-all duration-500"
+                      className="h-full bg-[#00a76b] rounded-2xl transition-all duration-500"
                       style={{ width: `${task.progress || 0}%` }}
                     ></div>
                   </div>
@@ -422,16 +417,16 @@ const HRDashboard = () => {
         </div>
 
         {/* ROW 4 RIGHT - ATTENDANCE STATUS */}
-        <div className="lg:col-span-1 bg-white rounded-[5px] border border-[#eceae3] p-8 shadow-sm flex flex-col">
+        <div className="lg:col-span-1 bg-white rounded-[24px] border border-[#eceae3] p-8 shadow-sm flex flex-col">
           <h3 className="text-[13px] font-black uppercase tracking-[0.15em] text-[#201515] mb-6">Today's Attendance Status</h3>
           <div className="grid grid-cols-2 gap-4 flex-1">
             {[
               { label: 'Present', val: todayAttendance.present, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100' },
               { label: 'Absent', val: todayAttendance.absent, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100' },
-              { label: 'Late', val: todayAttendance.late, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
+              { label: 'Late', val: todayAttendance.late, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
               { label: 'On Leave', val: todayAttendance.onLeave, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' }
             ].map((stat, i) => (
-              <div key={i} className={`p-4 rounded-[5px] border ${stat.border} ${stat.bg} flex flex-col items-center justify-center text-center`}>
+              <div key={i} className={`p-4 rounded-2xl border ${stat.border} ${stat.bg} flex flex-col items-center justify-center text-center`}>
                 <span className={`text-[32px] font-black leading-none mb-2 ${stat.color}`}>{stat.val}</span>
                 <span className="text-[10px] font-black uppercase tracking-widest text-[#36342e]">{stat.label}</span>
               </div>
@@ -441,7 +436,7 @@ const HRDashboard = () => {
       </div>
 
       {/* ROW 5 - PAYROLL SUMMARY */}
-      <div className="bg-[#fffdf9] rounded-[5px] border border-[#eceae3] p-8 shadow-sm mb-12 flex flex-col md:flex-row items-center justify-between gap-8">
+      <div className="bg-white rounded-[24px] border border-[#eceae3] p-8 shadow-sm mb-12 flex flex-col md:flex-row items-center justify-between gap-8">
         <div>
           <h3 className="text-[18px] font-black text-[#201515] mb-2">Payroll Summary</h3>
           <p className="text-[13px] font-medium text-[#939084] max-w-md">
@@ -456,73 +451,23 @@ const HRDashboard = () => {
           <div className="h-12 w-px bg-[#c5c0b1] hidden sm:block"></div>
           <div className="text-right">
             <p className="text-[10px] font-black uppercase tracking-widest text-[#939084] mb-1">Pending Salary</p>
-            <p className="text-[28px] font-black text-[#ff4f00] tabular-nums">{formatCurrency(payrollStats.pendingSalary)}</p>
+            <p className="text-[28px] font-black text-[#00a76b] tabular-nums">{formatCurrency(payrollStats.pendingSalary)}</p>
           </div>
         </div>
         <div className="flex flex-col gap-3 shrink-0 w-full md:w-auto">
           <button
             onClick={() => navigate('/hr/payroll')}
-            className="bg-[#ff4f00] hover:bg-[#e64600] text-white px-6 py-2.5 rounded-[5px] font-bold transition-all text-[13px] text-center"
+            className="bg-[#00a76b] hover:bg-[#00915c] text-white px-6 py-2.5 rounded-2xl font-bold transition-all text-[13px] text-center"
           >
             Generate Payroll
           </button>
-          <button onClick={() => navigate('/hr/payroll')} className="bg-white hover:bg-[#eceae3] border border-[#c5c0b1] text-[#201515] px-6 py-2.5 rounded-[5px] font-bold transition-all text-[13px] text-center">
+          <button onClick={() => navigate('/hr/payroll')} className="bg-white hover:bg-[#eceae3] border border-[#c5c0b1] text-[#201515] px-6 py-2.5 rounded-2xl font-bold transition-all text-[13px] text-center">
             View Payroll Report
           </button>
         </div>
       </div>
 
-      {/* ROW 6 & 7 - QUICK ACTIONS & NOTIFICATIONS */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-
-        {/* ROW 6 - EMPLOYEE MANAGEMENT QUICK ACTIONS */}
-        <div className="xl:col-span-2">
-          <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-[#201515] mb-6">Employee Management Quick Actions</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {[
-              { label: 'Add Employee', icon: UserPlus, action: () => navigate('/hr/create-user') },
-              { label: 'Assign Department', icon: Layers, action: () => navigate('/hr/departments') },
-              { label: 'Upload Documents', icon: FileText, action: () => navigate('/hr/employees') },
-              { label: 'Create Announcement', icon: Bell, action: () => navigate('/hr/notifications') },
-              { label: 'Assign Task', icon: Plus, action: () => navigate('/hr/task-management/create') },
-              { label: 'Approve Attendance', icon: CheckCircle, action: () => navigate('/hr/attendance') }
-            ].map((action, i) => (
-              <button
-                key={i}
-                onClick={action.action}
-                className="bg-white rounded-[5px] border border-[#eceae3] p-6 hover:border-[#ff4f00] hover:shadow-md transition-all group flex flex-col items-center justify-center text-center gap-3 cursor-pointer"
-              >
-                <div className="w-10 h-10 rounded-full bg-[#fffdf9] border border-[#eceae3] flex items-center justify-center text-[#36342e] group-hover:bg-[#ff4f00] group-hover:text-white group-hover:border-[#ff4f00] transition-colors">
-                  <action.icon size={18} />
-                </div>
-                <span className="text-[12px] font-bold text-[#201515]">{action.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ROW 7 - NOTIFICATIONS PANEL */}
-        <div className="xl:col-span-1">
-          <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-[#201515] mb-6">Notification Center</h3>
-          <div className="bg-white rounded-[5px] border border-[#eceae3] shadow-sm flex flex-col h-[320px]">
-            <div className="flex-1 overflow-y-auto p-2">
-              {notifications.map((notif) => (
-                <div key={notif.id} onClick={() => navigate('/hr/notifications')} className="p-4 border-b border-[#eceae3] hover:bg-[#fffdf9] transition-colors last:border-0 flex items-start gap-4 cursor-pointer">
-                  <div className={`w-8 h-8 rounded-[5px] flex items-center justify-center shrink-0 ${notif.color}`}>
-                    <notif.icon size={16} />
-                  </div>
-                  <div>
-                    <h4 className="text-[13px] font-bold text-[#201515] mb-1">{notif.title}</h4>
-                    <p className="text-[12px] font-medium text-[#939084] leading-snug">{notif.desc}</p>
-                    <p className="text-[10px] font-black text-[#c5c0b1] uppercase tracking-widest mt-2">{notif.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-      </div>
+      {/* Quick Actions and Notifications removed as requested */}
 
       {/* ── LEAVE DETAIL MODAL ── */}
       {selectedLeave && (
@@ -552,8 +497,8 @@ const HRDashboard = () => {
             <div className="px-7 py-6 space-y-5">
               {/* Employee Avatar */}
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#ff4f00]/10 flex items-center justify-center shrink-0">
-                  <span className="text-[16px] font-black text-[#ff4f00]">
+                <div className="w-12 h-12 rounded-full bg-[#00a76b]/10 flex items-center justify-center shrink-0">
+                  <span className="text-[16px] font-black text-[#00a76b]">
                     {(selectedLeave.employee?.name || selectedLeave.employeeId || 'E').charAt(0).toUpperCase()}
                   </span>
                 </div>
@@ -626,7 +571,7 @@ const HRDashboard = () => {
                 </button>
                 <button
                   onClick={() => { handleApproveLeave(selectedLeave._id || selectedLeave.id); setSelectedLeave(null); }}
-                  className="px-5 py-2.5 rounded-[5px] text-[12px] font-black uppercase tracking-widest bg-[#ff4f00] text-white hover:bg-[#e04500] transition-colors"
+                  className="px-5 py-2.5 rounded-[5px] text-[12px] font-black uppercase tracking-widest bg-[#00a76b] text-white hover:bg-[#00915c] transition-colors"
                 >
                   Approve
                 </button>

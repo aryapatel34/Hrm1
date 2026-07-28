@@ -362,7 +362,7 @@ const CreateUser = () => {
       {/* TOAST NOTIFICATION */}
       {message.text && (
         <div className={`fixed top-24 right-8 bg-[#fffefb] border border-[#c5c0b1] shadow-xl p-8 rounded-[8px] flex items-center gap-6 animate-fade-in z-[100] min-w-[400px]`}>
-          <div className={`w-14 h-14 rounded-[4px] flex items-center justify-center ${message.type === 'success' ? 'bg-[#24a148] text-white' : 'bg-[#00a76b] text-white'}`}>
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${message.type === 'success' ? 'bg-[#24a148] text-white' : 'bg-[#00a76b] text-white'}`}>
             {message.type === 'success' ? <CheckCircle size={28} /> : <AlertTriangle size={28} />}
           </div>
           <div className="flex-1">
@@ -371,10 +371,10 @@ const CreateUser = () => {
 
             {message.employeeId && (
               <div className="flex items-center gap-3">
-                <div className="px-3 py-1.5 bg-[#eceae3] text-[#201515] rounded-[4px] text-[11px] font-bold uppercase tracking-widest flex items-center gap-2">
+                <div className="px-3 py-1.5 bg-[#eceae3] text-[#201515] rounded-2xl text-[11px] font-bold uppercase tracking-widest flex items-center gap-2">
                   <Fingerprint size={14} /> {message.employeeId}
                 </div>
-                <div className="px-3 py-1.5 bg-[#24a148] text-white rounded-[4px] text-[11px] font-bold uppercase tracking-widest">
+                <div className="px-3 py-1.5 bg-[#24a148] text-white rounded-2xl text-[11px] font-bold uppercase tracking-widest">
                   {message.status || 'ACTIVE'}
                 </div>
               </div>
@@ -387,15 +387,13 @@ const CreateUser = () => {
       )}
 
       {/* HEADER */}
-      <div className="mb-16 border-b border-[#c5c0b1] pb-10">
-        <p className="zap-caption-upper text-[#00a76b] mb-4">Identity Synthesis</p>
-        <h1 className="zap-display-hero">Initialize <span className="text-[#00a76b]">User Node.</span></h1>
-        <p className="text-[18px] font-medium text-[#939084] mt-4">Register a new personnel entity into the organizational matrix.</p>
+      <div className="mb-12 border-b border-[#eceae3] pb-6">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Create Employee</h1>
       </div>
 
       <div className="max-w-4xl mx-auto">
         {/* FORM SIDE */}
-        <div className="zap-card bg-[#fffdf9] p-12">
+        <div className="zap-card bg-white dark:bg-[#13221e] border border-[#eceae3] dark:border-[#1a2d29] p-12">
           {/* AVATAR UPLOAD SECTION */}
           <div className="flex flex-col items-center mb-12 border-b border-[#eceae3] pb-12">
             <div className="relative group">
@@ -430,7 +428,7 @@ const CreateUser = () => {
                   <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#939084]" />
                   <input
                     required name="firstName" value={formData.firstName} onChange={handleChange}
-                    className="w-full h-14 pl-12 pr-4 bg-white border border-[#c5c0b1] rounded-[4px] text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#00a76b] transition-all"
+                    className="w-full h-14 pl-12 pr-4 bg-white border border-[#c5c0b1] rounded-2xl text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#00a76b] transition-all"
                     placeholder="Enter first name..."
                     maxLength="20"
                   />
@@ -445,7 +443,7 @@ const CreateUser = () => {
                   <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#939084]" />
                   <input
                     name="middleName" value={formData.middleName} onChange={handleChange}
-                    className={`w-full h-14 pl-12 pr-4 bg-white border ${errors.middleName ? 'border-red-500' : 'border-[#c5c0b1]'} rounded-[4px] text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#ff4f00] transition-all`}
+                    className={`w-full h-14 pl-12 pr-4 bg-white border ${errors.middleName ? 'border-red-500' : 'border-[#c5c0b1]'} rounded-2xl text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#ff4f00] transition-all`}
                     placeholder="Enter middle name (optional)..."
                     maxLength="20"
                   />
@@ -460,7 +458,7 @@ const CreateUser = () => {
                   <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#939084]" />
                   <input
                     required name="lastName" value={formData.lastName} onChange={handleChange}
-                    className="w-full h-14 pl-12 pr-4 bg-white border border-[#c5c0b1] rounded-[4px] text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#00a76b] transition-all"
+                    className="w-full h-14 pl-12 pr-4 bg-white border border-[#c5c0b1] rounded-2xl text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#00a76b] transition-all"
                     placeholder="Enter last name..."
                     maxLength="20"
                   />
@@ -475,7 +473,7 @@ const CreateUser = () => {
                   <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#939084]" />
                   <input
                     required name="email" value={formData.email} onChange={handleChange}
-                    className={`w-full h-14 pl-12 pr-4 bg-white border ${errors.email ? 'border-red-500' : 'border-[#c5c0b1]'} rounded-[4px] text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#ff4f00] transition-all`}
+                    className={`w-full h-14 pl-12 pr-4 bg-white border ${errors.email ? 'border-red-500' : 'border-[#c5c0b1]'} rounded-2xl text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#ff4f00] transition-all`}
                     placeholder="email@example.com"
                   />
                 </div>
@@ -489,7 +487,7 @@ const CreateUser = () => {
                   <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#939084]" />
                   <input
                     required name="personalEmail" value={formData.personalEmail} onChange={handleChange}
-                    className={`w-full h-14 pl-12 pr-4 bg-white border ${errors.personalEmail ? 'border-red-500' : 'border-[#c5c0b1]'} rounded-[4px] text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#ff4f00] transition-all`}
+                    className={`w-full h-14 pl-12 pr-4 bg-white border ${errors.personalEmail ? 'border-red-500' : 'border-[#c5c0b1]'} rounded-2xl text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#ff4f00] transition-all`}
                     placeholder="personal@gmail.com"
                   />
                 </div>
@@ -503,7 +501,7 @@ const CreateUser = () => {
                   <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#939084]" />
                   <input
                     required name="phone" value={formData.phone} onChange={handleChange}
-                    className={`w-full h-14 pl-12 pr-4 bg-white border ${errors.phone ? 'border-red-500' : 'border-[#c5c0b1]'} rounded-[4px] text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#ff4f00] transition-all`}
+                    className={`w-full h-14 pl-12 pr-4 bg-white border ${errors.phone ? 'border-red-500' : 'border-[#c5c0b1]'} rounded-2xl text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#ff4f00] transition-all`}
                     placeholder="Enter 10-digit phone number..."
                     maxLength="10"
                   />
@@ -519,7 +517,7 @@ const CreateUser = () => {
                   <input
                     required name="password" value={formData.password} onChange={handleChange} maxLength="20"
                     type={showPassword ? 'text' : 'password'}
-                    className="w-full h-14 pl-12 pr-12 bg-white border border-[#c5c0b1] rounded-[4px] text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#00a76b] transition-all"
+                    className="w-full h-14 pl-12 pr-12 bg-white border border-[#c5c0b1] rounded-2xl text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#00a76b] transition-all"
                     placeholder="••••••••"
                   />
                   <button
@@ -539,7 +537,7 @@ const CreateUser = () => {
                   <Shield size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#939084]" />
                   <select
                     required name="role" value={formData.role} onChange={handleChange}
-                    className="w-full h-14 pl-12 pr-12 bg-white border border-[#c5c0b1] rounded-[4px] text-[15px] font-bold text-[#201515] focus:outline-none focus:border-[#00a76b] appearance-none cursor-pointer"
+                    className="w-full h-14 pl-12 pr-12 bg-white border border-[#c5c0b1] rounded-2xl text-[15px] font-bold text-[#201515] focus:outline-none focus:border-[#00a76b] appearance-none cursor-pointer"
                   >
                     <option value="hr">HR</option>
                     <option value="manager">Manager</option>
@@ -558,7 +556,7 @@ const CreateUser = () => {
                   <Shield size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#939084]" />
                   <input
                     name="designation" value={formData.designation} onChange={handleChange}
-                    className={`w-full h-14 pl-12 pr-4 bg-white border border-[#c5c0b1] rounded-[4px] text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#ff4f00] transition-all`}
+                    className={`w-full h-14 pl-12 pr-4 bg-white border border-[#c5c0b1] rounded-2xl text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#ff4f00] transition-all`}
                     placeholder="Enter designation (e.g. Software Engineer)..."
                     maxLength="50"
                   />
@@ -572,7 +570,7 @@ const CreateUser = () => {
                   <Users size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#939084]" />
                   <select
                     required name="gender" value={formData.gender} onChange={handleChange}
-                    className="w-full h-14 pl-12 pr-12 bg-white border border-[#c5c0b1] rounded-[4px] text-[15px] font-bold text-[#201515] focus:outline-none focus:border-[#00a76b] appearance-none cursor-pointer"
+                    className="w-full h-14 pl-12 pr-12 bg-white border border-[#c5c0b1] rounded-2xl text-[15px] font-bold text-[#201515] focus:outline-none focus:border-[#00a76b] appearance-none cursor-pointer"
                   >
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -590,7 +588,7 @@ const CreateUser = () => {
                   <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#939084]" />
                   <input
                     required type="date" name="joinDate" value={formData.joinDate} onChange={handleChange}
-                    className="w-full h-14 pl-12 pr-4 bg-white border border-[#c5c0b1] rounded-[4px] text-[15px] font-bold text-[#201515] focus:outline-none focus:border-[#00a76b]"
+                    className="w-full h-14 pl-12 pr-4 bg-white border border-[#c5c0b1] rounded-2xl text-[15px] font-bold text-[#201515] focus:outline-none focus:border-[#00a76b]"
                   />
                 </div>
                 {errors.joinDate && <p className="text-red-500 text-sm mt-1">{errors.joinDate}</p>}
@@ -606,7 +604,7 @@ const CreateUser = () => {
                     onChange={handleChange}
                     placeholder="Select Date"
                     maxDate={new Date().toISOString().split('T')[0]}
-                    className={`w-full h-14 bg-white border ${errors.dob ? 'border-red-500' : 'border-[#c5c0b1]'} rounded-[4px] text-[15px] font-bold text-[#201515] transition-all hover:border-[#ff4f00]`}
+                    className={`w-full h-14 bg-white border ${errors.dob ? 'border-red-500' : 'border-[#c5c0b1]'} rounded-2xl text-[15px] font-bold text-[#201515] transition-all hover:border-[#ff4f00]`}
                   />
                 </div>
                 {errors.dob && <p className="text-red-500 text-sm mt-1">{errors.dob}</p>}
@@ -620,7 +618,7 @@ const CreateUser = () => {
                     <Users size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#939084]" />
                     <select
                       required name="reportingManager" value={formData.reportingManager} onChange={handleChange}
-                      className="w-full h-14 pl-12 pr-12 bg-white border border-[#c5c0b1] rounded-[4px] text-[15px] font-bold text-[#201515] focus:outline-none focus:border-[#00a76b] appearance-none cursor-pointer"
+                      className="w-full h-14 pl-12 pr-12 bg-white border border-[#c5c0b1] rounded-2xl text-[15px] font-bold text-[#201515] focus:outline-none focus:border-[#00a76b] appearance-none cursor-pointer"
                     >
                       <option value="">Select Reporting Manager</option>
                       {managers
@@ -642,7 +640,7 @@ const CreateUser = () => {
                   <MapPin size={18} className="absolute left-4 top-4 text-[#939084]" />
                   <textarea
                     name="address" value={formData.address} onChange={handleChange}
-                    className="w-full h-32 pl-12 pr-4 pt-4 bg-white border border-[#c5c0b1] rounded-[4px] text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#00a76b] transition-all resize-none"
+                    className="w-full h-32 pl-12 pr-4 pt-4 bg-white border border-[#c5c0b1] rounded-2xl text-[15px] font-medium text-[#201515] focus:outline-none focus:border-[#00a76b] transition-all resize-none"
                     placeholder="Enter physical location address..."
                   />
                   <div className="absolute bottom-3 right-4 text-[11px] font-bold text-[#939084]">
@@ -662,7 +660,7 @@ const CreateUser = () => {
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-4">
                       <div
-                        className={`w-14 h-14 rounded-[4px] flex items-center justify-center overflow-hidden border border-[#eceae3] transition-all shrink-0 ${adharFile ? 'bg-white cursor-pointer hover:scale-105 active:scale-95 shadow-sm' : 'bg-[#eceae3] text-[#939084]'}`}
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden border border-[#eceae3] transition-all shrink-0 ${adharFile ? 'bg-white cursor-pointer hover:scale-105 active:scale-95 shadow-sm' : 'bg-[#eceae3] text-[#939084]'}`}
                         onClick={() => adharFile && window.open(URL.createObjectURL(adharFile), '_blank')}
                       >
                         {adharFile ? (
@@ -676,7 +674,7 @@ const CreateUser = () => {
                         {!adharFile && <p className="text-[11px] text-[#939084] leading-tight">Upload Adharcard for Identity Verification</p>}
                       </div>
                     </div>
-                    {adharFile && <span className="text-[10px] font-black text-[#24a148] uppercase tracking-widest bg-[#24a148]/10 px-2 py-1 rounded-[4px]">Ready</span>}
+                    {adharFile && <span className="text-[10px] font-black text-[#24a148] uppercase tracking-widest bg-[#24a148]/10 px-2 py-1 rounded-2xl">Ready</span>}
                   </div>
                   <label className="zap-btn !h-12 !text-[12px] !bg-[#201515] hover:!bg-[#00a76b] !text-white w-full cursor-pointer flex items-center justify-center transition-colors">
                     {adharFile ? 'Change Document' : 'Upload Document'}
@@ -689,7 +687,7 @@ const CreateUser = () => {
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-4">
                       <div
-                        className={`w-14 h-14 rounded-[4px] flex items-center justify-center overflow-hidden border border-[#eceae3] transition-all shrink-0 ${bankFile ? 'bg-white cursor-pointer hover:scale-105 active:scale-95 shadow-sm' : 'bg-[#eceae3] text-[#939084]'}`}
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden border border-[#eceae3] transition-all shrink-0 ${bankFile ? 'bg-white cursor-pointer hover:scale-105 active:scale-95 shadow-sm' : 'bg-[#eceae3] text-[#939084]'}`}
                         onClick={() => bankFile && window.open(URL.createObjectURL(bankFile), '_blank')}
                       >
                         {bankFile ? (
@@ -703,7 +701,7 @@ const CreateUser = () => {
                         {!bankFile && <p className="text-[11px] text-[#939084] leading-tight">Upload Passbook/Cheque for Bank Details</p>}
                       </div>
                     </div>
-                    {bankFile && <span className="text-[10px] font-black text-[#24a148] uppercase tracking-widest bg-[#24a148]/10 px-2 py-1 rounded-[4px]">Ready</span>}
+                    {bankFile && <span className="text-[10px] font-black text-[#24a148] uppercase tracking-widest bg-[#24a148]/10 px-2 py-1 rounded-2xl">Ready</span>}
                   </div>
                   <label className="zap-btn !h-12 !text-[12px] !bg-[#201515] hover:!bg-[#00a76b] !text-white w-full cursor-pointer flex items-center justify-center transition-colors">
                     {bankFile ? 'Change Document' : 'Upload Document'}
@@ -716,7 +714,7 @@ const CreateUser = () => {
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-4">
                       <div
-                        className={`w-14 h-14 rounded-[4px] flex items-center justify-center overflow-hidden border border-[#eceae3] transition-all shrink-0 ${panFile ? 'bg-white cursor-pointer hover:scale-105 active:scale-95 shadow-sm' : 'bg-[#eceae3] text-[#939084]'}`}
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden border border-[#eceae3] transition-all shrink-0 ${panFile ? 'bg-white cursor-pointer hover:scale-105 active:scale-95 shadow-sm' : 'bg-[#eceae3] text-[#939084]'}`}
                         onClick={() => panFile && window.open(URL.createObjectURL(panFile), '_blank')}
                       >
                         {panFile ? (
@@ -730,7 +728,7 @@ const CreateUser = () => {
                         {!panFile && <p className="text-[11px] text-[#939084] leading-tight">Upload PAN Card for Tax Verification</p>}
                       </div>
                     </div>
-                    {panFile && <span className="text-[10px] font-black text-[#24a148] uppercase tracking-widest bg-[#24a148]/10 px-2 py-1 rounded-[4px]">Ready</span>}
+                    {panFile && <span className="text-[10px] font-black text-[#24a148] uppercase tracking-widest bg-[#24a148]/10 px-2 py-1 rounded-2xl">Ready</span>}
                   </div>
                   <label className="zap-btn !h-12 !text-[12px] !bg-[#201515] hover:!bg-[#00a76b] !text-white w-full cursor-pointer flex items-center justify-center transition-colors">
                     {panFile ? 'Change Document' : 'Upload Document'}

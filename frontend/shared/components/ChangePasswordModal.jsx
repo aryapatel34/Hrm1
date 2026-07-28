@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { X, Lock, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Lock, RefreshCw, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 const ChangePasswordModal = ({ isOpen, onClose }) => {
   const [passwords, setPasswords] = useState({
@@ -9,7 +9,13 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
     confirmPassword: ''
   });
   const [status, setStatus] = useState({ type: '', message: '' });
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
 
   // Handle escape key
   useEffect(() => {
@@ -32,6 +38,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
     setStatus({ type: '', message: '' });
+    setFieldErrors({});
 
     if (!passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword) {
       return setStatus({ type: 'error', message: 'All fields are required.' });
@@ -39,8 +46,10 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
     if (passwords.newPassword !== passwords.confirmPassword) {
       return setStatus({ type: 'error', message: 'New passwords do not match.' });
     }
-    if (passwords.newPassword.length < 6) {
-      return setStatus({ type: 'error', message: 'Password must be at least 6 characters.' });
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+    if (!passwordRegex.test(passwords.newPassword)) {
+      setFieldErrors({ newPassword: 'Password must be minimum 8 characters, 1 special symbol, minimum 1 capital letter, and minimum 1 number.' });
+      return;
     }
 
     setLoading(true);
@@ -85,7 +94,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
         
         {/* Header */}
         <div className="flex justify-between items-center px-8 pt-5 pb-4">
-          <h2 className="text-[28px] font-bold text-slate-900 tracking-tight leading-none m-0">Change Password</h2>
+          <h2 className="text-[28px] font-bold text-slate-900 dark:text-white tracking-tight leading-none m-0">Change Password</h2>
           <button 
             onClick={onClose}
             className="text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-2 rounded-full transition-colors cursor-pointer border-none outline-none"
@@ -113,55 +122,90 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
           <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4">
             {/* Field 1 */}
             <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-bold text-slate-700">Current Password</label>
+              <label className="text-[13px] font-bold text-slate-700 dark:text-slate-200">Current Password</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                   <Lock size={18} />
                 </div>
                 <input 
-                  type="password" 
+                  type={showPasswords.current ? "text" : "password"} 
                   placeholder="Enter current password"
                   required
                   value={passwords.currentPassword}
                   onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
-                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[8px] text-[14px] text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00a76b]/20 focus:border-[#00a76b] transition-all"
+                  className="w-full pl-11 pr-11 py-3.5 bg-slate-50 dark:bg-black border border-slate-200 dark:border-white rounded-[8px] text-[14px] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-black focus:outline-none focus:ring-2 focus:ring-[#00a76b]/20 focus:border-[#00a76b] transition-all"
                 />
+                {passwords.currentPassword.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors border-none bg-transparent cursor-pointer outline-none"
+                  >
+                    {showPasswords.current ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                )}
               </div>
             </div>
 
             {/* Field 2 */}
             <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-bold text-slate-700">New Password</label>
+              <label className="text-[13px] font-bold text-slate-700 dark:text-slate-200">New Password</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                   <Lock size={18} />
                 </div>
                 <input 
-                  type="password" 
+                  type={showPasswords.new ? "text" : "password"} 
                   placeholder="Enter new password"
                   required
                   value={passwords.newPassword}
-                  onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[8px] text-[14px] text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00a76b]/20 focus:border-[#00a76b] transition-all"
+                  onChange={(e) => {
+                    setPasswords({ ...passwords, newPassword: e.target.value });
+                    if (fieldErrors.newPassword) setFieldErrors({ ...fieldErrors, newPassword: '' });
+                  }}
+                  className="w-full pl-11 pr-11 py-3.5 bg-slate-50 dark:bg-black border border-slate-200 dark:border-white rounded-[8px] text-[14px] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-black focus:outline-none focus:ring-2 focus:ring-[#00a76b]/20 focus:border-[#00a76b] transition-all"
                 />
+                {passwords.newPassword.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors border-none bg-transparent cursor-pointer outline-none"
+                  >
+                    {showPasswords.new ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                )}
               </div>
+              {fieldErrors.newPassword && (
+                <p className="text-red-500 text-[11px] font-medium leading-relaxed mt-1">
+                  {fieldErrors.newPassword}
+                </p>
+              )}
             </div>
 
             {/* Field 3 */}
             <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-bold text-slate-700">Confirm New Password</label>
+              <label className="text-[13px] font-bold text-slate-700 dark:text-slate-200">Confirm New Password</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                   <Lock size={18} />
                 </div>
                 <input 
-                  type="password" 
+                  type={showPasswords.confirm ? "text" : "password"} 
                   placeholder="Confirm new password"
                   required
                   value={passwords.confirmPassword}
                   onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[8px] text-[14px] text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00a76b]/20 focus:border-[#00a76b] transition-all"
+                  className="w-full pl-11 pr-11 py-3.5 bg-slate-50 dark:bg-black border border-slate-200 dark:border-white rounded-[8px] text-[14px] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-black focus:outline-none focus:ring-2 focus:ring-[#00a76b]/20 focus:border-[#00a76b] transition-all"
                 />
+                {passwords.confirmPassword.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors border-none bg-transparent cursor-pointer outline-none"
+                  >
+                    {showPasswords.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -174,9 +218,6 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
               >
                 {loading ? <RefreshCw size={18} className="animate-spin" /> : 'Update Password'}
               </button>
-              <p className="text-center text-slate-500 text-[12px] font-medium mt-4">
-                Make sure your new password is at least 6 characters.
-              </p>
             </div>
           </form>
         </div>
@@ -187,3 +228,4 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
 };
 
 export default ChangePasswordModal;
+

@@ -372,12 +372,6 @@ const TimeTracker = () => {
                   `}
                 >
                   {day}
-                  {hasLog && !isSelected && (
-                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#10B981] rounded-full"></div>
-                  )}
-                  {hasLog && isSelected && (
-                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
-                  )}
                 </button>
               );
             })}
@@ -391,7 +385,12 @@ const TimeTracker = () => {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
           <h2 className="text-lg font-semibold text-gray-800">Daily Activity</h2>
-          <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-semibold">{selectedDate}</span>
+          <input 
+            type="date" 
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] cursor-pointer shadow-sm transition-all ml-auto"
+          />
         </div>
 
         <div className="overflow-x-auto">

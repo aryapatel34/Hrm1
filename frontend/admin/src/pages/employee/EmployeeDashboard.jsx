@@ -9,6 +9,8 @@ import {
   Sun, Moon, Sunrise, Bell, Star, Megaphone,
   CheckCircle, Play, Pause, Square, RefreshCw
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
 // ─── HELPERS ─────────────────────────────────────────────────
 const getAuth = () => {
   const t = sessionStorage.getItem('token');
@@ -134,6 +136,7 @@ const DeptDonut = ({ isDark }) => (
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────
 const EmployeeDashboard = () => {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [session, setSession] = useState(null);
@@ -598,7 +601,7 @@ const EmployeeDashboard = () => {
                 { month: 'Mar 2026', net: '₹6,720', status: 'Paid' },
                 { month: 'Feb 2026', net: '₹6,720', status: 'Paid' },
               ].map((p, i) => (
-                <div key={i} className="emp-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 12px', borderBottom: i < 3 ? (isDark ? '1px solid #1a2d29' : '1px solid #f3f4f6') : 'none', cursor: 'pointer', transition: 'background 0.15s', borderRadius: i === 0 ? '8px 8px 0 0' : i === 3 ? '0 0 8px 8px' : 0 }}>
+                <div key={i} className="emp-row" onClick={() => navigate('/employee/payslips')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 12px', borderBottom: i < 3 ? (isDark ? '1px solid #1a2d29' : '1px solid #f3f4f6') : 'none', cursor: 'pointer', transition: 'background 0.15s', borderRadius: i === 0 ? '8px 8px 0 0' : i === 3 ? '0 0 8px 8px' : 0 }}>
                   <div>
                     <p className="text-[#111827] dark:text-white" style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{p.month}</p>
                     <p className="text-[#9ca3af] dark:text-[#a3b3af]" style={{ fontSize: 12, margin: '2px 0 0' }}>Net {p.net}</p>
@@ -610,7 +613,7 @@ const EmployeeDashboard = () => {
           ) : (
             <div>
               {payroll.slice(0, 5).map((p, i, arr) => (
-                <div key={p._id || i} className="emp-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 12px', borderBottom: i < arr.length - 1 ? (isDark ? '1px solid #1a2d29' : '1px solid #f3f4f6') : 'none', cursor: 'pointer', transition: 'background 0.15s' }}>
+                <div key={p._id || i} className="emp-row" onClick={() => navigate('/employee/payslips')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 12px', borderBottom: i < arr.length - 1 ? (isDark ? '1px solid #1a2d29' : '1px solid #f3f4f6') : 'none', cursor: 'pointer', transition: 'background 0.15s' }}>
                   <div>
                     <p className="text-[#111827] dark:text-white" style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>
                       {p.month || new Date(p.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
