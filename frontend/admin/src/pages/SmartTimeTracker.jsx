@@ -515,12 +515,6 @@ const SmartTimeTracker = () => {
                   `}
                 >
                   {day}
-                  {hasLog && !isSelected && (
-                    <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#10B981] rounded-full"></div>
-                  )}
-                  {hasLog && isSelected && (
-                    <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-white rounded-full"></div>
-                  )}
                 </button>
               );
             })}
@@ -555,25 +549,26 @@ const SmartTimeTracker = () => {
       {/* BOTTOM ROW: ROLE-BASED DAILY ACTIVITY LOG */}
       <div className="bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-200 dark:border-[#38352e] flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-[#282520]">
-          <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-widest flex items-center gap-4">
+          <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-widest">
             {isAdmin ? 'All Employees Daily Activity' : 'Daily Activity'}
-            {!isAdmin && (
-              <input
-                type="date"
-                className="text-sm outline-none text-gray-700 dark:text-gray-300 font-normal bg-white dark:bg-[#181612] border border-gray-200 dark:border-[#38352e] rounded-lg px-3 py-1.5 shadow-sm focus:ring-1 focus:ring-[#10B981] focus:border-[#10B981]"
-                value={selectedDate}
-                onChange={e => setSelectedDate(e.target.value)}
-              />
-            )}
           </h3>
+
+          {!isAdmin && (
+            <input
+              type="date"
+              className="text-sm outline-none text-gray-700 dark:text-gray-300 font-normal bg-white dark:bg-[#181612] border border-gray-200 dark:border-[#38352e] rounded-lg px-3 py-1.5 shadow-sm focus:ring-1 focus:ring-[#10B981] focus:border-[#10B981]"
+              value={selectedDate}
+              onChange={e => setSelectedDate(e.target.value)}
+            />
+          )}
 
           {isAdmin && (
             <div className="flex gap-4 items-center">
-              <div className="flex items-center gap-2 bg-white dark:bg-[#181612] border border-gray-200 dark:border-[#38352e] rounded-lg px-3 py-1.5">
-                <span className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase">Range:</span>
-                <input type="date" className="text-sm outline-none text-gray-700 dark:text-gray-300 bg-transparent" value={dateRange.start} onChange={e => setDateRange({ ...dateRange, start: e.target.value })} />
+              <div className="flex items-center gap-2 bg-white dark:bg-[#181612] border border-gray-200 dark:border-[#38352e] rounded-lg px-3 py-1.5 flex-shrink-0">
+                <span className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase whitespace-nowrap">Range:</span>
+                <input type="date" className="text-sm outline-none text-gray-700 dark:text-gray-300 bg-transparent min-w-[130px]" value={dateRange.start} onChange={e => setDateRange({ ...dateRange, start: e.target.value })} />
                 <span className="text-gray-400 dark:text-[#a3a094]">-</span>
-                <input type="date" className="text-sm outline-none text-gray-700 dark:text-gray-300 bg-transparent" value={dateRange.end} onChange={e => setDateRange({ ...dateRange, end: e.target.value })} />
+                <input type="date" className="text-sm outline-none text-gray-700 dark:text-gray-300 bg-transparent min-w-[130px]" value={dateRange.end} onChange={e => setDateRange({ ...dateRange, end: e.target.value })} />
               </div>
               <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2 bg-gray-800 dark:bg-[#282520] text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-gray-900 dark:hover:bg-[#38352e] transition-colors">
                 <FileDown size={14} /> Export CSV
@@ -777,7 +772,7 @@ const SmartTimeTracker = () => {
 
       {/* DAILY SUMMARY LOG (EMPLOYEE ONLY) */}
       {!isAdmin && (
-        <div className="bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm overflow-hidden mt-16 mb-8">
+        <div className="bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm overflow-hidden mt-8 mb-8">
           <div className="p-6 border-b border-gray-200 dark:border-[#38352e] flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-[#282520]">
             <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-widest">
               Daily Summary

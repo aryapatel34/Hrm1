@@ -83,7 +83,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
   useEffect(() => {
     const savedLang = localStorage.getItem('appLanguage');
     if (savedLang && savedLang !== 'English') {
-      const langMap = { 'English': 'en', 'Spanish': 'es', 'French': 'fr', 'German': 'de' };
+      const langMap = { 'English': 'en', 'Gujarati': 'gu', 'Hindi': 'hi' };
       const translateTo = langMap[savedLang];
 
       const triggerTranslation = (langCode) => {
@@ -137,6 +137,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
   const token = sessionStorage.getItem('token');
   const [userProfile, setUserProfile] = useState(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState(null);
@@ -169,7 +170,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           time: n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
           path: `/${activeRole}/notifications`
         }));
-        setLiveNotifications(alerts.slice(0, 10));
+        setLiveNotifications(alerts.slice(0, 50));
       } catch (err) { console.error('Notification fetch failed:', err); }
     };
     fetchNotifications();
@@ -220,7 +221,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
         time: new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         path: `/${activeRole}/notifications`
       };
-      setLiveNotifications(prev => [formatted, ...prev].slice(0, 10));
+      setLiveNotifications(prev => [formatted, ...prev].slice(0, 50));
 
       // Show Native OS Desktop Notification
       if ('Notification' in window) {
@@ -389,6 +390,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
       case 'employee':
         return [
           { name: 'Dashboard', path: '/employee/dashboard', icon: LayoutDashboard },
+          { name: 'Attendance', path: '/employee/attendance', icon: Calendar },
           { name: 'Time Tracker', path: '/employee/time-tracker', icon: Clock },
           { name: 'Team Chat', path: '/employee/chat', icon: MessageSquare },
           { name: 'Create Task', path: '/employee/task-management/create', icon: PlusCircle },
@@ -519,7 +521,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
         time: 'Just Now',
         path: data.type === 'task' ? `/${activeRole}/task-management` : `/${activeRole}/dashboard`
       };
-      setLiveNotifications(prev => [newAlert, ...prev].slice(0, 5));
+      setLiveNotifications(prev => [newAlert, ...prev].slice(0, 50));
       toast(data.message, { icon: '🔔', style: { borderRadius: '5px', background: '#201515', color: '#fff', fontWeight: 900, fontSize: '12px' } });
     });
 
@@ -665,7 +667,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
         }}
       >
         {/* Brand Block */}
-        <div className={`px-6 py-5 flex items-center border-b ${isSidebarOpen ? 'gap-3' : 'justify-center'}`} style={{ height: '70px', borderColor: isDarkMode ? '#1a2d29' : '#e2eae7' }}>
+        <Link to={`/${activeRole}/dashboard`} className={`px-6 py-5 flex items-center border-b no-underline hover:opacity-90 transition-opacity ${isSidebarOpen ? 'gap-3' : 'justify-center'}`} style={{ height: '70px', borderColor: isDarkMode ? '#1a2d29' : '#e2eae7' }}>
           <div className="w-10 h-10 bg-[#00a76b] rounded-full flex items-center justify-center flex-shrink-0 shadow-sm transition-all duration-300 hover:scale-105">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 3c0 4.5-4.5 9-9 9 4.5 0 9 4.5 9 9 0-4.5 4.5-9 9-9-4.5 0-9-4.5-9-9z" />
@@ -678,7 +680,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
               <span className="text-[11px] font-semibold text-[#829e92] dark:text-[#a3b3af]">Workforce OS</span>
             </div>
           )}
-        </div>
+        </Link>
 
         {/* Sidebar Navigation */}
         <div className="flex-1 flex flex-col pb-12 w-full pt-6 px-4 space-y-6 overflow-y-auto scrollbar-hide">
@@ -693,29 +695,15 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
                 )}
                 <div className="space-y-1.5">
                   {items.map((item) => {
-                    const isSettingsPath = location.pathname.includes('/settings');
-                    const hasTabParam = item.path.includes('?tab=');
-
                     let isActive = false;
-                    if (isSettingsPath) {
-                      const params = new URLSearchParams(location.search);
-                      const currentTab = params.get('tab') || 'company-settings';
-                      if (hasTabParam) {
-                        const tabVal = item.path.split('?tab=')[1];
-                        isActive = currentTab === tabVal;
-                      } else {
-                        isActive = currentTab === 'company-settings';
-                      }
+                    const isDashboard = item.name === 'Dashboard';
+                    if (isDashboard) {
+                      isActive = location.pathname === item.path ||
+                        location.pathname === `/${activeRole}` ||
+                        location.pathname === `/${activeRole}/` ||
+                        location.pathname.startsWith(item.path + '/');
                     } else {
-                      const isDashboard = item.name === 'Dashboard';
-                      if (isDashboard) {
-                        isActive = location.pathname === item.path ||
-                          location.pathname === `/${activeRole}` ||
-                          location.pathname === `/${activeRole}/` ||
-                          location.pathname.startsWith(item.path + '/');
-                      } else {
-                        isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
-                      }
+                      isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
                     }
                     const Icon = item.icon;
                     return (
@@ -863,7 +851,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
                 </button>
                 {isLanguageOpen && (
                   <div className="absolute top-[45px] right-0 w-36 bg-white dark:bg-[#0c1512] border border-[#eceae3] dark:border-[#1a2d29] rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden z-[110] p-1 flex flex-col">
-                    {['English', 'Spanish', 'French', 'German'].map(lang => (
+                    {['English', 'Gujarati', 'Hindi'].map(lang => (
                       <button
                         key={lang}
                         onClick={() => {
@@ -871,7 +859,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
                           localStorage.setItem('appLanguage', lang);
                           setIsLanguageOpen(false);
 
-                          const langMap = { 'English': 'en', 'Spanish': 'es', 'French': 'fr', 'German': 'de' };
+                          const langMap = { 'English': 'en', 'Gujarati': 'gu', 'Hindi': 'hi' };
                           const translateTo = langMap[lang];
 
                           const triggerTranslation = (langCode) => {
@@ -920,14 +908,14 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
 
               <button
                 onClick={toggleTheme}
-                className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-800 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer"
+                className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-800 dark:text-slate-400 dark:hover:text-white transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer"
               >
                 {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
               </button>
 
               <button
                 onClick={() => navigate(`/${activeRole}/chat`)}
-                className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-800 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer"
+                className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-800 dark:text-slate-400 dark:hover:text-white transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer"
               >
                 <MessageSquare size={18} />
               </button>
@@ -943,7 +931,9 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
                 >
                   <Bell size={18} />
                   {liveNotifications.length > 0 && (
-                    <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                    <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-red-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-sm border border-white dark:border-[#111c18]">
+                      {liveNotifications.length > 10 ? '10+' : liveNotifications.length}
+                    </span>
                   )}
                 </button>
 
@@ -1116,10 +1106,8 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
                       <button
                         role="menuitem"
                         onClick={() => {
-                          if (window.confirm("Are you sure you want to sign out?")) {
-                            handleLogout();
-                            setIsProfileDropdownOpen(false);
-                          }
+                          setIsLogoutModalOpen(true);
+                          setIsProfileDropdownOpen(false);
                         }}
                         className="w-full px-6 py-3 flex items-center gap-3.5 text-left text-[13px] font-semibold text-[#EF4444] dark:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-colors border-none bg-transparent cursor-pointer outline-none"
                       >
@@ -1168,12 +1156,50 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           </footer>
         )}
       </div>
-      
+
       {/* Change Password Modal */}
-      <ChangePasswordModal 
-        isOpen={isPasswordModalOpen} 
-        onClose={() => setIsPasswordModalOpen(false)} 
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
       />
+
+      {/* Logout Confirmation Modal */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in"
+            onClick={() => setIsLogoutModalOpen(false)}
+          />
+          <div className="relative bg-white dark:bg-[#0c1512] border border-[#eceae3] dark:border-[#1a2d29] rounded-[24px] shadow-2xl w-full max-w-sm p-6 sm:p-8 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-6">
+                <LogOut size={28} className="text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Sign Out</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
+                Are you sure you want to sign out?
+              </p>
+              <div className="flex w-full gap-3">
+                <button
+                  onClick={() => setIsLogoutModalOpen(false)}
+                  className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-[#162722] dark:hover:bg-[#1a2d29] text-gray-700 dark:text-gray-300 font-bold rounded-xl transition-colors border-none cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setIsLogoutModalOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex-1 py-3 px-4 bg-[#00a76b] hover:bg-[#00915c] text-white font-bold rounded-xl transition-colors shadow-lg shadow-[#00a76b]/20 border-none cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

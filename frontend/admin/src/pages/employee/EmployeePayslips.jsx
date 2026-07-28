@@ -292,8 +292,8 @@ const EmployeePayslips = () => {
 
       {/* DETAIL MODAL */}
       {selectedSlip && (
-        <div className="print-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(30, 32, 38, 0.4)', backdropFilter: 'blur(4px)' }}>
-          <div className="verdant-card print-modal" style={{ width: '100%', maxWidth: 540, padding: 32, position: 'relative', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)' }}>
+        <div className="print-overlay" onClick={() => setSelectedSlip(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(30, 32, 38, 0.4)', backdropFilter: 'blur(4px)' }}>
+          <div className="verdant-card print-modal" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 540, padding: 32, position: 'relative', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)' }}>
             
             {/* Screen layout */}
             <div className="no-print" style={{ width: '100%' }}>
@@ -513,8 +513,8 @@ const EmployeePayslips = () => {
 
       {/* TAX DOCUMENTS MODAL */}
       {showTaxModal && (
-        <div className="no-print" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(6px)' }}>
-          <div style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto', background: isDark ? '#111c18' : '#fff', border: isDark ? '1px solid #1a2d29' : 'none', borderRadius: 24, boxShadow: '0 24px 48px rgba(0,0,0,0.18)', position: 'relative', fontFamily: "'Inter', sans-serif" }}>
+        <div className="no-print" onClick={() => setShowTaxModal(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(6px)' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto', background: isDark ? '#111c18' : '#fff', border: isDark ? '1px solid #1a2d29' : 'none', borderRadius: 24, boxShadow: '0 24px 48px rgba(0,0,0,0.18)', position: 'relative', fontFamily: "'Inter', sans-serif" }}>
             {/* Modal Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 28px', borderBottom: isDark ? '1px solid #1a2d29' : '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

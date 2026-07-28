@@ -171,9 +171,11 @@ const Chat = () => {
       // If the backend created a new chat, add it to chats state
       if (res.data?.chat) {
         setChats(prev => {
-          const exists = prev.some(c => c._id === res.data.chat._id);
+          const exists = prev.some(c => c._id === res.data.chat._id || c.chatId === res.data.chat._id);
           if (!exists) return [res.data.chat, ...prev];
-          return prev.map(c => c._id === res.data.chat._id ? res.data.chat : c);
+          // We already optimistically updated the specific array, so we don't overwrite the whole chat object 
+          // because res.data.chat lacks populated fields and frontend-computed properties like lastMessage.
+          return prev.map(c => (c._id === res.data.chat._id || c.chatId === res.data.chat._id) ? { ...c, [arrayName]: res.data.chat[arrayName], chatId: res.data.chat._id } : c);
         });
         
         // Also update activeChat's chatId so future toggles use the real Chat ID
@@ -1135,6 +1137,9 @@ const Chat = () => {
                             {item.blockedBy?.some(id => String(id) === String(currentUserId)) && (
                               <Ban size={12} className="text-red-500 flex-shrink-0" title="Blocked" />
                             )}
+                            {item.mutedBy?.some(id => String(id) === String(currentUserId)) && (
+                              <BellOff size={12} className="text-[#848E9C] dark:text-[#a3a094] flex-shrink-0" title="Muted" />
+                            )}
                           </h3>
                           <span className="text-[11px] font-bold text-[#848E9C] dark:text-[#a3a094]">{formatTime(item.lastMessage?.createdAt)}</span>
                         </div>
@@ -1333,13 +1338,14 @@ const Chat = () => {
                     </div>
                   )}
                   <div>
-                    <h3 className="text-[16px] font-extrabold text-[#1E2026] dark:text-white leading-none mb-1.5">
+                    <h3 className="flex items-center gap-1.5 text-[16px] font-extrabold text-[#1E2026] dark:text-white leading-none mb-1.5">
                       {activeChat.isGroup
                         ? activeChat.groupName
                         : (String(activeChat._id) === String(currentUserId)
                           ? <span className="flex items-center gap-1.5">{currentUserObj?.name || 'Me'} <span className="text-[10px] font-bold bg-[#3E74FF]/10 text-[#3E74FF] px-1.5 py-0.5 rounded-full">YOU</span></span>
                           : activeChat.name)
                       }
+                      {activeChat?.mutedBy?.some(id => String(id) === String(currentUserId)) && <BellOff size={14} className="text-[#848E9C] dark:text-[#a3a094]" title="Muted" />}
                     </h3>
                     <p className="text-[12px] font-bold flex items-center gap-1.5 leading-none">
                       {activeChat.isGroup ? (
@@ -1403,10 +1409,15 @@ const Chat = () => {
                           Clear Chat
                         </button>
                         <button
-                          onClick={() => toast.success('Notifications muted')}
+                          onClick={() => {
+                            const isMuted = activeChat?.mutedBy?.some(id => String(id) === String(currentUserId));
+                            handleToggleChatState(activeChat.chatId || activeChat._id, 'mute');
+                            toast.success(isMuted ? 'Notifications unmuted' : 'Notifications muted');
+                            setShowHeaderMenu(false);
+                          }}
                           className="w-full text-left px-4 py-2.5 text-sm text-[#1E2026] dark:text-white hover:bg-[#F5F7FA] dark:hover:bg-[#282520] font-medium transition-colors border-none bg-transparent cursor-pointer"
                         >
-                          Mute Notifications
+                          {activeChat?.mutedBy?.some(id => String(id) === String(currentUserId)) ? 'Unmute Notifications' : 'Mute Notifications'}
                         </button>
                         {activeChat.isGroup ? (
                           <button

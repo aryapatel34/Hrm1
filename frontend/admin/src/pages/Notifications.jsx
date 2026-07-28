@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Bell, Send, Loader2, Users, Briefcase, UserCheck, ChevronDown, Trash2, Edit2, RefreshCw } from 'lucide-react';
+import { Bell, Send, Loader2, Users, Briefcase, UserCheck, ChevronDown, Trash2, Edit2, RefreshCw, X, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const TYPE_COLORS = {
@@ -31,6 +31,7 @@ const Notifications = () => {
     _empSelectOpen: false
   });
   const [editingId, setEditingId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   
@@ -111,6 +112,7 @@ const Notifications = () => {
   /* ── PREPARE EDIT ── */
   const handleEdit = (notif) => {
     setEditingId(notif._id);
+    setIsModalOpen(true);
     setForm({ 
       ...form, 
       message: notif.message, 
@@ -150,6 +152,7 @@ const Notifications = () => {
         const res = await axios.post('/api/notifications', payload, { headers });
         toast.success(res.data?.message || 'Announcement sent!');
         setForm({ message: '', type: 'announcement', targetRole: 'all', targetUserId: '', specificRoleFilter: 'all' });
+        setIsModalOpen(false);
         backgroundRefresh(); // Use backgroundRefresh for new sends as well to be consistent
       }
     } catch (err) {
@@ -166,24 +169,41 @@ const Notifications = () => {
         <h1 className="text-[28px] font-black text-[#201515] dark:text-white tracking-tight">
           Notification
         </h1>
-        <button 
-          onClick={fetchNotifications} 
-          className="px-5 py-2.5 bg-[#00a76b] hover:bg-[#00915c] text-white rounded-full font-bold text-xs transition-all cursor-pointer border-none shadow-sm flex items-center gap-2"
-        >
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          <span>Refresh</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={fetchNotifications} 
+            className="px-5 py-2.5 bg-[#00a76b] hover:bg-[#00915c] text-white rounded-[5px] font-bold text-xs transition-all cursor-pointer border-none shadow-sm flex items-center gap-2"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span>Refresh</span>
+          </button>
+          {role !== 'employee' && (
+            <button 
+              onClick={() => { setEditingId(null); setForm({ message: '', type: 'announcement', targetRole: 'all', targetUserId: '', specificRoleFilter: 'all' }); setIsModalOpen(true); }}
+              className="px-5 py-2.5 bg-[#00a76b] hover:bg-[#00915c] text-white rounded-[5px] font-bold text-[13px] transition-all cursor-pointer border-none shadow-sm flex items-center gap-2"
+            >
+              <Plus size={14} />
+              <span>Create Announcement</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div className="w-full">
 
-        {/* ── SEND ANNOUNCEMENT FORM ── */}
-        {role !== 'employee' && (
-          <div className="xl:col-span-1">
-            <div className="bg-white rounded-[5px] border border-[#eceae3] shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-[#eceae3] bg-[#fffdf9]">
+        {/* ── SEND ANNOUNCEMENT MODAL ── */}
+        {role !== 'employee' && isModalOpen && (
+          <div className="fixed top-[70px] right-0 bottom-0 left-0 z-[140] flex justify-end bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsModalOpen(false)}>
+            <div className="bg-white border-l border-[#eceae3] shadow-2xl w-full max-w-[380px] h-full overflow-y-auto relative animate-in slide-in-from-right duration-300" onClick={e => e.stopPropagation()}>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors z-10 cursor-pointer border-none outline-none"
+              >
+                <X size={16} className="text-gray-600" />
+              </button>
+              <div className="p-4 border-b border-[#eceae3] bg-white">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-[5px] bg-[#ff4f00] flex items-center justify-center">
+                <div className="w-9 h-9 rounded-[5px] bg-[#00a76b] flex items-center justify-center">
                   <Send size={16} className="text-white" />
                 </div>
                 <div>
@@ -193,7 +213,7 @@ const Notifications = () => {
               </div>
             </div>
 
-            <form ref={formRef} onSubmit={handleSend} className="p-6 space-y-5">
+            <form ref={formRef} onSubmit={handleSend} className="p-5 pb-6 space-y-4">
               {/* Target Role - Hide in edit mode */}
               {!editingId && (
               <div>
@@ -203,7 +223,7 @@ const Notifications = () => {
                 <div className="relative">
                   <div 
                     onClick={() => setForm(f => ({ ...f, _targetRoleOpen: !f._targetRoleOpen, _roleFilterOpen: false, _empSelectOpen: false }))}
-                    className={`w-full bg-[#fffdf9] border ${form._targetRoleOpen ? 'border-[#ff4f00]' : 'border-[#eceae3]'} rounded-[5px] px-4 py-3 text-[13px] font-bold text-[#201515] cursor-pointer flex justify-between items-center transition-colors`}
+                    className={`w-full bg-white border ${form._targetRoleOpen ? 'border-[#00a76b]' : 'border-[#eceae3]'} rounded-[5px] px-4 py-3 text-[13px] font-bold text-[#201515] cursor-pointer flex justify-between items-center transition-colors`}
                   >
                     <span>
                       {{
@@ -231,7 +251,7 @@ const Notifications = () => {
                         <div 
                           key={opt.v}
                           onClick={() => setForm(f => ({ ...f, targetRole: opt.v, targetUserId: '', _targetRoleOpen: false }))}
-                          className={`px-4 py-2.5 text-[13px] font-bold cursor-pointer transition-colors ${form.targetRole === opt.v ? 'bg-[#ff4f00]/10 text-[#ff4f00]' : 'text-[#201515] hover:bg-[#fffdf9]'}`}
+                          className={`px-4 py-2.5 text-[13px] font-bold cursor-pointer transition-colors ${form.targetRole === opt.v ? 'bg-[#00a76b]/10 text-[#00a76b]' : 'text-[#201515] hover:bg-slate-50'}`}
                         >
                           {opt.l}
                         </div>
@@ -253,7 +273,7 @@ const Notifications = () => {
                     <div className="relative">
                       <div 
                         onClick={() => setForm(f => ({ ...f, _roleFilterOpen: !f._roleFilterOpen, _targetRoleOpen: false, _empSelectOpen: false }))}
-                        className={`w-full bg-[#fffdf9] border ${form._roleFilterOpen ? 'border-[#ff4f00]' : 'border-[#eceae3]'} rounded-[5px] px-4 py-3 text-[13px] font-bold text-[#201515] cursor-pointer flex justify-between items-center transition-colors`}
+                        className={`w-full bg-white border ${form._roleFilterOpen ? 'border-[#00a76b]' : 'border-[#eceae3]'} rounded-[5px] px-4 py-3 text-[13px] font-bold text-[#201515] cursor-pointer flex justify-between items-center transition-colors`}
                       >
                         <span>
                           {{
@@ -279,7 +299,7 @@ const Notifications = () => {
                             <div 
                               key={opt.v}
                               onClick={() => setForm(f => ({ ...f, specificRoleFilter: opt.v, targetUserId: '', _roleFilterOpen: false }))}
-                              className={`px-4 py-2.5 text-[13px] font-bold cursor-pointer transition-colors ${form.specificRoleFilter === opt.v ? 'bg-[#ff4f00]/10 text-[#ff4f00]' : 'text-[#201515] hover:bg-[#fffdf9]'}`}
+                              className={`px-4 py-2.5 text-[13px] font-bold cursor-pointer transition-colors ${form.specificRoleFilter === opt.v ? 'bg-[#00a76b]/10 text-[#00a76b]' : 'text-[#201515] hover:bg-slate-50'}`}
                             >
                               {opt.l}
                             </div>
@@ -292,7 +312,7 @@ const Notifications = () => {
                     <div className="relative">
                       <div 
                         onClick={() => setForm(f => ({ ...f, _empSelectOpen: !f._empSelectOpen, _targetRoleOpen: false, _roleFilterOpen: false }))}
-                        className={`w-full bg-[#fffdf9] border ${form._empSelectOpen ? 'border-[#ff4f00]' : 'border-[#eceae3]'} rounded-[5px] px-4 py-3 text-[13px] font-bold text-[#201515] cursor-pointer flex justify-between items-center transition-colors`}
+                        className={`w-full bg-white border ${form._empSelectOpen ? 'border-[#00a76b]' : 'border-[#eceae3]'} rounded-[5px] px-4 py-3 text-[13px] font-bold text-[#201515] cursor-pointer flex justify-between items-center transition-colors`}
                       >
                         <span className="truncate">
                           {form.targetUserId ? employees.find(e => e.userId && e.userId._id === form.targetUserId)?.userId?.name || '-- Name --' : '-- Name --'}
@@ -304,7 +324,7 @@ const Notifications = () => {
                         <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#eceae3] rounded-[8px] shadow-lg overflow-hidden z-20 max-h-60 overflow-y-auto">
                           <div 
                             onClick={() => setForm(f => ({ ...f, targetUserId: '', _empSelectOpen: false }))}
-                            className={`px-4 py-2.5 text-[13px] font-bold cursor-pointer transition-colors ${!form.targetUserId ? 'bg-[#ff4f00]/10 text-[#ff4f00]' : 'text-[#201515] hover:bg-[#fffdf9]'}`}
+                            className={`px-4 py-2.5 text-[13px] font-bold cursor-pointer transition-colors ${!form.targetUserId ? 'bg-[#00a76b]/10 text-[#00a76b]' : 'text-[#201515] hover:bg-slate-50'}`}
                           >
                             -- Name --
                           </div>
@@ -315,7 +335,7 @@ const Notifications = () => {
                               <div 
                                 key={emp.userId._id}
                                 onClick={() => setForm(f => ({ ...f, targetUserId: emp.userId._id, _empSelectOpen: false }))}
-                                className={`px-4 py-2.5 text-[13px] font-bold cursor-pointer transition-colors ${form.targetUserId === emp.userId._id ? 'bg-[#ff4f00]/10 text-[#ff4f00]' : 'text-[#201515] hover:bg-[#fffdf9]'}`}
+                                className={`px-4 py-2.5 text-[13px] font-bold cursor-pointer transition-colors ${form.targetUserId === emp.userId._id ? 'bg-[#00a76b]/10 text-[#00a76b]' : 'text-[#201515] hover:bg-slate-50'}`}
                               >
                                 {emp.userId.name}
                               </div>
@@ -340,8 +360,8 @@ const Notifications = () => {
                       onClick={() => setForm(f => ({ ...f, type: t }))}
                       className={`px-3 py-2 rounded-[5px] text-[11px] font-black uppercase tracking-wider border transition-all capitalize ${
                         form.type === t
-                          ? 'bg-[#ff4f00] text-white border-[#ff4f00]'
-                          : 'bg-[#fffdf9] text-[#36342e] border-[#eceae3] hover:border-[#ff4f00]'
+                          ? 'bg-[#00a76b] text-white border-[#00a76b]'
+                          : 'bg-white text-[#36342e] border-[#eceae3] hover:border-[#00a76b]'
                       }`}
                     >
                       {t}
@@ -358,16 +378,16 @@ const Notifications = () => {
                 <textarea
                   value={form.message}
                   onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
-                  rows={5}
+                  rows={3}
                   placeholder="Type your announcement here..."
-                  className="w-full bg-[#fffdf9] border border-[#eceae3] rounded-[5px] px-4 py-3 text-[13px] font-medium text-[#201515] placeholder-[#c5c0b1] focus:outline-none focus:border-[#ff4f00] resize-none transition-colors"
+                  className="w-full bg-white border border-[#eceae3] rounded-[5px] px-4 py-3 text-[13px] font-medium text-[#201515] placeholder-[#c5c0b1] focus:outline-none focus:border-[#00a76b] resize-none transition-colors"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full flex items-center justify-center gap-2 bg-[#ff4f00] hover:bg-[#e64600] disabled:opacity-60 text-white px-6 py-3 rounded-[5px] font-black text-[13px] transition-all"
+                className="w-full flex items-center justify-center gap-2 bg-[#00a76b] hover:bg-[#00915c] disabled:opacity-60 text-white px-6 py-3 rounded-[5px] font-black text-[13px] transition-all"
               >
                 {sending ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -381,31 +401,19 @@ const Notifications = () => {
               {editingId && (
                 <button
                   type="button"
-                  onClick={() => { setEditingId(null); setForm({ message: '', type: 'announcement', targetRole: 'all', targetUserId: '', specificRoleFilter: 'all' }); }}
+                  onClick={() => { setEditingId(null); setForm({ message: '', type: 'announcement', targetRole: 'all', targetUserId: '', specificRoleFilter: 'all' }); setIsModalOpen(false); }}
                   className="w-full mt-2 flex items-center justify-center bg-white border border-[#eceae3] hover:bg-gray-50 text-[#201515] px-6 py-3 rounded-[5px] font-black text-[13px] transition-all"
                 >
                   Cancel Edit
                 </button>
               )}
             </form>
+            </div>
           </div>
-
-          {/* Quick stats */}
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            {[
-              { label: 'Total Notifications', val: notifications.length, icon: Bell },
-            ].map((s, i) => (
-              <div key={i} className="col-span-2 bg-white border border-[#eceae3] rounded-[5px] p-4 text-center shadow-sm">
-                <p className="text-[22px] font-black text-[#201515]">{s.val}</p>
-                <p className="text-[10px] font-black text-[#939084] uppercase tracking-widest mt-1">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
         )}
 
         {/* ── NOTIFICATIONS LIST ── */}
-        <div className={role === 'employee' ? 'xl:col-span-3' : 'xl:col-span-2'}>
+        <div className="w-full">
           <div className="bg-white dark:bg-[#0c1512] border border-[#e2eae7] dark:border-[#13221e] rounded-[24px] shadow-[0_4px_20px_rgba(0,0,0,0.01)] overflow-hidden">
 
             {loading ? (
@@ -482,7 +490,7 @@ const Notifications = () => {
                               <div className="absolute right-5 top-5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
                                 <button 
                                   onClick={() => handleEdit(notif)}
-                                  className="p-1.5 text-slate-450 hover:text-[#ff4f00] hover:bg-orange-50 rounded"
+                                  className="p-1.5 text-slate-450 hover:text-[#00a76b] hover:bg-emerald-50 rounded"
                                   title="Edit"
                                 >
                                   <Edit2 size={14} />

@@ -39,7 +39,7 @@ const Dashboard = () => {
         </Card>
         <Card>
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-emerald-50 rounded-xl text-orange-600"><UserCheck size={24} /></div>
+            <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600"><UserCheck size={24} /></div>
             <div>
               <p className="text-xs font-black uppercase text-[#414753]">Pending Approvals</p>
               <p className="text-2xl font-black text-[#191c1e]">5 Requests</p>

@@ -342,7 +342,7 @@ const EmployeeForm = () => {
                 <div className="flex w-full gap-2">
                   <label className="flex-1 cursor-pointer bg-[#1E2026] text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center justify-center gap-1 shadow-lg active:scale-95">
                     <UploadCloud size={14} />
-                    Upload
+                    {formData.adharCard ? 'Replace' : 'Upload'}
                     <input 
                       type="file" className="hidden" 
                       accept="image/*,.pdf"
@@ -425,7 +425,7 @@ const EmployeeForm = () => {
                 <div className="flex w-full gap-2">
                   <label className="flex-1 cursor-pointer bg-[#1E2026] text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center justify-center gap-1 shadow-lg active:scale-95">
                     <UploadCloud size={14} />
-                    Upload
+                    {formData.bankDetails ? 'Replace' : 'Upload'}
                     <input 
                       type="file" className="hidden" 
                       accept="image/*,.pdf"
@@ -508,7 +508,7 @@ const EmployeeForm = () => {
                 <div className="flex w-full gap-2">
                   <label className="flex-1 cursor-pointer bg-[#1E2026] text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center justify-center gap-1 shadow-lg active:scale-95">
                     <UploadCloud size={14} />
-                    Upload
+                    {formData.panCard ? 'Replace' : 'Upload'}
                     <input 
                       type="file" className="hidden" 
                       accept="image/*,.pdf"

@@ -97,8 +97,9 @@ const Profile = () => {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (response.data) {
-            setUserData(response.data.user);
-            sessionStorage.setItem('user', JSON.stringify(response.data.user));
+            const mergedUser = { ...response.data.user, ...(response.data.user.profile || {}) };
+            setUserData(mergedUser);
+            sessionStorage.setItem('user', JSON.stringify(mergedUser));
             setStatus({ type: 'success', message: `${type} updated successfully` });
           }
         } catch (err) {
@@ -115,6 +116,31 @@ const Profile = () => {
   };
 
   const handleSaveProfile = async () => {
+    if (!editForm.personalEmail?.trim() || !editForm.phone?.trim() || !editForm.address?.trim()) {
+      setStatus({ type: 'error', message: 'Personal Email, Phone Number, and Address are required fields.' });
+      return;
+    }
+
+    if (editForm.address && editForm.address.length > 250) {
+      setStatus({ type: 'error', message: 'Address cannot exceed 250 characters.' });
+      return;
+    }
+
+    if (editForm.phone && !/^\d+$/.test(editForm.phone)) {
+      setStatus({ type: 'error', message: 'Phone number must contain only numeric values.' });
+      return;
+    }
+
+    if (editForm.personalEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.personalEmail)) {
+      setStatus({ type: 'error', message: 'Please enter a valid email address.' });
+      return;
+    }
+
+    if (editForm.address && !/^[a-zA-Z0-9\s,.\-/#]*$/.test(editForm.address)) {
+      setStatus({ type: 'error', message: 'Address contains invalid special characters.' });
+      return;
+    }
+
     try {
       setLoading(true);
       setStatus({ type: '', message: '' });
@@ -129,8 +155,9 @@ const Profile = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data) {
-        setUserData(response.data.user);
-        sessionStorage.setItem('user', JSON.stringify(response.data.user));
+        const mergedUser = { ...response.data.user, ...(response.data.user.profile || {}) };
+        setUserData(mergedUser);
+        sessionStorage.setItem('user', JSON.stringify(mergedUser));
         setIsEditing(false);
         setStatus({ type: 'success', message: 'Profile updated successfully' });
       }
@@ -174,23 +201,7 @@ const Profile = () => {
               <h1 style={{ fontSize: 28, fontWeight: 800, color: isDark ? '#fff' : '#2c302e', margin: 0, letterSpacing: '-0.5px' }}>My profile</h1>
               <p style={{ fontSize: 14, color: isDark ? '#a3b3af' : '#8c918f', margin: '4px 0 0' }}>Personal information.</p>
             </div>
-            {!isEditing ? (
-              <button onClick={handleEditClick} className="verdant-btn-outline" style={{ height: 36, padding: '0 16px', fontSize: 12 }}>
-                <Edit2 size={14} />
-                Edit Profile
-              </button>
-            ) : (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={handleSaveProfile} disabled={loading} className="zap-btn zap-btn-dark" style={{ height: 36, padding: '0 16px', fontSize: 12 }}>
-                  {loading ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-                  Save
-                </button>
-                <button onClick={() => setIsEditing(false)} disabled={loading} className="verdant-btn-outline" style={{ height: 36, padding: '0 16px', fontSize: 12 }}>
-                  <X size={14} />
-                  Cancel
-                </button>
-              </div>
-            )}
+
           </div>
         </div>
 
@@ -339,7 +350,7 @@ const Profile = () => {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <label style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#a3b3af' : '#939084', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phone</label>
-                  <input type="text" readOnly={!isEditing} value={isEditing ? editForm.phone : phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="verdant-input" style={{ backgroundColor: isEditing ? (isDark ? '#162722' : '#fff') : undefined }} />
+                  <input type="text" maxLength="10" readOnly={!isEditing} value={isEditing ? editForm.phone : phone} onChange={e => setEditForm({...editForm, phone: e.target.value.replace(/\D/g, '')})} className="verdant-input" style={{ backgroundColor: isEditing ? (isDark ? '#162722' : '#fff') : undefined }} />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -354,7 +365,7 @@ const Profile = () => {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <label style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#a3b3af' : '#939084', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Address</label>
-                  <input type="text" readOnly={!isEditing} value={isEditing ? editForm.address : address} onChange={e => setEditForm({...editForm, address: e.target.value})} className="verdant-input" style={{ backgroundColor: isEditing ? (isDark ? '#162722' : '#fff') : undefined }} />
+                  <input type="text" maxLength="250" readOnly={!isEditing} value={isEditing ? editForm.address : address} onChange={e => setEditForm({...editForm, address: e.target.value.replace(/[^a-zA-Z0-9\s,.\-/#]/g, '')})} className="verdant-input" style={{ backgroundColor: isEditing ? (isDark ? '#162722' : '#fff') : undefined }} />
                 </div>
               </div>
             </div>
@@ -392,6 +403,26 @@ const Profile = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+          {!isEditing ? (
+            <button onClick={handleEditClick} className="verdant-btn-outline" style={{ height: 36, padding: '0 16px', fontSize: 12 }}>
+              <Edit2 size={14} />
+              Edit Profile
+            </button>
+          ) : (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={handleSaveProfile} disabled={loading} className="verdant-btn-outline" style={{ height: 36, padding: '0 16px', fontSize: 12 }}>
+                {loading ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                Save
+              </button>
+              <button onClick={() => setIsEditing(false)} disabled={loading} className="verdant-btn-outline" style={{ height: 36, padding: '0 16px', fontSize: 12 }}>
+                <X size={14} />
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
 
       </div>

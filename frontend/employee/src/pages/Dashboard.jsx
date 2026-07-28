@@ -10,6 +10,7 @@ import {
   ChevronRight, AlertCircle, Star, Bell, Zap
 } from 'lucide-react';
 import WeeklyAttendanceChart from '@shared/components/WeeklyAttendanceChart';
+import { useNavigate } from 'react-router-dom';
 
 // ─── HELPERS ─────────────────────────────────────────────────
 const token = () => sessionStorage.getItem('token');
@@ -102,6 +103,7 @@ const Skeleton = ({ h = '20px', w = '100%', className = '' }) => (
 
 // ─── DASHBOARD ───────────────────────────────────────────────
 const Dashboard = () => {
+  const navigate = useNavigate();
   const greeting = getGreeting();
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
 
@@ -491,7 +493,8 @@ const Dashboard = () => {
             <div className="space-y-2">
               {payroll.slice(0, 4).map((p, i) => (
                 <div key={p._id || i}
-                  className="flex items-center justify-between p-3 rounded-xl transition-colors"
+                  onClick={() => navigate('/employee/payslips')}
+                  className="flex items-center justify-between p-3 rounded-xl transition-colors cursor-pointer"
                   style={{ background: 'var(--bg-primary)' }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-primary)'}>
