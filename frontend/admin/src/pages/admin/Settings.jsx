@@ -117,7 +117,7 @@ const Settings = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-[#829e92]">Entity Designation</label>
-                      <input type="text" defaultValue="Verdant HR Global Matrix" className="w-full bg-slate-50 dark:bg-[#111c18] border border-transparent rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:border-[#00a76b] focus:bg-white outline-none transition-all" />
+                      <input type="text" defaultValue="Fluid HR Global Matrix" className="w-full bg-slate-50 dark:bg-[#111c18] border border-transparent rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:border-[#00a76b] focus:bg-white outline-none transition-all" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-[#829e92]">Core Network URL</label>

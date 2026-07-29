@@ -99,8 +99,8 @@ const TaskManagement = () => {
   };
 
   const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.assignedTo?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = task.title.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
+                         task.assignedTo?.name?.toLowerCase().includes(searchTerm.trim().toLowerCase());
     const matchesStatus = statusFilter === 'All' || task.status === statusFilter;
     return matchesSearch && matchesStatus;
   });

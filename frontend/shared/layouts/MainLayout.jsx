@@ -80,6 +80,9 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
     return localStorage.getItem('appLanguage') || 'English';
   });
 
+  const location = useLocation();
+  const navigate = useNavigate();
+
   useEffect(() => {
     const savedLang = localStorage.getItem('appLanguage');
     if (savedLang && savedLang !== 'English') {
@@ -117,10 +120,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
         setTimeout(() => triggerTranslation(translateTo), 1000);
       }
     }
-  }, []);
-
-  const location = useLocation();
-  const navigate = useNavigate();
+  }, [location.pathname]);
 
   const toggleTheme = () => {
     const nextDark = !isDarkMode;
@@ -146,9 +146,9 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
   const pathRole = location.pathname.split('/')[1];
   const roleMap = { admin: 'admin', hr: 'hr', manager: 'manager', employee: 'employee' };
   const activeRole = roleMap[pathRole] ? pathRole : role;
-
-
-
+  const [unreadChats, setUnreadChats] = useState([]);
+  const [isChatPopupOpen, setIsChatPopupOpen] = useState(false);
+  const chatRef = useRef(null);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -178,6 +178,20 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
     return () => clearInterval(interval);
   }, [token, activeRole]);
 
+  useEffect(() => {
+    const fetchUnreadChats = async () => {
+      if (!token) return;
+      try {
+        const res = await axios.get('/api/chat/list', { headers: { Authorization: `Bearer ${token}` } });
+        const unread = res.data.filter(c => c.unreadCount > 0);
+        setUnreadChats(unread);
+      } catch (err) { console.error('Chat fetch failed:', err); }
+    };
+    fetchUnreadChats();
+    const interval = setInterval(fetchUnreadChats, 60000);
+    return () => clearInterval(interval);
+  }, [token]);
+
   // 🛡️ CLICK OUTSIDE HANDLER
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -193,6 +207,9 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
       }
       if (languageRef.current && !languageRef.current.contains(event.target)) {
         setIsLanguageOpen(false);
+      }
+      if (chatRef.current && !chatRef.current.contains(event.target)) {
+        setIsChatPopupOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -355,7 +372,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
   }, []);
 
   useEffect(() => {
-    const baseTitle = 'Verdant HR';
+    const baseTitle = 'Fluid HR';
     const roleMap = {
       admin: 'Admin',
       hr: 'HR',
@@ -381,7 +398,6 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Team Chat', path: '/hr/chat', icon: MessageSquare },
           { name: 'Payroll', path: '/hr/payroll', icon: Wallet },
           { name: 'Performance', path: '/hr/performance', icon: TrendingUp },
-          { name: 'Tasks', path: '/hr/tasks', icon: CheckSquare },
           { name: 'Reports', path: '/hr/reports', icon: BarChart3 },
           { name: 'Monitoring Logs', path: '/hr/screenshots', icon: Camera },
           { name: 'Notifications', path: '/hr/notifications', icon: Bell },
@@ -676,7 +692,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           </div>
           {isSidebarOpen && (
             <div className="flex flex-col items-start leading-tight animate-fade-in">
-              <span className="text-[16px] font-bold text-[#1f2937] dark:text-white tracking-tight">Verdant HR</span>
+              <span className="text-[16px] font-bold text-[#1f2937] dark:text-white tracking-tight">Fluid HR</span>
               <span className="text-[11px] font-semibold text-[#829e92] dark:text-[#a3b3af]">Workforce OS</span>
             </div>
           )}
@@ -913,12 +929,88 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
                 {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
               </button>
 
-              <button
-                onClick={() => navigate(`/${activeRole}/chat`)}
-                className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-800 dark:text-slate-400 dark:hover:text-white transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer"
-              >
-                <MessageSquare size={18} />
-              </button>
+              <div className="relative" ref={chatRef}>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsChatPopupOpen(prev => !prev);
+                  }}
+                  className={`w-9 h-9 flex items-center justify-center rounded-full transition-all relative border-none cursor-pointer outline-none ${isChatPopupOpen ? 'bg-[#00a76b] text-white shadow-lg' : 'bg-transparent text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 dark:text-slate-400 dark:hover:text-white'}`}
+                >
+                  <MessageSquare size={18} />
+                  {unreadChats.length > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-red-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-sm border border-white dark:border-[#111c18]">
+                      {unreadChats.length > 10 ? '10+' : unreadChats.length}
+                    </span>
+                  )}
+                </button>
+
+                {isChatPopupOpen && (
+                  <div className="absolute top-[48px] right-0 w-80 bg-white dark:bg-[#111c18] border border-[#c5c0b1] dark:border-[#1a2d29] rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[100]">
+                    <div className="p-4 border-b border-[#eceae3] dark:border-[#1a2d29] bg-[#fffdf9] dark:bg-[#162722] flex justify-between items-center">
+                      <span className="text-[11px] font-black uppercase tracking-widest text-[#201515] dark:text-white">Unread Messages</span>
+                      {unreadChats.length > 0 && (
+                        <span className="px-2 py-0.5 bg-[#00a76b]/10 text-[#00a76b] text-[8px] font-black rounded-full uppercase">
+                          {unreadChats.length} New
+                        </span>
+                      )}
+                    </div>
+                    <div className="max-h-[320px] overflow-y-auto">
+                      {unreadChats.length === 0 ? (
+                        <div className="p-8 text-center opacity-40">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-[#939084] dark:text-[#a3b3af]">No Unread Messages</p>
+                        </div>
+                      ) : (
+                        unreadChats.map((c, i) => {
+                          const currentUserId = (() => { try { return JSON.parse(atob(token.split('.')[1]))?.id; } catch { return null; } })();
+                          const otherParticipant = c.isGroup ? null : c.participants.find(p => String(p._id) !== String(currentUserId));
+                          const displayName = c.isGroup ? c.groupName : (otherParticipant?.name || 'User');
+                          
+                          return (
+                            <div
+                              key={i}
+                              onClick={() => {
+                                setUnreadChats(prev => prev.filter(chat => chat._id !== c._id));
+                                navigate(`/${activeRole}/chat`, { state: { openChatId: c._id } });
+                                setIsChatPopupOpen(false);
+                              }}
+                              className="p-4 border-b border-[#eceae3] dark:border-[#1a2d29] hover:bg-[#fffdf9] dark:hover:bg-[#162722]/50 transition-all cursor-pointer group"
+                            >
+                              <div className="flex gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-100 to-violet-100 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0 border">
+                                  {c.isGroup ? (
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                  ) : displayName.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-[12px] font-bold text-[#201515] dark:text-[#e2e8f0] leading-tight group-hover:text-[#00a76b] transition-colors truncate">
+                                    {displayName}
+                                  </p>
+                                  <p className="text-[11px] text-[#54656F] dark:text-[#a3a094] truncate mt-0.5">
+                                    {c.lastMessage?.message || (c.lastMessage?.attachment ? '📎 Attachment' : 'New Message')}
+                                  </p>
+                                </div>
+                                {c.unreadCount > 0 && (
+                                  <div className="min-w-[18px] h-[18px] px-1 bg-[#00a76b] text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-sm shrink-0 self-center">
+                                    {c.unreadCount}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                    <button
+                      onClick={() => { navigate(`/${activeRole}/chat`); setIsChatPopupOpen(false); }}
+                      className="w-full py-3 bg-[#eceae3] dark:bg-[#162722] text-[10px] font-black text-[#201515] dark:text-white uppercase tracking-[0.2em] hover:bg-[#c5c0b1] dark:hover:bg-[#111c18] transition-all border-none cursor-pointer"
+                    >
+                      View All Messages
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <div className="relative" ref={notificationRef}>
                 <button
@@ -1152,7 +1244,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
               </div>
               <span>v2.4.0 Automator</span>
             </div>
-            <span>© 2026 Verdant HR Infrastructure</span>
+            <span>© 2026 Fluid HR Infrastructure</span>
           </footer>
         )}
       </div>

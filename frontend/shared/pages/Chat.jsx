@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import EmojiPicker from 'emoji-picker-react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -45,11 +46,24 @@ const getAvatarStyles = (name, isGroup) => {
 
 const Chat = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [users, setUsers] = useState([]);
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [chats, setChats] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
+
+  useEffect(() => {
+    if (chats.length > 0 && location.state?.openChatId) {
+      const targetChat = chats.find(c => String(c._id) === String(location.state.openChatId));
+      if (targetChat && targetChat._id !== activeChat?._id) {
+        setActiveChat(targetChat);
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  }, [chats, location.state, activeChat, navigate, location.pathname]);
+
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,6 +78,23 @@ const Chat = () => {
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [newChatSearch, setNewChatSearch] = useState('');
+
+  // Re-trigger translation when chat changes or messages load
+  useEffect(() => {
+    const savedLang = localStorage.getItem('appLanguage');
+    if (savedLang && savedLang !== 'English') {
+      const langMap = { 'English': 'en', 'Gujarati': 'gu', 'Hindi': 'hi' };
+      const translateTo = langMap[savedLang];
+      const select = document.querySelector('.goog-te-combo');
+      if (select) {
+        setTimeout(() => {
+          select.value = translateTo;
+          select.dispatchEvent(new Event('change'));
+        }, 100);
+      }
+    }
+  }, [messages, activeChat]);
+
   const handleClearChat = async () => {
     if (!activeChat) return;
     try {
@@ -1291,7 +1322,7 @@ const Chat = () => {
           ) : (
             <>
               {/* Top Chat Window Header */}
-              <div className="h-[76px] bg-white dark:bg-[#181612] border-b border-[#E6E8EA] dark:border-[#38352e] px-6 flex items-center justify-between shrink-0 shadow-sm z-20 relative">
+              <div className="h-[76px] bg-white dark:bg-[#181612] border-b border-[#E6E8EA] dark:border-[#38352e] px-6 flex items-center justify-between shrink-0 shadow-sm z-40 relative">
                 <div className="flex items-center gap-3">
                   <button onClick={() => setActiveChat(null)} className="md:hidden mr-2 p-1 hover:bg-gray-100 dark:hover:bg-[#282520] rounded-full transition-colors border-none bg-transparent cursor-pointer"><ArrowLeft size={20} className="text-[#1E2026] dark:text-white" /></button>
                   <div className="relative shrink-0">
@@ -1641,7 +1672,7 @@ const Chat = () => {
                                 {activeMenuId === (msg._id || i) && (
                                   <>
                                     <div className="fixed inset-0 z-40 cursor-default" onClick={(e) => { e.stopPropagation(); setActiveMenuId(null); }}></div>
-                                    <div className={`absolute ${i >= groups.length - 2 && i >= 4 ? 'bottom-0' : 'top-0'} ${isMe ? 'right-0' : 'left-0'} mt-2 bg-white dark:bg-[#181612] shadow-xl rounded-xl py-2 w-48 z-50 animate-in fade-in zoom-in-95 duration-100 border border-[#E6E8EA] dark:border-[#38352e] flex flex-col`}>
+                                    <div className={`absolute ${i >= groups.length / 2 ? 'bottom-full mb-1' : 'top-full mt-1'} ${isMe ? 'right-0' : 'left-0'} bg-white dark:bg-[#181612] shadow-xl rounded-xl py-2 w-48 z-50 animate-in fade-in zoom-in-95 duration-100 border border-[#E6E8EA] dark:border-[#38352e] flex flex-col max-h-[250px] overflow-y-auto custom-scrollbar`}>
 
                                       {/* EMOJI QUICK REACTIONS */}
                                       <div className="flex items-center justify-around px-2 pb-2 border-b border-[#F5F6F6] dark:border-[#38352e] mb-1 relative">
@@ -2259,12 +2290,12 @@ const Chat = () => {
 
   {/* CREATE GROUP MODAL */ }
   {
-    isCreatingGroup && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white dark:bg-[#181612] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border dark:border-[#38352e]">
+    isCreatingGroup && createPortal(
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setIsCreatingGroup(false)}>
+        <div className="bg-white dark:bg-[#181612] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border dark:border-[#38352e]" onClick={(e) => e.stopPropagation()}>
           <div className="p-4 bg-[#F5F7FA] dark:bg-[#282520] border-b border-[#E6E8EA] dark:border-[#38352e] flex items-center justify-between">
             <h2 className="text-lg font-bold text-[#111B21] dark:text-white">New Group</h2>
-            <button onClick={() => setIsCreatingGroup(false)} className="text-[#848E9C] dark:text-[#a3a094] hover:text-[#111B21] dark:hover:text-white transition-colors border-none bg-transparent cursor-pointer"><Search size={20} className="rotate-45" /></button>
+            <button onClick={() => setIsCreatingGroup(false)} className="text-[#848E9C] dark:text-[#a3a094] hover:text-[#111B21] dark:hover:text-white transition-colors border-none bg-transparent cursor-pointer"><X size={20} /></button>
           </div>
           <div className="p-6 space-y-6">
             <div>
@@ -2295,15 +2326,16 @@ const Chat = () => {
             <button onClick={handleCreateGroup} disabled={!groupName.trim() || selectedParticipants.length === 0} className="flex-1 py-3 text-sm font-bold bg-[#3E74FF] text-white rounded-xl shadow-md hover:bg-[#2B5DE5] disabled:opacity-50 disabled:bg-gray-300 transition-all border-none cursor-pointer">Create Group</button>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     )
   }
 
   {/* NEW CONTACT MODAL */ }
   {
-    isNewContactOpen && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white dark:bg-[#181612] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border dark:border-[#38352e]">
+    isNewContactOpen && createPortal(
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setIsNewContactOpen(false)}>
+        <div className="bg-white dark:bg-[#181612] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border dark:border-[#38352e]" onClick={(e) => e.stopPropagation()}>
           <div className="p-4 bg-[#F5F7FA] dark:bg-[#282520] border-b border-[#E6E8EA] dark:border-[#38352e] flex items-center justify-between">
             <h2 className="text-lg font-bold text-[#111B21] dark:text-white">New Contact / Employee</h2>
             <button onClick={() => setIsNewContactOpen(false)} className="text-[#848E9C] dark:text-[#a3a094] hover:text-[#111B21] dark:hover:text-white transition-colors p-1 hover:bg-gray-200 dark:hover:bg-[#38352e] rounded-full border-none bg-transparent cursor-pointer"><ArrowLeft size={20} /></button>
@@ -2377,7 +2409,8 @@ const Chat = () => {
             )}
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     )
   }
   {/* LIGHTBOX MODAL */ }
@@ -2441,9 +2474,9 @@ const Chat = () => {
 
   {/* COMMUNITY COMING SOON MODAL */ }
   {
-    isCreatingCommunity && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white dark:bg-[#181612] w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border dark:border-[#38352e] text-center p-8 relative">
+    isCreatingCommunity && createPortal(
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setIsCreatingCommunity(false)}>
+        <div className="bg-white dark:bg-[#181612] w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border dark:border-[#38352e] text-center p-8 relative" onClick={(e) => e.stopPropagation()}>
           <button onClick={() => setIsCreatingCommunity(false)} className="absolute top-4 right-4 text-[#848E9C] hover:text-[#111B21] dark:hover:text-white transition-colors p-2 hover:bg-gray-100 dark:hover:bg-[#282520] rounded-full border-none bg-transparent cursor-pointer">
             <X size={20} />
           </button>
@@ -2458,7 +2491,8 @@ const Chat = () => {
             Got it!
           </button>
         </div>
-      </div>
+      </div>,
+      document.body
     )
   }
 

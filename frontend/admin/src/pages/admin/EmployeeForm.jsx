@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Save, ArrowLeft, Loader2, ChevronDown, FileText, UploadCloud, CheckCircle, Download } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { getImageUrl } from '@shared/services/api';
 
 const EmployeeForm = () => {
   const { id } = useParams();
@@ -263,7 +264,7 @@ const EmployeeForm = () => {
             <div className="relative group">
               <div className="w-32 h-32 rounded-2xl bg-[#F5F5F5] flex items-center justify-center border-2 border-dashed border-[#E6E8EA] overflow-hidden group-hover:border-[#F0B90B] transition-all">
                 {formData.profileImage ? (
-                  <img src={formData.profileImage} alt="" className="w-full h-full object-cover" />
+                  <img src={getImageUrl(formData.profileImage)} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-4xl font-black text-[#1E2026] opacity-10 uppercase">
                     {formData.firstName?.substring(0, 1) || 'S'}{formData.lastName?.substring(0, 1) || 'A'}
@@ -320,7 +321,7 @@ const EmployeeForm = () => {
               <div className="flex flex-col items-center gap-4 p-5 bg-[#F5F5F5] rounded-2xl border-2 border-dashed border-[#E6E8EA] hover:border-[#F0B90B] transition-all group">
                 <div 
                   className={`w-full aspect-square max-w-[160px] rounded-xl bg-white flex items-center justify-center text-[#F0B90B] shadow-md overflow-hidden border border-[#E6E8EA] transition-all ${formData.adharCard ? 'cursor-pointer hover:scale-[1.02] active:scale-95' : ''}`}
-                  onClick={() => formData.adharCard && window.open(formData.adharCard, '_blank')}
+                  onClick={() => formData.adharCard && window.open(getImageUrl(formData.adharCard), '_blank')}
                 >
                   {formData.adharCard ? (
                     (formData.adharCard.toLowerCase().endsWith('.pdf') || formData.adharCard.startsWith('data:application/pdf')) ? (
@@ -329,7 +330,7 @@ const EmployeeForm = () => {
                         <span className="text-[10px] font-bold text-[#1E2026]">View PDF</span>
                       </div>
                     ) : (
-                      <img src={formData.adharCard} alt="" className="w-full h-full object-cover" />
+                      <img src={getImageUrl(formData.adharCard)} alt="" className="w-full h-full object-cover" />
                     )
                   ) : (
                     <div className="flex flex-col items-center gap-2">
@@ -381,7 +382,7 @@ const EmployeeForm = () => {
                       type="button"
                       onClick={() => {
                         const link = document.createElement('a');
-                        link.href = formData.adharCard;
+                        link.href = getImageUrl(formData.adharCard);
                         link.download = `AdharCard_${formData.employeeId || 'doc'}`;
                         link.target = "_blank";
                         document.body.appendChild(link);
@@ -403,7 +404,7 @@ const EmployeeForm = () => {
               <div className="flex flex-col items-center gap-4 p-5 bg-[#F5F5F5] rounded-2xl border-2 border-dashed border-[#E6E8EA] hover:border-[#F0B90B] transition-all group">
                 <div 
                   className={`w-full aspect-square max-w-[160px] rounded-xl bg-white flex items-center justify-center text-[#F0B90B] shadow-md overflow-hidden border border-[#E6E8EA] transition-all ${formData.bankDetails ? 'cursor-pointer hover:scale-[1.02] active:scale-95' : ''}`}
-                  onClick={() => formData.bankDetails && window.open(formData.bankDetails, '_blank')}
+                  onClick={() => formData.bankDetails && window.open(getImageUrl(formData.bankDetails), '_blank')}
                 >
                   {formData.bankDetails ? (
                     (formData.bankDetails.toLowerCase().endsWith('.pdf') || formData.bankDetails.startsWith('data:application/pdf')) ? (
@@ -412,7 +413,7 @@ const EmployeeForm = () => {
                         <span className="text-[10px] font-bold text-[#1E2026]">View PDF</span>
                       </div>
                     ) : (
-                      <img src={formData.bankDetails} alt="" className="w-full h-full object-cover" />
+                      <img src={getImageUrl(formData.bankDetails)} alt="" className="w-full h-full object-cover" />
                     )
                   ) : (
                     <div className="flex flex-col items-center gap-2">
@@ -464,7 +465,7 @@ const EmployeeForm = () => {
                       type="button"
                       onClick={() => {
                         const link = document.createElement('a');
-                        link.href = formData.bankDetails;
+                        link.href = getImageUrl(formData.bankDetails);
                         link.download = `BankDetails_${formData.employeeId || 'doc'}`;
                         link.target = "_blank";
                         document.body.appendChild(link);
@@ -486,7 +487,7 @@ const EmployeeForm = () => {
               <div className="flex flex-col items-center gap-4 p-5 bg-[#F5F5F5] rounded-2xl border-2 border-dashed border-[#E6E8EA] hover:border-[#F0B90B] transition-all group">
                 <div 
                   className={`w-full aspect-square max-w-[160px] rounded-xl bg-white flex items-center justify-center text-[#F0B90B] shadow-md overflow-hidden border border-[#E6E8EA] transition-all ${formData.panCard ? 'cursor-pointer hover:scale-[1.02] active:scale-95' : ''}`}
-                  onClick={() => formData.panCard && window.open(formData.panCard, '_blank')}
+                  onClick={() => formData.panCard && window.open(getImageUrl(formData.panCard), '_blank')}
                 >
                   {formData.panCard ? (
                     (formData.panCard.toLowerCase().endsWith('.pdf') || formData.panCard.startsWith('data:application/pdf')) ? (
@@ -495,7 +496,7 @@ const EmployeeForm = () => {
                         <span className="text-[10px] font-bold text-[#1E2026]">View PDF</span>
                       </div>
                     ) : (
-                      <img src={formData.panCard} alt="" className="w-full h-full object-cover" />
+                      <img src={getImageUrl(formData.panCard)} alt="" className="w-full h-full object-cover" />
                     )
                   ) : (
                     <div className="flex flex-col items-center gap-2">
@@ -547,7 +548,7 @@ const EmployeeForm = () => {
                       type="button"
                       onClick={() => {
                         const link = document.createElement('a');
-                        link.href = formData.panCard;
+                        link.href = getImageUrl(formData.panCard);
                         link.download = `PAN_${formData.employeeId || 'doc'}`;
                         link.target = "_blank";
                         document.body.appendChild(link);
