@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Users, ChevronRight, Plus, Phone, CheckCircle2, Maximize2, Sparkles, 
   Circle, Calendar, Hourglass, Timer, User, Flag, Target, Tag, 
@@ -11,7 +12,7 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog }) => {
+const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog, onTaskChange }) => {
   const [task, setTask] = useState(initialTask);
   
   useEffect(() => {
@@ -269,6 +270,7 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
       await axios.delete(`/api/tasks/${task._id}`, auth);
       toast.success("Task deleted successfully");
       setShowMoreDropdown(false);
+      if (onTaskChange) onTaskChange();
       onClose();
     } catch (err) {
       toast.error("Failed to delete task");
@@ -289,6 +291,7 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
       if (res.data?.success) {
         toast.success("Task duplicated successfully");
         setShowMoreDropdown(false);
+        if (onTaskChange) onTaskChange();
         setTask(res.data.data);
       }
     } catch (err) {
@@ -300,8 +303,17 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
     if (!task) return;
     try {
       const jsonStr = JSON.stringify(task, null, 2);
-      navigator.clipboard.writeText(jsonStr);
-      toast.success("Task exported to clipboard as JSON");
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Task_${task.title || 'Export'}_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success("Task downloaded as JSON");
       setShowMoreDropdown(false);
     } catch (err) {
       toast.error("Failed to export task");
@@ -893,13 +905,77 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
   const createdDate = task?.createdAt ? new Date(task.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A';
   const totalSecondsLogged = task?.timeLogs?.reduce((acc, log) => acc + (log.duration || log.seconds || 0), 0) || 0;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center animate-in fade-in duration-200 p-6">
-      <div className="fixed inset-0 bg-[#201515]/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 flex flex-col bg-[#fffdf9] w-full max-w-[1400px] h-[90vh] shadow-2xl animate-in zoom-in-95 duration-300 border border-[#c5c0b1] rounded-[12px] overflow-hidden">
-      
-      {/* Top Navigation Bar */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-[#c5c0b1] bg-[#fffdf9]">
+  return createPortal(
+    <>
+      <style>{`
+        @media print {
+          /* Hide EVERYTHING in body except our portal container */
+          body > *:not(.print-portal-container) {
+            display: none !important;
+          }
+          
+          body, html {
+            background: white !important;
+            height: auto !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+          }
+
+          .print-portal-container {
+            display: block !important;
+            position: static !important;
+            height: auto !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: white !important;
+          }
+          
+          #print-task-container {
+            position: static !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+            max-height: none !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          
+          #print-main-split {
+            display: block !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+          
+          #print-left-panel, #print-right-panel {
+            display: block !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+            border: none !important;
+          }
+          
+          .no-print {
+            display: none !important;
+          }
+          
+          textarea {
+            overflow: visible !important;
+            height: auto !important;
+          }
+        }
+      `}</style>
+      <div className="print-portal-container fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto animate-in fade-in duration-200 p-4 sm:p-6">
+        <div className="fixed inset-0 bg-[#201515]/40 backdrop-blur-sm no-print" onClick={onClose} />
+        <div id="print-task-container" className="relative my-auto z-10 flex flex-col bg-[#fffdf9] w-full max-w-[1400px] h-[90vh] shadow-2xl animate-in zoom-in-95 duration-300 border border-[#c5c0b1] rounded-[12px] overflow-hidden">
+        
+        {/* Top Navigation Bar */}
+          <div className="flex items-center justify-between px-6 py-3 border-b border-[#c5c0b1] bg-[#fffdf9] no-print">
           <span 
             className="cursor-help hover:text-[#201515] transition-colors text-xs text-[#939084] font-bold"
             title={`Created on ${task?.createdAt ? new Date(task.createdAt).toLocaleString() : 'N/A'}`}
@@ -1013,10 +1089,10 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
       </div>
 
         {/* Main Content Area Split */}
-        <div className="flex-1 flex overflow-hidden">
+        <div id="print-main-split" className="flex-1 flex overflow-hidden">
           
           {/* Left Panel - Task Details */}
-          <div className="flex-1 overflow-y-auto bg-[#fffdf9] p-3 custom-scrollbar">
+          <div id="print-left-panel" className="flex-1 overflow-y-auto bg-[#fffdf9] p-3 custom-scrollbar">
             
             {/* Task Title */}
             <input
@@ -1037,7 +1113,7 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
               
               {/* Status */}
               <div className="flex items-center justify-between group relative">
-                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[135px] shrink-0 mr-3"><Circle size={13}/> Status</div>
+                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[160px] shrink-0 mr-3"><Circle size={13}/> Status</div>
                 <div className="flex-1 flex items-center gap-1.5" ref={statusDropdownRef}>
                   <button 
                     onClick={() => setShowStatusDropdown(!showStatusDropdown)}
@@ -1085,7 +1161,7 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
 
               {/* Assignees */}
               <div className="flex items-center justify-between group relative">
-                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[135px] shrink-0 mr-3"><User size={13}/> Assignees</div>
+                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[160px] shrink-0 mr-3"><User size={13}/> Assignees</div>
                 <div className="flex-1" ref={assigneeDropdownRef}>
                   <button 
                     onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
@@ -1118,7 +1194,7 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
 
               {/* Time Estimate */}
               <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[135px] shrink-0 mr-3"><Hourglass size={13}/> Time estimate</div>
+                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[160px] shrink-0 mr-3"><Hourglass size={13}/> Time estimate</div>
                 <div className="flex-1">
                   {isEditingEstimate ? (
                     <input
@@ -1153,7 +1229,7 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
               {/* Track Time */}
               <div className="flex flex-col gap-1.5 group relative w-full">
                 <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[135px] shrink-0 mr-3"><Timer size={13}/> Track time</div>
+                  <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[160px] shrink-0 mr-3"><Timer size={13}/> Track time</div>
                   <div className="flex-1 flex items-center gap-1.5">
                     <button 
                       onClick={() => setShowTimePopup(!showTimePopup)}
@@ -1289,7 +1365,7 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
 
               {/* Dates - Row 3 */}
               <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[135px] shrink-0 mr-3"><Calendar size={13}/> Dates</div>
+                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[160px] shrink-0 mr-3"><Calendar size={13}/> Dates</div>
                 <div className="flex-1 flex items-center gap-1.5 text-[13px] text-[#939084] font-bold">
                   <input
                     type="date"
@@ -1305,7 +1381,7 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
 
               {/* Sprint Points - Row 3 */}
               <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[135px] shrink-0 mr-3"><Target size={13}/> Sprint points</div>
+                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[160px] shrink-0 mr-3"><Target size={13}/> Sprint points</div>
                 <div className="flex-1">
                   {isEditingSprintPoints ? (
                     <input
@@ -1338,7 +1414,7 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
 
               {/* Priority */}
               <div className="flex items-center justify-between group relative">
-                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[135px] shrink-0 mr-3"><Flag size={13}/> Priority</div>
+                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[160px] shrink-0 mr-3"><Flag size={13}/> Priority</div>
                 <div className="flex-1" ref={priorityDropdownRef}>
                   <button 
                     onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
@@ -1367,7 +1443,7 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
 
               {/* Tags */}
               <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[135px] shrink-0 mr-3"><Tag size={13}/> Tags</div>
+                <div className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-[#939084] w-[160px] shrink-0 mr-3"><Tag size={13}/> Tags</div>
                 <div className="flex-1 flex flex-wrap gap-1 items-center">
                   {task?.tags && task.tags.map(t => (
                     <span key={t} className="bg-[#eceae3] text-[#201515] border border-[#c5c0b1] text-[12px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded flex items-center gap-1">
@@ -1527,7 +1603,7 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
           </div>
 
           {/* Right Panel - Activity or Brain AI Copilot */}
-          <div className={`bg-[#fffdf9] border-l border-[#c5c0b1] flex flex-col shrink-0 transition-all duration-300 ${isMaximized ? 'w-0 overflow-hidden border-l-0 opacity-0' : 'w-[360px]'}`}>
+          <div id="print-right-panel" className={`bg-[#fffdf9] border-l border-[#c5c0b1] flex flex-col shrink-0 transition-all duration-300 ${isMaximized ? 'w-0 overflow-hidden border-l-0 opacity-0' : 'w-[360px]'}`}>
             {showAISidebar ? (
               <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#fffdf9]">
                 {/* AI Copilot Header */}
@@ -1962,7 +2038,9 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
           }
         `}} />
       </div>
-    </div>
+      </div>
+    </>,
+    document.body
   );
 };
 

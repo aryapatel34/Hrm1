@@ -9,7 +9,12 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL, getImageUrl } from '@shared/services/api';
 
-const getToday = () => new Date().toISOString().split('T')[0];
+const getLocalISODate = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const Screenshots = () => {
   const [screenshots, setScreenshots] = useState([]);
@@ -121,6 +126,41 @@ const Screenshots = () => {
     return 0;
   };
 
+  // Helper for single download (bypasses cross-origin issue)
+  const handleSingleDownload = async (e, url, filename) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Cloudinary specific forced download (bypasses CORS fetch issues in production)
+    if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+      const downloadUrl = url.replace('/upload/', '/upload/fl_attachment/');
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      console.error('Failed to download image:', err);
+      window.open(url, '_blank');
+    }
+  };
+
   // 📦 BULK DOWNLOAD ENGINE (Generates a single ZIP file)
   const handleDownloadAll = async () => {
     if (filtered.length === 0) return;
@@ -149,8 +189,9 @@ const Screenshots = () => {
           const blob = await response.blob();
           
           // Generate a clean filename: BhavikKukadiya-2026-07-23-16-59.png
-          const dateStr = new Date(s.timestamp).toISOString().split('T')[0];
-          const timeStr = new Date(s.timestamp).toTimeString().split(' ')[0].replace(/:/g, '-');
+          const timestampDate = new Date(s.timestamp);
+          const dateStr = getLocalISODate(timestampDate);
+          const timeStr = timestampDate.toTimeString().split(' ')[0].replace(/:/g, '-');
           const filename = `${s.employeeName}-${dateStr}-${timeStr}.png`;
           
           zip.file(filename, blob);
@@ -163,7 +204,7 @@ const Screenshots = () => {
 
       // Generate the zip and trigger download
       const content = await zip.generateAsync({ type: 'blob' });
-      const dateStr = filterDate || new Date().toISOString().split('T')[0];
+      const dateStr = filterDate || getLocalISODate();
       const zipFilename = `Screenshots-${navigationPath[1] || 'All'}-${dateStr}.zip`;
       
       const link = document.createElement('a');
@@ -181,11 +222,11 @@ const Screenshots = () => {
 
   const setQuickDate = (type) => {
     const now = new Date();
-    if (type === 'today') setFilterDate(now.toISOString().split('T')[0]);
+    if (type === 'today') setFilterDate(getLocalISODate(now));
     if (type === 'yesterday') {
       const yesterday = new Date(now);
       yesterday.setDate(yesterday.getDate() - 1);
-      setFilterDate(yesterday.toISOString().split('T')[0]);
+      setFilterDate(getLocalISODate(yesterday));
     }
     if (type === 'all') setFilterDate('');
   };
@@ -305,7 +346,7 @@ const Screenshots = () => {
                                 disabled={isDisabled}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setFilterDate(day.toISOString().split('T')[0]);
+                                  setFilterDate(getLocalISODate(day));
                                   setShowDatePicker(false);
                                 }}
                                 className={`text-[10px] font-bold py-1.5 rounded-lg transition-all ${
@@ -339,7 +380,7 @@ const Screenshots = () => {
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              setFilterDate(new Date().toISOString().split('T')[0]);
+                              setFilterDate(getLocalISODate());
                               setShowDatePicker(false);
                             }}
                             className="text-[#00a76b] hover:underline"
@@ -535,13 +576,12 @@ const Screenshots = () => {
                                         >
                                           <Eye size={14} />
                                         </button>
-                                        <a 
-                                          href={getImageUrl(s.imageUrl)} 
-                                          download={`Screenshot-${s.employeeName}-${new Date(s.timestamp).toLocaleDateString()}.png`}
+                                        <button 
+                                          onClick={(e) => handleSingleDownload(e, getImageUrl(s.imageUrl), `Screenshot-${s.employeeName}-${new Date(s.timestamp).toLocaleDateString()}.png`)}
                                           className="w-8 h-8 rounded-lg bg-[#eceae3] dark:bg-[#1a2d29] flex items-center justify-center text-slate-800 dark:text-white hover:bg-[#00a76b] hover:text-white transition-all"
                                         >
                                           <Download size={14} />
-                                        </a>
+                                        </button>
                                       </div>
                                    </div>
                                    <div className="pt-4 border-t border-[#eceae3] dark:border-[#13221e] flex justify-between items-center text-[10px] font-black text-slate-500 dark:text-[#829e92] uppercase tracking-widest italic">
@@ -597,13 +637,12 @@ const Screenshots = () => {
                                 >
                                   <Eye size={18} />
                                 </button>
-                                <a 
-                                  href={getImageUrl(s.imageUrl)} 
-                                  download={`Screenshot-${s.employeeName}.png`}
+                                <button 
+                                  onClick={(e) => handleSingleDownload(e, getImageUrl(s.imageUrl), `Screenshot-${s.employeeName}.png`)}
                                   className="p-2 text-[#939084] hover:text-[#00a76b] transition-colors"
                                 >
                                   <Download size={18} />
-                                </a>
+                                </button>
                              </div>
                           </td>
                        </tr>
@@ -639,15 +678,14 @@ const Screenshots = () => {
 
               {/* ACTION BAR AT BOTTOM */}
               <div className="mt-8 flex gap-6">
-                 <a 
-                   href={selectedImage} 
-                   download="FluidHR-Capture.png"
+                 <button 
+                   onClick={(e) => handleSingleDownload(e, selectedImage, "FluidHR-Capture.png")}
                    className="flex items-center gap-3 px-8 py-3 rounded-full bg-white/10 hover:bg-[#00a76b] text-white transition-all border border-white/20 shadow-2xl group"
                    title="Download High Res"
                  >
                     <Download size={20} className="group-hover:scale-110 transition-transform" />
                     <span className="text-[10px] font-black uppercase tracking-widest">Download Node</span>
-                 </a>
+                 </button>
                  <button 
                    onClick={() => setSelectedImage(null)}
                    className="flex items-center gap-3 px-8 py-3 rounded-full bg-white/10 hover:bg-red-500 text-white transition-all border border-white/20 shadow-2xl group"

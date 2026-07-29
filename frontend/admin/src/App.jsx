@@ -1,5 +1,13 @@
-import React from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
 import { Toaster } from 'react-hot-toast';
 import Login from '@shared/pages/Login';
 import ForgotPassword from '@shared/pages/ForgotPassword';
@@ -88,6 +96,7 @@ const RootRedirect = () => {
 const App = () => {
   return (
     <>
+      <ScrollToTop />
       <Toaster position="top-right" reverseOrder={false} />
       <Routes>
         {/* PUBLIC ROUTES */}

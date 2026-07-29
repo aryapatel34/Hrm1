@@ -25,23 +25,25 @@ const Profile = () => {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const timestamp = new Date().getTime();
-        const response = await axios.get(`/api/auth/me?t=${timestamp}`, {
-          headers: { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' }
-        });
-        if (response.data) {
-          setUserData(response.data);
-          sessionStorage.setItem('user', JSON.stringify(response.data));
-        }
-      } catch (err) {
-        console.warn('Initial sync failed.');
-      } finally {
-        setSyncing(false);
+  const fetchProfile = async () => {
+    try {
+      const timestamp = new Date().getTime();
+      const response = await axios.get(`/api/auth/me?t=${timestamp}`, {
+        headers: { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' }
+      });
+      if (response.data) {
+        setUserData(response.data);
+        sessionStorage.setItem('user', JSON.stringify(response.data));
+        window.dispatchEvent(new Event('profileUpdated'));
       }
-    };
+    } catch (err) {
+      console.warn('Initial sync failed.');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  useEffect(() => {
     if (token) fetchProfile();
   }, [token]);
 
@@ -83,6 +85,22 @@ const Profile = () => {
 
   const handleDocumentUpload = async (type, file) => {
     if (!file) return;
+
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setStatus({ type: 'error', message: 'Please select a valid document format (PDF, JPG, PNG, DOC, DOCX).' });
+      return;
+    }
+
     setUploadingDocType(type);
     setStatus({ type: '', message: '' });
     
@@ -97,9 +115,7 @@ const Profile = () => {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (response.data) {
-            const mergedUser = { ...response.data.user, ...(response.data.user.profile || {}) };
-            setUserData(mergedUser);
-            sessionStorage.setItem('user', JSON.stringify(mergedUser));
+            await fetchProfile();
             setStatus({ type: 'success', message: `${type} updated successfully` });
           }
         } catch (err) {
@@ -155,9 +171,7 @@ const Profile = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data) {
-        const mergedUser = { ...response.data.user, ...(response.data.user.profile || {}) };
-        setUserData(mergedUser);
-        sessionStorage.setItem('user', JSON.stringify(mergedUser));
+        await fetchProfile();
         setIsEditing(false);
         setStatus({ type: 'success', message: 'Profile updated successfully' });
       }
@@ -231,6 +245,12 @@ const Profile = () => {
                   <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
                     const file = e.target.files[0];
                     if (file) {
+                      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                      if (!validTypes.includes(file.type)) {
+                        setStatus({ type: 'error', message: 'Please upload a valid image file (JPG, PNG, WEBP).' });
+                        e.target.value = '';
+                        return;
+                      }
                       const reader = new FileReader();
                       reader.onloadend = () => setEditForm({ ...editForm, profileImage: reader.result });
                       reader.readAsDataURL(file);

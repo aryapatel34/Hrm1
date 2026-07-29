@@ -4,6 +4,7 @@ import {
   Play, Square, Clock, Users, Search, Filter, RefreshCw, Pause, ChevronLeft, ChevronRight, Calendar as CalendarIcon, FileDown, X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const API_BASE = '/api/time';
 
@@ -29,6 +30,7 @@ const SmartTimeTracker = () => {
   const [timer, setTimer] = useState(0);
   const [idleTime, setIdleTime] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
   // Role management
   const [userRole, setUserRole] = useState('employee');
@@ -202,6 +204,18 @@ const SmartTimeTracker = () => {
     }
   };
 
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      await fetchData();
+      toast.success('Registry synced successfully');
+    } catch (error) {
+      toast.error('Sync failed');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const getWeekRange = (date) => {
     const d = new Date(date);
     const day = d.getDay();
@@ -365,10 +379,11 @@ const SmartTimeTracker = () => {
             </div>
           )}
           <button
-            onClick={fetchData}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-[#282520] border border-gray-300 dark:border-[#38352e] shadow-sm rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-[#38352e] transition-colors text-gray-700 dark:text-white">
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            Sync Registry
+            onClick={handleSync}
+            disabled={syncing}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-[#282520] border border-gray-300 dark:border-[#38352e] shadow-sm rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-[#38352e] transition-colors text-gray-700 dark:text-white disabled:opacity-50">
+            <RefreshCw size={16} className={syncing ? 'animate-spin text-[#10B981]' : (loading ? 'animate-spin' : '')} />
+            {syncing ? 'Syncing...' : 'Sync Registry'}
           </button>
         </div>
       </div>
@@ -564,13 +579,17 @@ const SmartTimeTracker = () => {
 
           {isAdmin && (
             <div className="flex gap-4 items-center">
-              <div className="flex items-center gap-2 bg-white dark:bg-[#181612] border border-gray-200 dark:border-[#38352e] rounded-lg px-3 py-1.5 flex-shrink-0">
-                <span className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase whitespace-nowrap">Range:</span>
-                <input type="date" className="text-sm outline-none text-gray-700 dark:text-gray-300 bg-transparent min-w-[130px]" value={dateRange.start} onChange={e => setDateRange({ ...dateRange, start: e.target.value })} />
-                <span className="text-gray-400 dark:text-[#a3a094]">-</span>
-                <input type="date" className="text-sm outline-none text-gray-700 dark:text-gray-300 bg-transparent min-w-[130px]" value={dateRange.end} onChange={e => setDateRange({ ...dateRange, end: e.target.value })} />
+              <div className="flex items-center bg-white dark:bg-[#181612] border border-gray-200 dark:border-[#38352e] rounded-lg h-9 overflow-hidden flex-shrink-0 shadow-sm transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/50">
+                <div className="px-3 bg-gray-50 dark:bg-[#282520] border-r border-gray-200 dark:border-[#38352e] h-full flex items-center justify-center">
+                  <span className="text-[11px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider whitespace-nowrap">Range</span>
+                </div>
+                <div className="flex items-center px-1 h-full">
+                  <input type="date" className="text-sm outline-none text-gray-700 dark:text-gray-300 bg-transparent min-w-[125px] cursor-pointer h-full px-2" value={dateRange.start} onChange={e => setDateRange({ ...dateRange, start: e.target.value })} />
+                  <span className="text-gray-300 dark:text-[#5c584b] px-1 font-bold">-</span>
+                  <input type="date" className="text-sm outline-none text-gray-700 dark:text-gray-300 bg-transparent min-w-[125px] cursor-pointer h-full px-2" value={dateRange.end} onChange={e => setDateRange({ ...dateRange, end: e.target.value })} />
+                </div>
               </div>
-              <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2 bg-gray-800 dark:bg-[#282520] text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-gray-900 dark:hover:bg-[#38352e] transition-colors">
+              <button onClick={handleExport} className="flex items-center justify-center gap-2 px-4 h-9 bg-gray-800 dark:bg-[#282520] text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-gray-900 dark:hover:bg-[#38352e] transition-colors shadow-sm">
                 <FileDown size={14} /> Export CSV
               </button>
             </div>

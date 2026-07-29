@@ -12,6 +12,13 @@ import {
   ResponsiveContainer, Legend, AreaChart, Area, PieChart, Pie, Cell
 } from 'recharts';
 
+// Card component
+const Card = ({ children, className = '' }) => (
+  <div className={`bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] rounded-[20px] p-5 shadow-[0_2px_16px_rgba(0,0,0,0.02)] transition-all ${className}`}>
+    {children}
+  </div>
+);
+
 // ────────────────────────────── SAMPLE DATA ──────────────────────────────
 const SAMPLE_RECORDS = (() => {
   const names = [
@@ -278,12 +285,6 @@ const Attendance = () => {
     toast.success('Attendance report exported successfully');
   };
 
-  // Card component
-  const Card = ({ children, className = '' }) => (
-    <div className={`bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] rounded-[20px] p-5 shadow-[0_2px_16px_rgba(0,0,0,0.02)] transition-all ${className}`}>
-      {children}
-    </div>
-  );
 
   // ────────────────────────────── RENDER ──────────────────────────────
   if (loading) {

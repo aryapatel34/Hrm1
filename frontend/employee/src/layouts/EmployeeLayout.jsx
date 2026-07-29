@@ -278,7 +278,7 @@ const EmployeeLayout = () => {
             </svg>
           </div>
           <div className="flex flex-col items-start leading-tight">
-            <span className="font-bold text-[16px] text-white tracking-tight">Verdant HR</span>
+            <span className="font-bold text-[16px] text-white tracking-tight">Fluid HR</span>
             <span className="text-[10px] font-bold text-[#527068] uppercase tracking-wider">Workforce OS</span>
           </div>
           {mobile && (
@@ -365,7 +365,7 @@ const EmployeeLayout = () => {
                   </svg>
                 </div>
                 <div className="flex flex-col items-start leading-tight">
-                  <span className="text-[17px] font-black text-[#201515] dark:text-white tracking-tight">Verdant HR</span>
+                  <span className="text-[17px] font-black text-[#201515] dark:text-white tracking-tight">Fluid HR</span>
                   <span className="text-[10px] font-bold text-[#939084] dark:text-[#a3b3af] uppercase tracking-wider">Workforce OS</span>
                 </div>
               </div>

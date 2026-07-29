@@ -152,7 +152,7 @@ export default function UnifiedDashboardPanel() {
     upcomingEvents: [
       { title: 'Sarah Cox - Technical Interview', date: 'Today, 2:30 PM', type: 'interview', desc: 'Senior Backend Engineer role' },
       { title: 'Independence Day Holiday', date: 'Jul 04', type: 'holiday', desc: 'National Holiday (Company Off)' },
-      { title: 'Marcus Lee - Work Anniversary', date: 'Jul 08', type: 'anniversary', desc: 'Celebrating 4 years at Verdant!' },
+      { title: 'Marcus Lee - Work Anniversary', date: 'Jul 08', type: 'anniversary', desc: 'Celebrating 4 years at Fluid HR!' },
       { title: 'Mei Chen - Birthday Celebration', date: 'Jul 10', type: 'birthday', desc: 'Birthday cake in cafeteria at 4 PM' },
       { title: 'Q2 Performance Appraisal Review', date: 'Jul 15', type: 'deadline', desc: 'All appraisals must be approved' }
     ],

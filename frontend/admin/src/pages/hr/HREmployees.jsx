@@ -73,12 +73,13 @@ const HREmployees = () => {
     const empId = emp.employeeId?.toLowerCase() || '';
     const dept = emp.department?.toLowerCase() || '';
     const desig = emp.designation?.toLowerCase() || '';
-    const search = searchTerm.toLowerCase();
+    const search = searchTerm.trim().toLowerCase();
 
     const matchesSearch = fullName.includes(search) ||
       email.includes(search) ||
       dept.includes(search) ||
-      desig.includes(search);
+      desig.includes(search) ||
+      empId.includes(search);
 
     const matchesRole = filterRole.length > 0 && !filterRole.includes('all') ? (filterRole.includes(emp.role) || filterRole.includes(emp.userId?.role)) : true;
     const empStatus = emp.status?.toLowerCase() || emp.userId?.status?.toLowerCase() || 'active';
@@ -125,16 +126,16 @@ const HREmployees = () => {
   const handleExportCSV = () => {
     const headers = ['Employee Name', 'Email', 'Department', 'Designation', 'Join Date', 'Status'];
     const rows = filteredEmployees.map(emp => [
-      emp.fullName,
-      emp.email,
-      emp.department,
-      emp.designation,
+      emp.fullName || emp.userId?.name || 'Anonymous',
+      emp.email || emp.userId?.email || 'N/A',
+      typeof emp.department === 'object' ? emp.department?.name : (emp.department || 'N/A'),
+      typeof emp.designation === 'object' ? emp.designation?.name : (emp.designation || 'N/A'),
       formatDate(emp.joinDate),
-      emp.status
+      emp.status || 'N/A'
     ]);
 
     const csvContent = "data:text/csv;charset=utf-8,"
-      + [headers.join(','), ...rows.map(e => e.map(val => `"${val.replace(/"/g, '""')}"`).join(','))].join('\n');
+      + [headers.join(','), ...rows.map(e => e.map(val => `"${String(val || '').replace(/"/g, '""')}"`).join(','))].join('\n');
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -189,13 +190,21 @@ const HREmployees = () => {
     );
   };
 
-  const handleApplyFilters = () => {
+  const handleApplyFilters = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setFilterRole(tempFilterRole);
     setFilterStatus(tempFilterStatus);
     setShowFiltersPanel(false);
   };
 
-  const handleClearFilters = () => {
+  const handleClearFilters = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setTempFilterRole([]);
     setTempFilterStatus([]);
     setFilterRole([]);
@@ -314,8 +323,8 @@ const HREmployees = () => {
                 </div>
 
                 <div className="flex gap-2 mt-2 pt-4 border-t border-gray-200 dark:border-[#1a2d29]">
-                  <button onClick={handleApplyFilters} className="flex-1 bg-[#00a76b] hover:bg-[#008f5a] text-white text-xs font-bold py-2.5 rounded-lg transition-colors cursor-pointer">Apply Filters</button>
-                  <button onClick={handleClearFilters} className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-[#111c18] dark:hover:bg-[#1a2d29] text-gray-700 dark:text-gray-300 text-xs font-bold py-2.5 rounded-lg transition-colors border border-gray-200 dark:border-[#1a2d29] cursor-pointer">Clear</button>
+                  <button type="button" onClick={handleApplyFilters} className="flex-1 bg-[#00a76b] hover:bg-[#008f5a] text-white text-xs font-bold py-2.5 rounded-lg transition-colors cursor-pointer">Apply Filters</button>
+                  <button type="button" onClick={handleClearFilters} className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-[#111c18] dark:hover:bg-[#1a2d29] text-gray-700 dark:text-gray-300 text-xs font-bold py-2.5 rounded-lg transition-colors border border-gray-200 dark:border-[#1a2d29] cursor-pointer">Clear</button>
                 </div>
               </div>
             )}

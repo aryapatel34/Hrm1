@@ -683,7 +683,8 @@ const TaskCreate = ({ isModal = false, onClose, onSuccess, defaultStatus = 'Ongo
       {selectedTask && (
         <TaskDetailView 
           task={selectedTask} 
-          onClose={() => setSelectedTask(null)} 
+          onClose={() => setSelectedTask(null)}
+          onTaskChange={() => fetchTasks(registryDate)}
           onAddComment={async (comment) => {
             await updateTaskStatus(selectedTask._id, selectedTask.status, selectedTask.progressNote, comment);
             setSelectedTask(prev => ({

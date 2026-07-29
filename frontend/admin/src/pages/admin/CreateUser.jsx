@@ -23,9 +23,11 @@ import {
   Phone
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import CustomDatePicker from '../../components/CustomDatePicker';
 
 const CreateUser = () => {
+  const navigate = useNavigate();
   const today = new Date();
   const maxDobDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate()).toISOString().split('T')[0];
 
@@ -393,7 +395,7 @@ const CreateUser = () => {
 
       <div className="max-w-4xl mx-auto">
         {/* FORM SIDE */}
-        <div className="zap-card bg-white dark:bg-[#13221e] border border-[#eceae3] dark:border-[#1a2d29] p-12">
+        <div className="zap-card !bg-white dark:!bg-[#13221e] border border-[#eceae3] dark:border-[#1a2d29] p-12">
           {/* AVATAR UPLOAD SECTION */}
           <div className="flex flex-col items-center mb-12 border-b border-[#eceae3] pb-12">
             <div className="relative group">
@@ -670,8 +672,7 @@ const CreateUser = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[15px] font-bold text-[#201515] mb-0.5">Adharcard Registry</p>
-                        {!adharFile && <p className="text-[11px] text-[#939084] leading-tight">Upload Adharcard for Identity Verification</p>}
+                        <p className="text-[15px] font-bold text-[#201515] mb-0.5">Adharcard</p>
                       </div>
                     </div>
                     {adharFile && <span className="text-[10px] font-black text-[#24a148] uppercase tracking-widest bg-[#24a148]/10 px-2 py-1 rounded-2xl">Ready</span>}
@@ -697,8 +698,7 @@ const CreateUser = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[15px] font-bold text-[#201515] mb-0.5">Bank Details Registry</p>
-                        {!bankFile && <p className="text-[11px] text-[#939084] leading-tight">Upload Passbook/Cheque for Bank Details</p>}
+                        <p className="text-[15px] font-bold text-[#201515] mb-0.5">Bank Details</p>
                       </div>
                     </div>
                     {bankFile && <span className="text-[10px] font-black text-[#24a148] uppercase tracking-widest bg-[#24a148]/10 px-2 py-1 rounded-2xl">Ready</span>}
@@ -724,8 +724,7 @@ const CreateUser = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[15px] font-bold text-[#201515] mb-0.5">Pan Card Registry</p>
-                        {!panFile && <p className="text-[11px] text-[#939084] leading-tight">Upload PAN Card for Tax Verification</p>}
+                        <p className="text-[15px] font-bold text-[#201515] mb-0.5">Pan Card</p>
                       </div>
                     </div>
                     {panFile && <span className="text-[10px] font-black text-[#24a148] uppercase tracking-widest bg-[#24a148]/10 px-2 py-1 rounded-2xl">Ready</span>}
@@ -751,7 +750,7 @@ const CreateUser = () => {
                   {loading ? <RefreshCw className="animate-spin mr-3" size={18} /> : <Plus size={18} className="mr-3 text-white" />}
                   {loading ? 'Saving...' : 'Save Employee'}
                 </button>
-                <button type="button" className="zap-btn zap-btn-light h-14 px-10">Cancel</button>
+                <button type="button" onClick={() => navigate(-1)} className="zap-btn zap-btn-light h-14 px-10">Cancel</button>
               </div>
             </div>
           </form>

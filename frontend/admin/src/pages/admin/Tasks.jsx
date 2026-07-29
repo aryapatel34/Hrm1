@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import {
   Plus, Search, Calendar, Clock, CheckSquare, Trash2, UserPlus, Flag,
@@ -120,6 +121,7 @@ const Tasks = () => {
 
   // Group header context menu
   const [groupHeaderMenu, setGroupHeaderMenu] = useState(null); // { statusVal, x, y }
+  const [taskToDelete, setTaskToDelete] = useState(null);
 
   // Inline Creation State
   const [inlineCreateTitle, setInlineCreateTitle] = useState('');
@@ -458,13 +460,19 @@ const Tasks = () => {
   };
 
   const handleDeleteTask = async (taskId) => {
-    if (!window.confirm('Delete this task permanently?')) return;
+    setTaskToDelete(taskId);
+  };
+
+  const confirmDeleteTask = async () => {
+    if (!taskToDelete) return;
     try {
-      await axios.delete(`/api/tasks/${taskId}`, { headers });
+      await axios.delete(`/api/tasks/${taskToDelete}`, { headers });
       toast.success('Task deleted');
       fetchData(true);
     } catch (err) {
       toast.error('Failed to delete task');
+    } finally {
+      setTaskToDelete(null);
     }
   };
 
@@ -580,8 +588,8 @@ const Tasks = () => {
   };
 
   const filteredTasks = tasks.filter(t => {
-    const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.employeeName || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = t.title.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
+      (t.employeeName || '').toLowerCase().includes(searchQuery.trim().toLowerCase());
     const matchesAssignee = filterAssignee === 'All' || t.userId === filterAssignee;
     const matchesPriority = filterPriority === 'All' || t.priority === filterPriority;
     const matchesClosed = showClosedOnly ? t.status === 'Completed' : true;
@@ -1729,6 +1737,7 @@ const Tasks = () => {
       {selectedTask && isDetailOpen && (
         <TaskDetailView
           task={tasks.find(t => t._id === selectedTask._id) || selectedTask}
+          onTaskChange={() => fetchData(true)}
           onClose={() => {
             setIsDetailOpen(false);
             setSelectedTask(null);
@@ -2074,7 +2083,33 @@ const Tasks = () => {
           defaultStatus={createModalDefaultStatus}
         />
       )}
-
+      {taskToDelete && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setTaskToDelete(null)}>
+          <div className="relative bg-[#fffdf9] dark:bg-[#181612] w-full max-w-sm rounded-[16px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border border-[#c5c0b1] dark:border-[#38352e]" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setTaskToDelete(null)} className="absolute top-4 right-4 text-[#939084] hover:text-[#201515] dark:text-[#a3a094] dark:hover:text-white transition-colors bg-transparent border-none cursor-pointer p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#282520]">
+              <X size={20} />
+            </button>
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                <Trash2 size={32} />
+              </div>
+              <h2 className="text-lg font-bold text-[#201515] dark:text-white mb-2">Delete Task</h2>
+              <p className="text-sm text-[#939084] dark:text-[#a3a094]">
+                Are you sure you want to permanently delete this task? This action cannot be undone.
+              </p>
+            </div>
+            <div className="p-4 bg-[#eceae3] dark:bg-[#282520] border-t border-[#c5c0b1] dark:border-[#38352e] flex gap-3">
+              <button onClick={() => setTaskToDelete(null)} className="flex-1 py-2.5 text-sm font-bold text-[#201515] dark:text-white bg-white dark:bg-[#38352e] border border-[#c5c0b1] dark:border-[#4a4740] hover:bg-gray-50 dark:hover:bg-[#4a4740] rounded-[8px] transition-colors shadow-sm cursor-pointer">
+                Cancel
+              </button>
+              <button onClick={confirmDeleteTask} className="flex-1 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-[8px] shadow-sm transition-colors border-none cursor-pointer">
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

@@ -58,9 +58,9 @@ const Employees = () => {
     const email = emp.email?.toLowerCase() || emp.userId?.email?.toLowerCase() || '';
     const empId = emp.employeeId?.toLowerCase() || '';
 
-    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
-      email.includes(searchTerm.toLowerCase()) ||
-      empId.includes(searchTerm.toLowerCase());
+    const matchesSearch = fullName.includes(searchTerm.trim().toLowerCase()) ||
+      email.includes(searchTerm.trim().toLowerCase()) ||
+      empId.includes(searchTerm.trim().toLowerCase());
 
     const matchesRole = filterRole ? (emp.role === filterRole || emp.userId?.role === filterRole) : true;
 
