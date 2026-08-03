@@ -15,6 +15,10 @@ const authorize = require('../middleware/roleMiddleware');
 const upload = require('../middleware/upload');
 
 router.get('/', protect, getEmployees);
+router.get('/events', protect, (req, res) => {
+  const { getUpcomingEvents } = require('../controllers/employeeController');
+  getUpcomingEvents(req, res);
+});
 router.post('/', protect, authorize('admin', 'hr'), createEmployee);
 router.get('/:id', protect, getEmployeeById);
 router.put('/:id', protect, authorize('admin', 'hr', 'manager'), updateEmployee);

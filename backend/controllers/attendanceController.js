@@ -251,7 +251,7 @@ exports.clockIn = async (req, res) => {
     const attendance = await Attendance.create({
       user: req.user.id,
       date,
-      clockIn: time,
+      checkInTime: new Date(),
       location,
       status: 'Present'
     });
@@ -273,7 +273,7 @@ exports.clockOut = async (req, res) => {
       return res.status(404).json({ message: 'No clock-in record found for today' });
     }
 
-    attendance.clockOut = time;
+    attendance.checkOutTime = new Date();
     await attendance.save();
 
     res.json(attendance);
@@ -286,7 +286,8 @@ exports.clockOut = async (req, res) => {
 // @route   GET /api/attendance/me
 exports.getMyAttendance = async (req, res) => {
   try {
-    const records = await Attendance.find({ user: req.user.id }).sort({ date: -1 });
+    const targetUserId = (req.user.role === 'admin' || req.user.role === 'hr') && req.query.userId ? req.query.userId : req.user.id;
+    const records = await Attendance.find({ user: targetUserId }).sort({ date: -1 });
     res.json(records);
   } catch (error) {
     res.status(500).json({ message: error.message });

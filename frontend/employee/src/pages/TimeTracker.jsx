@@ -18,6 +18,7 @@ const TimeTracker = () => {
   const [displaySeconds, setDisplaySeconds] = useState(0);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [calendarData, setCalendarData] = useState({});
   
   // Custom Month-Year Picker State
   const [showMonthYearPicker, setShowMonthYearPicker] = useState(false);

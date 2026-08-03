@@ -12,8 +12,10 @@ import EmployeeLayout from './layouts/EmployeeLayout';
 import Dashboard from './pages/Dashboard';
 import Attendance from './pages/Attendance';
 import TimeTracker from './pages/TimeTracker';
+import Holidays from './pages/Holidays';
 import useAuthStore from '@shared/store/authStore';
 import EmployeeDocuments from './pages/EmployeeDocuments';
+import MyEvents from './pages/MyEvents';
 
 // Shared pages that already exist for employee role
 import Chat from '@shared/pages/Chat';
@@ -71,6 +73,8 @@ function App() {
           <Route path="notifications" element={<PlaceholderPage title="Notifications" />} />
           <Route path="employees/view/:id" element={<PlaceholderPage title="Employee Information" />} />
           <Route path="attendance" element={<Attendance />} />
+          <Route path="events" element={<MyEvents />} />
+          <Route path="holidays" element={<Holidays />} />
           <Route path="leave" element={<PlaceholderPage title="My Leaves" />} />
           <Route path="payslips" element={<PlaceholderPage title="Payslips" />} />
           <Route path="documents" element={<EmployeeDocuments />} />

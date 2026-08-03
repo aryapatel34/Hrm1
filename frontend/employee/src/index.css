@@ -258,7 +258,7 @@ body {
 
 /* Time Tracker Table Overrides for Dark Mode */
 .dark table thead tr.bg-gray-50,
-.dark table thead tr.bg-gray-50\\/50 {
+.dark table thead tr.bg-gray-50\/50 {
   background-color: #1e1c18 !important;
   border-color: #38352e !important;
 }

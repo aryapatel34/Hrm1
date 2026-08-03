@@ -13,6 +13,7 @@
 
 const TimeTrack = require('../models/TimeTrack');
 const User = require('../models/User');
+const Attendance = require('../models/Attendance');
 const mongoose = require('mongoose');
 
 // ── CONFIG // Constants for Idle tracking (MUST MATCH DESKTOP APP & WEB APP)
@@ -100,6 +101,17 @@ exports.startTracking = async (req, res) => {
     }
 
     await session.save();
+
+    // Sync with legacy Attendance model for HR dashboards
+    const existingAttendance = await Attendance.findOne({ user: id, date: today });
+    if (!existingAttendance) {
+      await Attendance.create({
+        user: id,
+        date: today,
+        checkInTime: now,
+        status: 'Present'
+      });
+    }
 
     const io = req.app.get('io');
     if (io) io.to(`user_${id}`).emit('timer_update', buildPayload(session));
@@ -337,13 +349,21 @@ exports.getSessionStatus = async (req, res) => {
   try {
     if (!isDBConnected()) return res.json({ hasActiveSession: false, ...mock });
 
-    const { id } = req.user;
+    const { id, role } = req.user;
+    let targetId = id;
+    if (req.query.userId && (role === 'admin' || role === 'hr' || role === 'manager')) {
+      targetId = req.query.userId;
+    }
     const today = getToday();
     const session = await TimeTrack.findOne({
-      employeeId: id, date: today, status: { $ne: 'completed' }
-    });
-    // console.log(`[STATUS CHECK] User: ${req.user.role} (${id}), Date: ${today}, Found: ${!!session}, Headers: ${req.headers['user-agent']}`);
+      employeeId: targetId, date: today
+    }).sort({ createdAt: -1 });
+
     if (!session) return res.json({ hasActiveSession: false });
+    
+    if (session.status === 'completed') {
+      return res.json({ hasActiveSession: false, activeTime: Math.floor(session.activeTime || 0) });
+    }
 
     // ── Session Status ──
     // The frontend is responsible for calculating elapsed time from segmentStart.

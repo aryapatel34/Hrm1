@@ -133,11 +133,11 @@ const Screenshots = () => {
     
     // Cloudinary specific forced download (bypasses CORS fetch issues in production)
     if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+      // Use fl_attachment to force Content-Disposition: attachment
       const downloadUrl = url.replace('/upload/', '/upload/fl_attachment/');
       const link = document.createElement('a');
       link.href = downloadUrl;
       link.download = filename;
-      link.target = '_blank';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

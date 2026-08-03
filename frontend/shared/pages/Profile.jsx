@@ -171,6 +171,15 @@ const Profile = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data) {
+        setUserData(prev => ({
+          ...prev,
+          name: editForm.fullName,
+          fullName: editForm.fullName,
+          personalEmail: editForm.personalEmail,
+          phone: editForm.phone,
+          address: editForm.address,
+          profileImage: editForm.profileImage || prev?.profileImage
+        }));
         await fetchProfile();
         setIsEditing(false);
         setStatus({ type: 'success', message: 'Profile updated successfully' });

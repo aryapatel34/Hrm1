@@ -317,3 +317,124 @@ exports.updateEmployeeDocument = async (req, res, field) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// GET /api/employees/events
+exports.getUpcomingEvents = async (req, res) => {
+  try {
+    const employees = await Employee.find({ status: 'active' }).populate('userId', 'name role profileImage');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const events = [];
+    
+    employees.forEach(emp => {
+      const name = emp.fullName || (emp.userId && emp.userId.name) || 'Employee';
+      const role = emp.designation || (emp.userId && emp.userId.role) || 'Employee';
+      const avatar = emp.profileImage || (emp.userId && emp.userId.profileImage) || null;
+      const department = emp.position || emp.designation || '';
+      
+      // Birthday calculation
+      const dobVal = emp.dob || (emp.userId && emp.userId.dob);
+      if (dobVal) {
+        const dob = new Date(dobVal);
+        if (!isNaN(dob.getTime())) {
+          const month = dob.getUTCMonth();
+          const date = dob.getUTCDate();
+          const thisYearBday = new Date(today.getFullYear(), month, date);
+          thisYearBday.setHours(0, 0, 0, 0);
+
+          let targetBday = new Date(thisYearBday);
+          let diffTime = targetBday.getTime() - today.getTime();
+          let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+          // If birthday passed more than 7 days ago this year, check next year
+          if (diffDays < -7) {
+            targetBday.setFullYear(today.getFullYear() + 1);
+            diffTime = targetBday.getTime() - today.getTime();
+            diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+          }
+          
+          if (diffDays >= -7 && diffDays <= 60) {
+            events.push({
+              id: `bday-${emp._id}`,
+              name,
+              role,
+              department,
+              avatar,
+              type: 'birthday',
+              date: targetBday,
+              formattedDate: targetBday.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+              daysLeft: diffDays,
+              desc: diffDays === 0 
+                ? 'Birthday Today' 
+                : (diffDays === 1 
+                    ? 'Birthday Tomorrow' 
+                    : (diffDays < 0 
+                        ? `Celebrated ${Math.abs(diffDays)}d ago` 
+                        : `Birthday in ${diffDays} days`)),
+              icon: 'Cake',
+              color: '#00a76b'
+            });
+          }
+        }
+      }
+
+      // Anniversary calculation
+      const joinVal = emp.joinDate || (emp.userId && emp.userId.joinDate);
+      if (joinVal) {
+        const doj = new Date(joinVal);
+        if (!isNaN(doj.getTime())) {
+          const month = doj.getUTCMonth();
+          const date = doj.getUTCDate();
+          const thisYearAnn = new Date(today.getFullYear(), month, date);
+          thisYearAnn.setHours(0, 0, 0, 0);
+          
+          let targetAnn = new Date(thisYearAnn);
+          let diffTime = targetAnn.getTime() - today.getTime();
+          let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+          // If anniversary passed more than 7 days ago this year, check next year
+          if (diffDays < -7) {
+            targetAnn.setFullYear(today.getFullYear() + 1);
+            diffTime = targetAnn.getTime() - today.getTime();
+            diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+          }
+
+          const years = targetAnn.getFullYear() - doj.getFullYear();
+          
+          if (diffDays >= -7 && diffDays <= 60 && years > 0) {
+            const suffix = (years % 10 === 1 && years !== 11) ? 'st' :
+                           (years % 10 === 2 && years !== 12) ? 'nd' :
+                           (years % 10 === 3 && years !== 13) ? 'rd' : 'th';
+            events.push({
+              id: `ann-${emp._id}`,
+              name,
+              role,
+              department,
+              avatar,
+              type: 'anniversary',
+              date: targetAnn,
+              formattedDate: targetAnn.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+              daysLeft: diffDays,
+              years,
+              desc: diffDays === 0 
+                ? `${years}${suffix} Work Anniversary Today` 
+                : (diffDays === 1 
+                    ? `${years}${suffix} Anniversary Tomorrow` 
+                    : (diffDays < 0 
+                        ? `${years}${suffix} Anniversary (${Math.abs(diffDays)}d ago)` 
+                        : `${years}${suffix} Anniversary in ${diffDays} days`)),
+              icon: 'Gift',
+              color: '#00a76b'
+            });
+          }
+        }
+      }
+    });
+
+    events.sort((a, b) => a.daysLeft - b.daysLeft);
+    res.json(events);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

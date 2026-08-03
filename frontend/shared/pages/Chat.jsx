@@ -1966,16 +1966,6 @@ const Chat = () => {
                     )}
 
                     <div className="w-full max-w-4xl mx-auto px-4">
-                      {showEmojiPicker && (
-                    <div className="absolute bottom-20 left-4 bg-white dark:bg-[#181612] border border-[#E6E8EA] dark:border-[#38352e] shadow-2xl rounded-2xl w-80 h-80 p-3 z-[60] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-200">
-                      <div className="text-[11px] font-bold text-[#848E9C] dark:text-[#a3a094] mb-2 uppercase tracking-wider sticky top-0 bg-white dark:bg-[#181612] py-1">Smileys & People</div>
-                      <div className="flex-1 overflow-y-auto grid grid-cols-8 gap-1 custom-scrollbar pr-1">
-                        {EMOJI_LIST.map((e, idx) => (<button key={idx} type="button" onClick={() => setNewMessage(prev => prev + e)} className="text-2xl hover:bg-gray-100 dark:hover:bg-[#282520] rounded-lg flex items-center justify-center p-1.5 transition-all hover:scale-110 active:scale-95 border-none bg-transparent cursor-pointer">{e}</button>))}
-                      </div>
-                    </div>
-                  )}
-                  {showEmojiPicker && <div className="fixed inset-0 z-50" onClick={() => setShowEmojiPicker(false)}></div>}
-
                   {/* HIDDEN FILE INPUTS */}
                   <input type="file" id="image-upload" accept="image/*" multiple className="hidden" onChange={(e) => { setShowAttachmentMenu(false); handleFileUpload(e, 'image'); }} />
                   <input type="file" id="audio-upload" accept="audio/*" multiple className="hidden" onChange={(e) => { setShowAttachmentMenu(false); handleFileUpload(e, 'audio'); }} />
@@ -2062,7 +2052,18 @@ const Chat = () => {
 
                     {/* Utility Icons */}
                     {!isRecording && (
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0 relative">
+                        {showEmojiPicker && (
+                          <>
+                            <div className="fixed inset-0 z-[50]" onClick={() => setShowEmojiPicker(false)}></div>
+                            <div className="absolute bottom-full right-0 mb-4 bg-white dark:bg-[#181612] border border-[#E6E8EA] dark:border-[#38352e] shadow-2xl rounded-2xl w-80 h-80 p-3 z-[60] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-200">
+                              <div className="text-[11px] font-bold text-[#848E9C] dark:text-[#a3a094] mb-2 uppercase tracking-wider sticky top-0 bg-white dark:bg-[#181612] py-1">Smileys & People</div>
+                              <div className="flex-1 overflow-y-auto grid grid-cols-8 gap-1 custom-scrollbar pr-1">
+                                {EMOJI_LIST.map((e, idx) => (<button key={idx} type="button" onClick={() => setNewMessage(prev => prev + e)} className="text-2xl hover:bg-gray-100 dark:hover:bg-[#282520] rounded-lg flex items-center justify-center p-1.5 transition-all hover:scale-110 active:scale-95 border-none bg-transparent cursor-pointer">{e}</button>))}
+                              </div>
+                            </div>
+                          </>
+                        )}
                         <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${showEmojiPicker ? 'text-[#7F66FF]' : 'text-[#848E9C] dark:text-[#a3a094] hover:text-[#1E2026] dark:hover:text-white'} border-none bg-transparent cursor-pointer`}><Smile size={20} /></button>
                         <button type="button" onClick={() => document.getElementById('doc-upload').click()} className="w-8 h-8 rounded-full flex items-center justify-center text-[#848E9C] dark:text-[#a3a094] hover:text-[#1E2026] dark:hover:text-white border-none bg-transparent cursor-pointer"><Paperclip size={18} /></button>
                         <button type="button" onClick={() => document.getElementById('image-upload').click()} className="w-8 h-8 rounded-full flex items-center justify-center text-[#848E9C] dark:text-[#a3a094] hover:text-[#1E2026] dark:hover:text-white border-none bg-transparent cursor-pointer"><ImageIcon size={18} /></button>

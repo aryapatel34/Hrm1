@@ -28,6 +28,7 @@ import LeaveManagement from './pages/hr/LeaveManagement';
 import TeamManagement from './pages/hr/TeamManagement';
 import HREmployees from './pages/hr/HREmployees';
 import EmployeeLeave from './pages/employee/LeaveManagement';
+import EmployeeHolidays from './pages/employee/Holidays';
 import EmployeePayslips from './pages/employee/EmployeePayslips';
 import EmployeeDocuments from './pages/employee/EmployeeDocuments';
 import EmployeePerformance from './pages/employee/EmployeePerformance';
@@ -57,6 +58,7 @@ import TaskUpdate from './pages/TaskUpdate';
 import Notifications from './pages/Notifications';
 import AllNotifications from './pages/AllNotifications';
 import SmartTimeTracker from './pages/SmartTimeTracker';
+import EventsManagement from './pages/EventsManagement';
 
 // ROUTE PROTECTION LOGIC
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -122,6 +124,7 @@ const App = () => {
           <Route path="employees/edit/:id" element={<EmployeeForm />} />
           <Route path="employees/view/:id" element={<EmployeeDetail />} />
           <Route path="tasks" element={<Tasks />} />
+          <Route path="events" element={<EventsManagement />} />
           <Route path="task-management" element={<TaskManagement />} />
           <Route path="task-management/create" element={<TaskCreate />} />
           <Route path="task-management/update/:id" element={<TaskUpdate />} />
@@ -158,6 +161,7 @@ const App = () => {
           <Route index element={<HRDashboard />} />
           <Route path="dashboard" element={<HRDashboard />} />
           <Route path="tasks" element={<HRTasks />} />
+          <Route path="events" element={<EventsManagement />} />
           <Route path="task-management" element={<TaskManagement />} />
           <Route path="task-management/create" element={<TaskCreate />} />
           <Route path="task-management/update/:id" element={<TaskUpdate />} />
@@ -201,6 +205,7 @@ const App = () => {
           <Route path="task-management/update/:id" element={<TaskUpdate />} />
           <Route path="projects" element={<EmployeeProjects />} />
           <Route path="leave" element={<EmployeeLeave />} />
+          <Route path="holidays" element={<EmployeeHolidays />} />
           <Route path="attendance" element={<Attendance />} />
           <Route path="time-tracker" element={<SmartTimeTracker />} />
           <Route path="payslips" element={<EmployeePayslips />} />
@@ -229,6 +234,7 @@ const App = () => {
           <Route index element={<ManagerDashboard />} />
           <Route path="dashboard" element={<ManagerDashboard />} />
           <Route path="tasks" element={<ManagerTasks />} />
+          <Route path="events" element={<EventsManagement />} />
           <Route path="employees" element={<HREmployees />} />
           <Route path="employees/edit/:id" element={<EmployeeForm />} />
           <Route path="employees/view/:id" element={<EmployeeDetail />} />
