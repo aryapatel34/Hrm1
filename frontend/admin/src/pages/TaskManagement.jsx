@@ -216,103 +216,94 @@ const TaskManagement = () => {
           </button>
         </div>
 
-        <div className="bg-white border border-[#eceae3] rounded-[5px] shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-[#fcfcfc] border-b border-[#eceae3]">
-                  {['Mission Log', 'Operative', 'Protocol', 'Evidence', 'Timeline', 'Actions'].map(h => (
-                    <th key={h} className="px-8 py-6 text-[11px] font-black text-[#939084] uppercase tracking-[0.2em]">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#eceae3]">
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      <td colSpan="6" className="px-8 py-10"><div className="h-4 bg-[#f8f9fa] rounded-[5px] w-full"></div></td>
-                    </tr>
-                  ))
-                ) : filteredTasks.length === 0 ? (
-                  <tr><td colSpan="6" className="px-8 py-20 text-center text-[#939084] font-bold">No missions detected in current sector.</td></tr>
-                ) : filteredTasks.map((task) => (
-                  <tr key={task._id} className="hover:bg-[#fcfcfc] transition-colors group">
-                    <td className="px-8 py-8">
-                      <div className="max-w-[280px]">
-                        <p className="text-[17px] font-black text-[#201515] tracking-tight line-clamp-1">{task.title}</p>
-                        <p className="text-[12px] font-medium text-[#939084] mt-1 line-clamp-2 italic leading-relaxed">"{task.description}"</p>
-                      </div>
-                    </td>
-                    <td className="px-8 py-8">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#201515] flex items-center justify-center text-white font-black text-[14px] shadow-lg">
-                          {task.assignedTo?.name?.charAt(0) || 'U'}
-                        </div>
-                        <div>
-                          <p className="text-[13px] font-black text-[#201515] tracking-tight">{task.assignedTo?.name || 'Unassigned'}</p>
-                          <p className="text-[10px] font-bold text-[#939084] uppercase tracking-widest">{task.assignedTo?.role || 'Operative'}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-8">
-                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-[5px] border text-[10px] font-black uppercase tracking-widest ${getStatusColor(task.status)}`}>
-                        <div className={`w-2 h-2 rounded-full animate-pulse ${task.status === 'Completed' ? 'bg-emerald-500' : task.status === 'Ongoing' ? 'bg-blue-500' : 'bg-amber-500'}`}></div>
-                        {task.status}
-                      </div>
-                    </td>
-                    <td className="px-8 py-8">
-                      {task.attachments?.length > 0 && (
-                        <div className="flex items-center gap-2">
-                          <div 
-                            onClick={() => openGallery(task.attachments, 0)}
-                            className="w-14 h-14 rounded-[5px] border-2 border-white bg-[#f8f9fa] flex items-center justify-center overflow-hidden shadow-sm ring-1 ring-[#eceae3] transition-all cursor-pointer hover:scale-110 hover:shadow-md relative group"
-                          >
-                            {((typeof task.attachments[0] === 'string' ? task.attachments[0] : (task.attachments[0].fileName || task.attachments[0].path || task.attachments[0].filename || '')) || '').match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) || (task.attachments[0].fileType?.startsWith('image/')) ? (
-                              <img src={task.attachments[0].fileUrl || `/api/uploads/${typeof task.attachments[0] === 'string' ? task.attachments[0] : (task.attachments[0].fileName || task.attachments[0].path || task.attachments[0].filename)}`} className="w-full h-full object-cover" />
-                            ) : (
-                              <FileText size={18} className="text-[#939084]" />
-                            )}
-                            {task.attachments.length > 1 && (
-                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] font-black text-white">+{task.attachments.length - 1}</div>
-                            )}
-                          </div>
-                        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {loading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white border border-[#eceae3] rounded-xl p-6 shadow-sm flex flex-col gap-4 animate-pulse">
+                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-100 rounded w-full"></div>
+                <div className="h-4 bg-gray-100 rounded w-5/6"></div>
+                <div className="flex items-center gap-3 mt-4">
+                  <div className="w-10 h-10 rounded-full bg-gray-200"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                    <div className="h-3 bg-gray-100 rounded w-1/4"></div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : filteredTasks.length === 0 ? (
+            <div className="col-span-full bg-white border border-[#eceae3] rounded-xl p-20 flex flex-col items-center justify-center text-center shadow-sm">
+              <ClipboardList size={48} className="text-[#939084] mb-4 opacity-50" />
+              <p className="text-lg font-bold text-[#939084]">No missions detected in current sector.</p>
+            </div>
+          ) : filteredTasks.map((task) => (
+            <div key={task._id} className="bg-white border border-[#eceae3] rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col relative group overflow-hidden">
+              {/* Top Accent Line based on status */}
+              <div className={`absolute top-0 left-0 right-0 h-1 ${task.status === 'Completed' ? 'bg-emerald-500' : task.status === 'Ongoing' ? 'bg-blue-500' : 'bg-amber-500'}`}></div>
+              
+              <div className="p-6 flex-1 flex flex-col">
+                <div className="flex justify-between items-start mb-4">
+                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-widest ${getStatusColor(task.status)}`}>
+                    <div className={`w-2 h-2 rounded-full animate-pulse ${task.status === 'Completed' ? 'bg-emerald-500' : task.status === 'Ongoing' ? 'bg-blue-500' : 'bg-amber-500'}`}></div>
+                    {task.status}
+                  </div>
+                  <div className="flex items-center gap-2 text-[#939084]">
+                    <Calendar size={14} className="text-[#00a76b]" />
+                    <span className="text-xs font-bold">{new Date(task.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                <div className="mb-6 flex-1">
+                  <h3 className="text-lg font-black text-[#201515] tracking-tight line-clamp-2 leading-tight">{task.title}</h3>
+                  <p className="text-[13px] font-medium text-[#939084] mt-2 line-clamp-3 italic leading-relaxed">"{task.description}"</p>
+                </div>
+
+                <div className="flex items-center justify-between mt-auto border-t border-[#eceae3] pt-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#201515] flex items-center justify-center text-white font-black text-sm shadow-md ring-2 ring-white">
+                      {task.assignedTo?.name?.charAt(0) || 'U'}
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-[#201515] tracking-tight leading-none">{task.assignedTo?.name || 'Unassigned'}</p>
+                      <p className="text-[10px] font-bold text-[#939084] uppercase tracking-widest mt-1">{task.assignedTo?.role || 'Operative'}</p>
+                    </div>
+                  </div>
+                  
+                  {task.attachments?.length > 0 && (
+                    <div 
+                      onClick={() => openGallery(task.attachments, 0)}
+                      className="w-12 h-12 rounded-lg border-2 border-white bg-[#f8f9fa] flex items-center justify-center overflow-hidden shadow-sm ring-1 ring-[#eceae3] transition-all cursor-pointer hover:scale-110 hover:shadow-md relative group shrink-0"
+                    >
+                      {((typeof task.attachments[0] === 'string' ? task.attachments[0] : (task.attachments[0].fileName || task.attachments[0].path || task.attachments[0].filename || '')) || '').match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) || (task.attachments[0].fileType?.startsWith('image/')) ? (
+                        <img src={task.attachments[0].fileUrl || `/api/uploads/${typeof task.attachments[0] === 'string' ? task.attachments[0] : (task.attachments[0].fileName || task.attachments[0].path || task.attachments[0].filename)}`} className="w-full h-full object-cover" />
+                      ) : (
+                        <FileText size={18} className="text-[#939084]" />
                       )}
-                    </td>
-                    <td className="px-8 py-8">
-                      <div className="flex items-center gap-3 text-[#939084]">
-                        <Calendar size={14} className="text-[#00a76b]" />
-                        <span className="text-[12px] font-bold">{new Date(task.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-8">
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => quickCompleteTask(task._id)}
-                          title="Quick Complete"
-                          className="w-10 h-10 rounded-full bg-[#24a148]/10 flex items-center justify-center text-[#24a148] hover:bg-[#24a148] hover:text-white transition-all shadow-sm"
-                        >
-                          <CheckCircle2 size={18} />
-                        </button>
-                        <button 
-                          onClick={() => navigate(`/${role}/task-management/update/${task._id}`)}
-                          className="h-10 px-5 bg-[#201515] text-white rounded-[5px] text-[10px] font-black uppercase tracking-widest hover:bg-[#00a76b] transition-all shadow-lg flex items-center gap-2"
-                        >
-                          LOG UPDATE <ArrowRight size={14} />
-                        </button>
-                        <button 
-                          onClick={() => deleteTask(task._id)}
-                          className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      {task.attachments.length > 1 && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-[11px] font-black text-white backdrop-blur-[1px]">+{task.attachments.length - 1}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-[#fcfcfc] px-6 py-4 border-t border-[#eceae3] flex items-center justify-end gap-8">
+                <button 
+                  onClick={() => navigate(`/${role}/task-management/update/${task._id}`)}
+                  className="h-10 px-6 bg-[#201515] text-white rounded-lg text-[11px] font-black uppercase tracking-[0.2em] hover:bg-[#00a76b] transition-all shadow-md flex items-center gap-2"
+                >
+                  LOG UPDATE <ArrowRight size={14} />
+                </button>
+                <button 
+                  onClick={() => deleteTask(task._id)}
+                  className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

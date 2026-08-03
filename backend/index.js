@@ -1,3 +1,4 @@
+// nodemon restart trigger
 // nodemon restart comment 4
 const express = require('express');
 const mongoose = require('mongoose');
@@ -170,6 +171,8 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/audit-logs', require('./routes/auditLogRoutes'));
 app.use('/api/search', searchRoutes);
+app.use('/api/events', require('./routes/eventRoutes'));
+app.use('/api/hr-dashboard', require('./routes/hrDashboardRoutes'));
 
 
 // Health check

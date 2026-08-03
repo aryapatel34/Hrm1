@@ -47,14 +47,20 @@ exports.createTask = async (req, res) => {
     const targetUserId = userId || req.user.id;
     let targetEmployeeName = employeeName;
     let targetEmployeeRole = employeeRole;
-    let targetManagerId = managerId || user?.reportingManager;
+    let targetManagerId = managerId;
 
-    if (userId && !employeeName) {
+    if (user.role === 'manager') {
+      targetManagerId = user.id; // Manager who creates the task owns it
+    }
+
+    if (userId && (!employeeName || !targetManagerId)) {
       const assignedUser = await User.findById(userId);
       if (assignedUser) {
-        targetEmployeeName = assignedUser.fullName || assignedUser.name;
-        targetEmployeeRole = assignedUser.role;
-        targetManagerId = assignedUser.reportingManager;
+        targetEmployeeName = targetEmployeeName || assignedUser.fullName || assignedUser.name;
+        targetEmployeeRole = targetEmployeeRole || assignedUser.role;
+        if (user.role !== 'manager') {
+          targetManagerId = targetManagerId || assignedUser.reportingManager;
+        }
       }
     }
 
@@ -85,7 +91,7 @@ exports.createTask = async (req, res) => {
 exports.getTasks = async (req, res) => {
   try {
     const filter = getRoleFilter(req.user);
-    
+
     // Additional filters from query
     if (req.query.status) filter.status = req.query.status;
     if (req.query.priority) filter.priority = req.query.priority;
@@ -93,7 +99,7 @@ exports.getTasks = async (req, res) => {
     if (req.query.userId) filter.userId = req.query.userId;
 
     const tasks = await Task.find(filter).sort({ createdAt: -1 });
-    
+
     // Stats calculation
     const stats = {
       total: tasks.length,
@@ -114,7 +120,7 @@ exports.getTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
-    
+
     // Security check: can they see this?
     // (Simplification: If they can list it via getRoleFilter, they can see it)
     res.json({ success: true, data: task });
@@ -129,7 +135,7 @@ exports.updateTask = async (req, res) => {
   try {
     const { status, progressNote, title, description, priority, date, userId, managerId, newComment, comments, timeEstimate, sprintPoints, tags, attachments } = req.body;
     let task = await Task.findById(req.params.id);
-    
+
     if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
 
     const oldStatus = task.status;
@@ -158,7 +164,7 @@ exports.updateTask = async (req, res) => {
     if (attachments !== undefined) {
       let parsedAttachments = attachments;
       if (typeof attachments === 'string') {
-        try { parsedAttachments = JSON.parse(attachments); } catch (e) {}
+        try { parsedAttachments = JSON.parse(attachments); } catch (e) { }
       }
       if (Array.isArray(parsedAttachments)) {
         // Delete removed attachments from disk
@@ -184,7 +190,7 @@ exports.updateTask = async (req, res) => {
     if (req.body.newTimeLog) {
       let timeLogData = req.body.newTimeLog;
       if (typeof timeLogData === 'string') {
-        try { timeLogData = JSON.parse(timeLogData); } catch (e) {}
+        try { timeLogData = JSON.parse(timeLogData); } catch (e) { }
       }
       const user = await User.findById(req.user.id);
       if (!updateData.$push) updateData.$push = {};
@@ -198,7 +204,7 @@ exports.updateTask = async (req, res) => {
         tags: Array.isArray(timeLogData.tags) ? timeLogData.tags : []
       };
     }
-    
+
     // Add new attachments if any
     if (req.files && req.files.length > 0) {
       const taskTitleSanitized = (title || task.title || 'general').replace(/[^a-zA-Z0-9]/g, '_');
@@ -227,16 +233,16 @@ exports.updateTask = async (req, res) => {
     }
 
     task = await Task.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('task_updated', task);
     }
-    
+
     // ── NOTIFICATION LOGIC ──────────────────────────────────
     if (status !== oldStatus) {
       const io = req.app.get('io');
-      
+
       // 1. Employee -> Management (Review Submission)
       if (status === 'Review') {
         const managers = await User.find({ role: { $in: ['admin', 'hr', 'manager'] } });
@@ -246,7 +252,7 @@ exports.updateTask = async (req, res) => {
           type: 'task'
         }));
         await Notification.insertMany(notifications);
-        
+
         // Broadcast to management roles
         io.to('role_admin').to('role_hr').to('role_manager').emit('notification', {
           message: `Mission Node [${task.title}] submitted for REVIEW by ${task.employeeName}`,
@@ -254,7 +260,7 @@ exports.updateTask = async (req, res) => {
           time: 'Just Now'
         });
       }
-      
+
       // 2. Management -> Employee (Feedback/Improvement/Completion)
       if (status === 'Need to Improve' || status === 'Completed') {
         const msg = status === 'Need to Improve' ? 'need to improve' : 'updated successfully';
@@ -263,7 +269,7 @@ exports.updateTask = async (req, res) => {
           message: msg,
           type: 'task'
         });
-        
+
         // Broadcast to specific employee
         io.to(`user_${employeeId}`).emit('notification', {
           message: msg,
@@ -272,7 +278,7 @@ exports.updateTask = async (req, res) => {
         });
       }
     }
-    
+
     res.json({ success: true, data: task });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

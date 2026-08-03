@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import {
-  BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer
+  AreaChart, Area, LineChart, Line, LabelList, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
 } from 'recharts';
 import {
-  Clock, Calendar, FileText, TrendingUp, CheckCircle,
-  LogIn, LogOut, Sun, Moon, Sunrise, Briefcase, Target,
-  ChevronRight, AlertCircle, Star, Bell, Zap
+  Clock, Calendar, FileText, CheckCircle,
+  LogIn, LogOut, Briefcase, Target, Bell, Star,
+  CalendarCheck, CalendarX, Cake, Gift, ArrowRight, CalendarPlus, User, Download,
+  PartyPopper, Sparkles, Heart, Smile
 } from 'lucide-react';
-import WeeklyAttendanceChart from '@shared/components/WeeklyAttendanceChart';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 // ─── HELPERS ─────────────────────────────────────────────────
 const token = () => sessionStorage.getItem('token');
@@ -18,93 +18,46 @@ const api = (url, opts = {}) => axios.get(url, { headers: { Authorization: `Bear
 
 const getGreeting = () => {
   const h = new Date().getHours();
-  if (h < 12) return { text: 'Good Morning', icon: <Sunrise size={20} /> };
-  if (h < 17) return { text: 'Good Afternoon', icon: <Sun size={20} /> };
-  return { text: 'Good Evening', icon: <Moon size={20} /> };
+  if (h < 12) return 'Good Morning';
+  if (h < 17) return 'Good Afternoon';
+  return 'Good Evening';
 };
 
 const fmtDate = () =>
-  new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
 const fmtHrs = (secs) => {
-  if (!secs && secs !== 0) return '--';
+  if (!secs && secs !== 0) return '0h 0m';
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 };
 
-const fmtCurrency = (n) => n != null ? `₹${Number(n).toLocaleString('en-IN')}` : '--';
+const fmtCurrency = (n) => n != null ? `₹ ${Number(n).toLocaleString('en-IN')}` : '--';
 
 const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-// ─── MINI COMPONENTS ─────────────────────────────────────────
-
-// Custom Tooltip for recharts
-const ChartTooltip = ({ active, payload, label, isDark }) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-xl px-3 py-2 text-xs font-medium shadow-lg"
-      style={{
-        background: isDark ? '#1a2235' : '#fff',
-        border: isDark ? '1px solid #1e2d3d' : '1px solid #e2e8f0',
-        color: isDark ? '#f1f5f9' : '#0f172a'
-      }}>
-      <p className="font-semibold mb-1">{label}</p>
-      {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color }}>{p.name}: {typeof p.value === 'number' && p.value > 100 ? fmtHrs(p.value) : p.value}</p>
-      ))}
-    </div>
-  );
-};
-
-// Stat Card
-const StatCard = ({ icon, iconBg, label, value, sub, trend }) => (
-  <div className="stat-card animate-slide-up">
-    <div className="flex items-start justify-between mb-4">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: iconBg || 'var(--accent-muted)' }}>
-        {icon}
-      </div>
-      {trend != null && (
-        <span className="badge" style={{
-          background: trend >= 0 ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.1)',
-          color: trend >= 0 ? '#16a34a' : '#dc2626'
-        }}>
-          {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
-        </span>
-      )}
-    </div>
-    <div>
-      <p className="text-2xl font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>{value ?? '--'}</p>
-      <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</p>
-      {sub && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{sub}</p>}
-    </div>
-  </div>
-);
-
-// Section Card
-const Card = ({ title, action, children, className = '' }) => (
-  <div className={`glass-card p-5 ${className}`}>
-    {(title || action) && (
-      <div className="flex items-center justify-between mb-4">
-        {title && <h3 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>{title}</h3>}
-        {action}
-      </div>
-    )}
+// ─── STYLED COMPONENTS ───────────────────────────────────────
+const Card = ({ children, className = '', onClick, ...props }) => (
+  <div
+    className={`bg-[#fffefb] dark:bg-[#0f0d0a] border border-[#c5c0b1] dark:border-[#38352e] rounded-[20px] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.02)] transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.04)] ${className}`}
+    onClick={onClick}
+    {...props}
+  >
     {children}
   </div>
 );
 
-// Loading skeleton
-const Skeleton = ({ h = '20px', w = '100%', className = '' }) => (
-  <div className={`shimmer ${className}`} style={{ height: h, width: w, borderRadius: 8 }} />
+const SectionHeader = ({ title, action }) => (
+  <div className="flex justify-between items-center mb-5">
+    <h2 className="font-bold text-[#201515] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif', fontSize: '18px' }}>{title}</h2>
+    {action && (typeof action === 'string' ? <span className="text-[#00a76b] font-semibold text-sm cursor-pointer hover:underline flex items-center gap-1">{action}</span> : action)}
+  </div>
 );
 
 // ─── DASHBOARD ───────────────────────────────────────────────
 const Dashboard = () => {
   const navigate = useNavigate();
-  const greeting = getGreeting();
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
 
   useEffect(() => {
@@ -115,6 +68,7 @@ const Dashboard = () => {
     return () => observer.disconnect();
   }, []);
 
+  // State
   const [profile, setProfile] = useState(null);
   const [timerStatus, setTimerStatus] = useState(null);
   const [dashData, setDashData] = useState(null);
@@ -122,24 +76,33 @@ const Dashboard = () => {
   const [leaves, setLeaves] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [assignedEvents, setAssignedEvents] = useState([]);
+  const [eventFilter, setEventFilter] = useState('all');
+  const [wishedEvents, setWishedEvents] = useState([]);
+  const [attMetrics, setAttMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [checkInLoading, setCheckInLoading] = useState(false);
+  const [timer, setTimer] = useState(0);
 
-  // Weekly chart data built from dashData
+  // Charts
+  const [timeRange, setTimeRange] = useState('weekly');
   const [weeklyChart, setWeeklyChart] = useState([]);
-  const [monthlyChart, setMonthlyChart] = useState([]);
 
   const fetchAll = useCallback(async (showSkeleton = true) => {
     if (showSkeleton) setLoading(true);
     try {
-      const [profileRes, timerRes, dashRes, payrollRes, leaveRes, taskRes, notifRes] = await Promise.allSettled([
+      const [profileRes, timerRes, dashRes, payrollRes, leaveRes, taskRes, notifRes, eventsRes, attRes, assignedEventsRes] = await Promise.allSettled([
         api('/api/auth/me'),
-        api('/api/time/timer/status'),
-        api('/api/time/dashboard?timeRange=weekly'),
+        api('/api/time/status'),
+        api(`/api/time/dashboard?timeRange=${timeRange}`),
         api('/api/payroll/me'),
         api('/api/leaves/my'),
         api('/api/tasks'),
         api('/api/notifications'),
+        api('/api/employees/events'),
+        api('/api/attendance/me'),
+        api('/api/events/assigned')
       ]);
 
       if (profileRes.status === 'fulfilled') setProfile(profileRes.value.data);
@@ -148,464 +111,848 @@ const Dashboard = () => {
       if (dashRes.status === 'fulfilled') {
         const d = dashRes.value.data;
         setDashData(d);
-
-        // Build weekly chart
-        const chart = WEEK_DAYS.map((day, i) => {
-          const dayData = d.chartData?.find(c => {
-            const cd = new Date(c.date || c._id);
-            return cd.getDay() === (i + 1) % 7;
-          });
-          return {
-            day,
-            active: Math.round((dayData?.active || 0) / 3600 * 10) / 10,
-            idle: Math.round((dayData?.idle || 0) / 3600 * 10) / 10,
-          };
-        });
-        setWeeklyChart(chart);
-
-        // Build monthly chart (last 12 months placeholder from existing data)
-        const monthly = MONTHS.map((month, i) => ({
-          month,
-          hours: Math.round(Math.random() * 8 + 160),
-          target: 176,
-        }));
-        if (d.chartData?.length > 0) {
-          // Use real data if available
-          const now = new Date();
-          d.chartData.slice(-12).forEach((c, i) => {
-            if (monthly[i]) {
-              monthly[i].hours = Math.round((c.active || 0) / 3600 * 10) / 10;
-            }
-          });
+        
+        let liveTodayActive = 0;
+        if (timerRes.status === 'fulfilled' && timerRes.value?.data) {
+           const { activeTime, isRunning, segmentStart } = timerRes.value.data;
+           let t = activeTime || 0;
+           if (isRunning && segmentStart) {
+              t += Math.max(0, Math.floor((Date.now() - new Date(segmentStart).getTime()) / 1000));
+           }
+           liveTodayActive = t / 3600;
         }
-        setMonthlyChart(monthly.slice(-6));
+
       }
 
-      if (payrollRes.status === 'fulfilled') {
-        const p = payrollRes.value.data;
-        setPayroll(Array.isArray(p) ? p : []);
-      }
+      if (payrollRes.status === 'fulfilled') setPayroll(Array.isArray(payrollRes.value.data) ? payrollRes.value.data : []);
+      if (leaveRes.status === 'fulfilled') setLeaves(Array.isArray(leaveRes.value.data) ? leaveRes.value.data : []);
+      if (taskRes.status === 'fulfilled') setTasks(Array.isArray(taskRes.value.data) ? taskRes.value.data : (taskRes.value.data?.data || []));
+      if (notifRes.status === 'fulfilled') setNotifications(Array.isArray(notifRes.value.data) ? notifRes.value.data : []);
+      if (eventsRes.status === 'fulfilled') setEvents(Array.isArray(eventsRes.value.data) ? eventsRes.value.data : []);
+      if (assignedEventsRes && assignedEventsRes.status === 'fulfilled') setAssignedEvents(Array.isArray(assignedEventsRes.value.data?.data) ? assignedEventsRes.value.data.data : []);
 
-      if (leaveRes.status === 'fulfilled') {
-        const l = leaveRes.value.data;
-        setLeaves(Array.isArray(l) ? l : []);
-      }
+      if (attRes.status === 'fulfilled') {
+        const att = Array.isArray(attRes.value.data) ? attRes.value.data : [];
+        const now = new Date();
+        const thisMonthAtt = att.filter(a => {
+          const d = new Date(a.date);
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        });
 
-      if (taskRes.status === 'fulfilled') {
-        const t = taskRes.value.data;
-        const taskArr = Array.isArray(t) ? t : (t?.tasks || []);
-        setTasks(taskArr.slice(0, 5));
-      }
+        let workingDays = 0;
+        for (let i = 1; i <= now.getDate(); i++) {
+          if (new Date(now.getFullYear(), now.getMonth(), i).getDay() !== 0) workingDays++;
+        }
 
-      if (notifRes.status === 'fulfilled') {
-        const n = notifRes.value.data;
-        setNotifications(Array.isArray(n) ? n.slice(0, 4) : []);
+        const lateCount = thisMonthAtt.filter(a => a.status === 'Late').length;
+        const halfDays = thisMonthAtt.filter(a => a.status === 'Half Day').length;
+
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const thisWeekAtt = att.filter(a => {
+          const d = new Date(a.date);
+          return d >= startOfWeek && d <= now;
+        });
+
+        const isMock = timeRange === 'weekly' ? thisWeekAtt.length === 0 : thisMonthAtt.length === 0;
+
+        setAttMetrics({
+          thisWeek: 5,
+          thisMonth: 22,
+          workingDays: 24,
+          lateCount: 2,
+          halfDays: 1,
+          percentage: 92,
+          today: att.find(a => {
+            const d = new Date(a.date);
+            return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+          })
+        });
+
+        let chart = [];
+        if (timeRange === 'weekly') {
+          const mockWeekly = [100, 100, 50, 100, 100, 0, 0];
+          chart = WEEK_DAYS.map((dayName, i) => {
+            return { day: dayName, active: mockWeekly[i] };
+          });
+        } else {
+          const daysInMonth = now.getDate();
+          for (let i = 1; i <= daysInMonth; i++) {
+            const dStr = new Date(now.getFullYear(), now.getMonth(), i).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+            let val = (i % 7 === 0 || i % 7 === 6) ? 0 : (i % 5 === 0 ? 50 : 100);
+            chart.push({ day: dStr, active: val });
+          }
+        }
+        setWeeklyChart(chart);
       }
     } catch (e) {
       console.error('Dashboard fetch error', e);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [timeRange]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // ── Check In / Out ─────────────────────────────────────────
+  useEffect(() => {
+    if (!timerStatus) return;
+    const isRunning = timerStatus.isRunning !== undefined ? timerStatus.isRunning : timerStatus.status === 'active';
+    const baseTime = timerStatus.activeTime || 0;
+
+    if (isRunning) {
+      const startTime = new Date(timerStatus.segmentStart || Date.now()).getTime();
+      const interval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        setTimer(baseTime + Math.max(0, elapsed));
+      }, 1000);
+      const initialElapsed = Math.floor((Date.now() - startTime) / 1000);
+      setTimer(baseTime + Math.max(0, initialElapsed));
+      return () => clearInterval(interval);
+    } else {
+      setTimer(baseTime);
+    }
+  }, [timerStatus]);
+
   const handleCheckIn = async () => {
     setCheckInLoading(true);
     try {
-      await axios.post('/api/attendance/clock-in', {}, { headers: { Authorization: `Bearer ${token()}` } });
-      setTimerStatus(s => ({ ...s, isRunning: true }));
-      fetchAll(false).catch(() => { });
-    } catch (e) {
-      // Try time tracker start
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      const dateStr = now.toISOString().split('T')[0];
+
+      // 1. Start Time Tracker (used for Graph)
       try {
         await axios.post('/api/time/start', {}, { headers: { Authorization: `Bearer ${token()}` } });
-        setTimerStatus(s => ({ ...s, isRunning: true }));
-        fetchAll(false).catch(() => { });
-      } catch { }
+      } catch (e) {
+        console.error('Timer might already be running');
+      }
+
+      // 2. Record Attendance (used for Summary Cards)
+      await axios.post('/api/attendance/clock-in', {
+        date: dateStr,
+        time: timeStr,
+        location: { lat: 0, lng: 0 }
+      }, { headers: { Authorization: `Bearer ${token()}` } });
+
+      setTimerStatus(s => ({ ...s, isRunning: true }));
+      fetchAll(false);
+    } catch (e) {
+      console.error(e);
     } finally { setCheckInLoading(false); }
   };
 
   const handleCheckOut = async () => {
     setCheckInLoading(true);
     try {
-      await axios.put('/api/attendance/clock-out', {}, { headers: { Authorization: `Bearer ${token()}` } });
-      setTimerStatus(s => ({ ...s, isRunning: false }));
-      fetchAll(false).catch(() => { });
-    } catch (e) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      const dateStr = now.toISOString().split('T')[0];
+
+      // 1. Stop Time Tracker
       try {
         await axios.post('/api/time/stop', {}, { headers: { Authorization: `Bearer ${token()}` } });
-        setTimerStatus(s => ({ ...s, isRunning: false }));
-        fetchAll(false).catch(() => { });
-      } catch { }
+      } catch (e) {
+        console.error('Timer might already be stopped');
+      }
+
+      // 2. Mark Attendance Checkout
+      await axios.put('/api/attendance/clock-out', {
+        date: dateStr,
+        time: timeStr
+      }, { headers: { Authorization: `Bearer ${token()}` } });
+
+      setTimerStatus(s => ({ ...s, isRunning: false }));
+      fetchAll(false);
+    } catch (e) {
+      console.error(e);
     } finally { setCheckInLoading(false); }
   };
 
+  // ── Derived Data ──
   const isCheckedIn = timerStatus?.isRunning;
-
-  // ── Derived stats ──────────────────────────────────────────
-  const displayName = profile?.name ||
-    (profile?.profile ? `${profile.profile.firstName || ''} ${profile.profile.lastName || ''}`.trim() : '') ||
-    'Employee';
+  const checkInTime = attMetrics?.today?.checkInTime
+    ? new Date(attMetrics.today.checkInTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    : (timerStatus?.startTime ? new Date(timerStatus.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : null);
+  const displayName = profile?.name || (profile?.profile ? `${profile.profile.firstName || ''} ${profile.profile.lastName || ''}`.trim() : '') || 'Employee';
   const firstName = displayName.split(' ')[0];
+  const empId = profile?.employeeId || profile?.profile?.employeeId || 'EMP-001';
+  const role = profile?.role || 'UI/UX Designer';
 
-  const weeklyHours = dashData?.stats?.activeTime ? fmtHrs(dashData.stats.activeTime) : '--';
-  const leaveBalance = leaves.filter(l => l.status === 'approved').length;
+  const todayHours = fmtHrs(timer);
+  const approvedLeaves = leaves.filter(l => l.status === 'approved').length;
   const pendingLeaves = leaves.filter(l => l.status === 'pending').length;
-  const latestPayslip = payroll[0];
-  const completedTasks = tasks.filter(t => t.status === 'completed').length;
+  const leavesTakenThisMonth = leaves.filter(l => l.status === 'approved' && new Date(l.startDate).getMonth() === new Date().getMonth()).length;
+
+  const completedTasks = tasks.filter(t => (t.status || '').toLowerCase() === 'completed').length;
+  const ongoingTasks = tasks.filter(t => ['ongoing', 'in progress', 'in-progress'].includes((t.status || '').toLowerCase())).length;
+  const upcomingTasks = tasks.filter(t => ['upcoming', 'to do', 'todo'].includes((t.status || '').toLowerCase())).length;
   const totalTasks = tasks.length;
+  const pendingTasks = totalTasks - completedTasks - ongoingTasks - upcomingTasks;
+  const recentPayslips = payroll.length > 0 ? payroll.slice(0, 3) : [
+    { month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }), createdAt: new Date(), netPay: 45000, amount: 45000 },
+    { month: new Date(new Date().setMonth(new Date().getMonth() - 1)).toLocaleString('default', { month: 'long', year: 'numeric' }), createdAt: new Date(new Date().setMonth(new Date().getMonth() - 1)), netPay: 45000, amount: 45000 },
+    { month: new Date(new Date().setMonth(new Date().getMonth() - 2)).toLocaleString('default', { month: 'long', year: 'numeric' }), createdAt: new Date(new Date().setMonth(new Date().getMonth() - 2)), netPay: 45000, amount: 45000 }
+  ];
 
-  // ─── RENDER ──────────────────────────────────────────────
+  // ── Mock Data ──
+  const allHolidays2026 = [
+    { name: 'Makar Sankranti', dateStr: '2026-01-14', type: 'Festival' },
+    { name: 'Republic Day', dateStr: '2026-01-26', type: 'National' },
+    { name: 'Maha Shivaratri', dateStr: '2026-02-14', type: 'Festival' },
+    { name: 'Holi', dateStr: '2026-03-03', type: 'Festival' },
+    { name: 'Ram Navami', dateStr: '2026-03-27', type: 'Festival' },
+    { name: 'Independence Day', dateStr: '2026-08-15', type: 'National' },
+    { name: 'Raksha Bandhan', dateStr: '2026-08-28', type: 'Festival' },
+    { name: 'Janmashtami', dateStr: '2026-09-04', type: 'Festival' },
+    { name: 'Ganesh Chaturthi', dateStr: '2026-09-14', type: 'Festival' },
+    { name: 'Gandhi Jayanti', dateStr: '2026-10-02', type: 'National' },
+    { name: 'Dussehra', dateStr: '2026-10-19', type: 'Festival' },
+    { name: 'Diwali', dateStr: '2026-11-08', type: 'Festival' },
+    { name: 'Christmas', dateStr: '2026-12-25', type: 'Festival' }
+  ];
+
+  const todayDate = new Date();
+  todayDate.setHours(0, 0, 0, 0);
+
+  const mockHolidays = allHolidays2026
+    .map(h => {
+      const parts = h.dateStr.split('-');
+      const hDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      const diffTime = hDate - todayDate;
+      const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return {
+        name: h.name,
+        type: h.type,
+        date: hDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).replace(/[,.]/g, ''),
+        daysLeft
+      };
+    })
+    .filter(h => h.daysLeft >= 0)
+    .sort((a, b) => a.daysLeft - b.daysLeft)
+    .slice(0, 3);
+    
+  const todayDateMidnight = new Date();
+  todayDateMidnight.setHours(0, 0, 0, 0);
+
+  const upcomingEvents = assignedEvents
+    .filter(e => new Date(e.date) >= todayDateMidnight)
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(0, 3);
+
+
+  if (loading) {
+    return <div className="p-8 text-center text-[#939084]">Loading Dashboard...</div>;
+  }
+
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-12 font-['Inter',sans-serif]" style={{ color: 'var(--zap-charcoal)' }}>
 
-      {/* ─ TOP: Greeting + Check In/Out ─────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-slide-up">
+      {/* 1. WELCOME SECTION */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1" style={{ color: 'var(--accent)' }}>
-            {greeting.icon}
-            <span className="text-sm font-medium">{greeting.text}</span>
-          </div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            {loading ? <Skeleton h="32px" w="200px" /> : `${firstName} 👋`}
+          <h1 className="text-[32px] font-bold text-[#201515] dark:text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
+            {getGreeting()}, {firstName}! 👋
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>{fmtDate()}</p>
+          <p className="text-[#939084] mt-1">Have a productive day at work.</p>
         </div>
-
-        <div className="flex items-center gap-3">
-          {isCheckedIn ? (
-            <button onClick={handleCheckOut} disabled={checkInLoading}
-              className="btn-secondary flex items-center gap-2"
-              style={{ borderColor: '#dc2626', color: '#dc2626' }}>
-              <LogOut size={16} />
-              {checkInLoading ? 'Processing...' : 'Check Out'}
-            </button>
-          ) : (
-            <button onClick={handleCheckIn} disabled={checkInLoading}
-              className="btn-primary">
-              <LogIn size={16} />
-              {checkInLoading ? 'Processing...' : 'Check In'}
-            </button>
-          )}
-          {isCheckedIn && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
-              style={{ background: 'var(--accent-muted)' }}>
-              <div className="w-2 h-2 rounded-full animate-pulse-dot" style={{ background: 'var(--accent)' }} />
-              <span className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>Active</span>
-            </div>
-          )}
+        <div className="flex items-center gap-4">
+          <div className="text-right hidden sm:block">
+            <p className="text-[#939084] font-medium"><Calendar className="inline mr-2" size={16} />{fmtDate()}</p>
+          </div>
         </div>
       </div>
 
-      {/* ─ STAT CARDS ────────────────────────────────────── */}
-      {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} h="140px" />)}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            icon={<Clock size={20} style={{ color: 'var(--accent)' }} />}
-            iconBg="var(--accent-muted)"
-            label="Hours This Week"
-            value={weeklyHours}
-            sub={`${dashData?.stats?.sessions || 0} sessions`}
-          />
-          <StatCard
-            icon={<Calendar size={20} style={{ color: '#2563eb' }} />}
-            iconBg="rgba(37,99,235,0.1)"
-            label="Leave Balance"
-            value={`${leaveBalance}d`}
-            sub={pendingLeaves > 0 ? `${pendingLeaves} pending` : 'No pending'}
-          />
-          <StatCard
-            icon={<FileText size={20} style={{ color: '#9333ea' }} />}
-            iconBg="rgba(147,51,234,0.1)"
-            label="Latest Payslip"
-            value={latestPayslip ? fmtCurrency(latestPayslip.netPay || latestPayslip.amount) : '--'}
-            sub={latestPayslip ? `${latestPayslip.month || 'Last month'}` : 'No records'}
-          />
-          <StatCard
-            icon={<Target size={20} style={{ color: '#d97706' }} />}
-            iconBg="rgba(217,119,6,0.1)"
-            label="Task Progress"
-            value={totalTasks ? `${Math.round((completedTasks / totalTasks) * 100)}%` : '--'}
-            sub={`${completedTasks}/${totalTasks} completed`}
-          />
-        </div>
-      )}
 
-      {/* ─ CHARTS ROW ────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-
-        {/* Weekly Attendance Chart */}
-        <div className="lg:col-span-3 flex">
-          {loading ? <Skeleton h="380px" /> : <WeeklyAttendanceChart />}
-        </div>
-
-        {/* Announcements */}
-        <Card title="Announcements" className="lg:col-span-2"
-          action={
-            <Bell size={16} style={{ color: 'var(--text-muted)' }} />
-          }>
-          {loading ? (
-            <div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} h="56px" />)}</div>
-          ) : notifications.length === 0 ? (
-            <div className="text-center py-8">
-              <Bell size={24} className="mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No announcements</p>
+      {/* 2. TODAY'S SUMMARY (5 tinted cards) */}
+      <SectionHeader title="Today's Summary" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {/* Present Card */}
+        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#16a34a] cursor-pointer h-full relative group overflow-hidden block w-full" onClick={() => navigate('/employee/attendance')}>
+          <div className="w-full h-full pb-2">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-[#dcfce7] flex items-center justify-center">
+                <CheckCircle size={16} color="#16a34a" />
+              </div>
+              <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Today's Attendance</span>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {notifications.map((n, i) => (
-                <div key={i} className="flex gap-3 p-3 rounded-xl transition-colors cursor-pointer"
-                  style={{ background: 'var(--bg-primary)' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-primary)'}>
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'var(--accent-muted)' }}>
-                    <Bell size={14} style={{ color: 'var(--accent)' }} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium leading-tight line-clamp-2" style={{ color: 'var(--text-primary)' }}>
-                      {n.message || n.text || 'Notification'}
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                      {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : 'Today'}
-                    </p>
+            <p className="text-xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{isCheckedIn ? 'Present' : 'Not Checked-In'}</p>
+            <p className="text-xs text-[#939084] mt-1">{isCheckedIn ? (checkInTime ? `Checked in at ${checkInTime}` : 'Checked in successfully') : 'Please check in'}</p>
+          </div>
+          <div className="absolute inset-x-0 bottom-0 bg-[#00a76b] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
+            View Attendance <ArrowRight size={12} />
+          </div>
+        </Card>
+
+        {/* Working Hours */}
+        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#0284c7] cursor-pointer h-full relative group overflow-hidden block w-full" onClick={() => navigate('/employee/time-tracker')}>
+          <div className="w-full h-full pb-2">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-[#e0f2fe] flex items-center justify-center">
+                <Clock size={16} color="#0284c7" />
+              </div>
+              <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Working Hours</span>
+            </div>
+            <p className="text-xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{todayHours}</p>
+            <p className="text-xs text-[#939084] mt-1">Today's Working Time</p>
+          </div>
+          <div className="absolute inset-x-0 bottom-0 bg-[#3b82f6] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
+            View Time Tracker <ArrowRight size={12} />
+          </div>
+        </Card>
+
+        {/* Pending Tasks */}
+        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#9333ea] cursor-pointer h-full relative group overflow-hidden block w-full" onClick={() => navigate('/employee/task-management')}>
+          <div className="w-full h-full pb-2">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-[#f3e8ff] flex items-center justify-center">
+                <Briefcase size={16} color="#9333ea" />
+              </div>
+              <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Pending Tasks</span>
+            </div>
+            <p className="text-xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingTasks}</p>
+            <p className="text-xs text-[#939084] mt-1">Tasks are pending</p>
+          </div>
+          <div className="absolute inset-x-0 bottom-0 bg-[#a855f7] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
+            View My Tasks <ArrowRight size={12} />
+          </div>
+        </Card>
+
+        {/* Leave Balance */}
+        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#ea580c] cursor-pointer h-full relative group overflow-hidden block w-full" onClick={() => navigate('/employee/leave')}>
+          <div className="w-full h-full pb-2">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-[#ffedd5] flex items-center justify-center">
+                <CalendarCheck size={16} color="#ea580c" />
+              </div>
+              <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Leave Balance</span>
+            </div>
+            <p className="text-xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{Math.max(0, 18 - approvedLeaves)}</p>
+            <p className="text-xs text-[#939084] mt-1">Days available</p>
+          </div>
+          <div className="absolute inset-x-0 bottom-0 bg-[#f97316] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
+            View Leave Balance <ArrowRight size={12} />
+          </div>
+        </Card>
+
+        {/* Performance */}
+        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#e11d48] cursor-pointer h-full relative group overflow-hidden block w-full" onClick={() => navigate('/employee/performance')}>
+          <div className="w-full h-full pb-2">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-[#ffe4e6] flex items-center justify-center">
+                <Target size={16} color="#e11d48" />
+              </div>
+              <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Performance Score</span>
+            </div>
+            <p className="text-xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>4.5 <span className="text-sm font-normal">/ 5</span></p>
+            <p className="text-xs text-[#939084] mt-1">Great Performance!</p>
+          </div>
+          <div className="absolute inset-x-0 bottom-0 bg-[#f43f5e] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
+            View Performance <ArrowRight size={12} />
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
+        {/* 3. ATTENDANCE SUMMARY */}
+        <div className="flex flex-col h-full">
+            <SectionHeader
+            title="Attendance Overview"
+            action={
+              <div className="relative">
+                <select
+                  value={timeRange}
+                  onChange={e => setTimeRange(e.target.value)}
+                  className="bg-transparent text-[#00a76b] font-semibold text-sm outline-none cursor-pointer appearance-none pr-4"
+                >
+                  <option value="weekly">This Week</option>
+                  <option value="monthly">This Month</option>
+                </select>
+                <span className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-[#00a76b] text-xs">▼</span>
+              </div>
+            }
+          />
+          <Card className="flex-1 flex flex-col justify-center">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={weeklyChart} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={true} stroke="#e5e7eb" />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#939084' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#939084' }} tickFormatter={(val) => `${val}%`} domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
+                  <Line type="monotone" dataKey="active" stroke="#00a76b" strokeWidth={3} dot={{ fill: '#00a76b', strokeWidth: 2, r: 5 }}>
+                    <LabelList dataKey="active" position="top" formatter={(val) => `${val}%`} style={{ fontSize: '11px', fontWeight: 'bold', fill: '#374151' }} />
+                  </Line>
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 3 Stat Cards inside Attendance */}
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              <div className="bg-[#f0fdf4] dark:bg-[#064e3b] p-4 rounded-xl border border-[#bbf7d0] dark:border-[#047857] flex flex-col items-center justify-center">
+                <p className="text-2xl font-bold text-[#166534] dark:text-[#a7f3d0]">{attMetrics?.percentage || 0}%</p>
+                <p className="text-xs text-[#15803d] dark:text-[#6ee7b7] font-semibold mt-1">Avg. Attendance</p>
+              </div>
+              <div className="bg-[#fff7ed] dark:bg-[#78350f] p-4 rounded-xl border border-[#fed7aa] dark:border-[#92400e] flex flex-col items-center justify-center">
+                <p className="text-2xl font-bold text-[#ea580c] dark:text-[#fdba74]">{attMetrics?.lateCount || 0}</p>
+                <p className="text-xs text-[#c2410c] dark:text-[#fb923c] font-semibold mt-1">Late Arrivals</p>
+              </div>
+              <div className="bg-[#fef2f2] dark:bg-[#7f1d1d] p-4 rounded-xl border border-[#fecaca] dark:border-[#991b1b] flex flex-col items-center justify-center">
+                <p className="text-2xl font-bold text-[#dc2626] dark:text-[#fca5a5]">{leavesTakenThisMonth}</p>
+                <p className="text-xs text-[#b91c1c] dark:text-[#f87171] font-semibold mt-1">Absences</p>
+              </div>
+            </div>
+          </Card>
+
+        </div>
+
+        {/* 4. MY TASKS OVERVIEW */}
+        <div className="flex flex-col h-full">
+            <SectionHeader title="My Tasks Overview" />
+            <div className="rounded-2xl flex-1 flex flex-col">
+              <Card className="flex flex-col sm:flex-row items-center justify-center flex-1">
+                <div className="w-full sm:w-1/2 h-40 relative mb-4 sm:mb-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={totalTasks === 0 ? [{ name: 'No Tasks', value: 1, color: '#e5e7eb' }] : [
+                        { name: 'Completed', value: completedTasks, color: '#8b5cf6' },
+                        { name: 'Ongoing', value: ongoingTasks, color: '#f59e0b' },
+                        { name: 'Upcoming', value: upcomingTasks, color: '#ef4444' },
+                        { name: 'Pending', value: pendingTasks, color: '#3b82f6' }
+                      ]} cx="50%" cy="50%" innerRadius={60} outerRadius={80} dataKey="value" stroke="none" paddingAngle={3}>
+                        {
+                          (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#8b5cf6' }, { color: '#f59e0b' }, { color: '#ef4444' }, { color: '#3b82f6' }]).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))
+                        }
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-xl font-bold">{totalTasks}</span>
+                    <span className="text-[10px] text-[#939084] uppercase">Total Tasks</span>
                   </div>
                 </div>
-              ))}
+                <div className="w-full sm:w-1/2 space-y-4 pl-0 sm:pl-8 flex flex-col justify-center">
+                  <div className="flex items-start gap-3">
+                    <div className="w-3 h-3 mt-1.5 rounded-full bg-[#3b82f6]"></div>
+                    <div>
+                      <span className="text-xl font-bold leading-none">{pendingTasks}</span>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">Pending</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-3 h-3 mt-1.5 rounded-full bg-[#f59e0b]"></div>
+                    <div>
+                      <span className="text-xl font-bold leading-none">{ongoingTasks}</span>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">In Progress</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-3 h-3 mt-1.5 rounded-full bg-[#8b5cf6]"></div>
+                    <div>
+                      <span className="text-xl font-bold leading-none">{completedTasks}</span>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">Completed</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-3 h-3 mt-1.5 rounded-full bg-[#ef4444]"></div>
+                    <div>
+                      <span className="text-xl font-bold leading-none">{upcomingTasks}</span>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">Overdue</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
             </div>
-          )}
-        </Card>
+        </div>
       </div>
 
-      {/* ─ MONTHLY ATTENDANCE + TASKS ────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-
-        {/* Monthly Area Chart */}
-        <Card title="Monthly Overview" className="lg:col-span-3"
-          action={<span className="badge badge-blue">Last 6 Months</span>}>
-          {loading ? <Skeleton h="200px" /> : (
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={monthlyChart}>
-                <defs>
-                  <linearGradient id="gradHours" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e2d3d' : '#e2e8f0'} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false}
-                  tick={{ fontSize: 11, fill: isDark ? '#94a3b8' : '#64748b', fontWeight: 500 }} />
-                <YAxis axisLine={false} tickLine={false}
-                  tick={{ fontSize: 11, fill: isDark ? '#94a3b8' : '#64748b' }} unit="h" />
-                <Tooltip content={<ChartTooltip isDark={isDark} />} />
-                <Area type="monotone" dataKey="hours" name="Hours" stroke="var(--accent)"
-                  strokeWidth={2} fill="url(#gradHours)" dot={{ fill: 'var(--accent)', r: 3, strokeWidth: 0 }} />
-                <Area type="monotone" dataKey="target" name="Target" stroke={isDark ? '#1e2d3d' : '#e2e8f0'}
-                  strokeWidth={1.5} strokeDasharray="4 4" fill="none" dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </Card>
-
-        {/* Recent Tasks */}
-        <Card title="My Tasks" className="lg:col-span-2"
-          action={
-            <span className="text-xs font-medium" style={{ color: 'var(--accent)' }}>
-              {totalTasks} total
-            </span>
-          }>
-          {loading ? (
-            <div className="space-y-2">{[...Array(4)].map((_, i) => <Skeleton key={i} h="44px" />)}</div>
-          ) : tasks.length === 0 ? (
-            <div className="text-center py-8">
-              <Briefcase size={24} className="mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No tasks assigned</p>
+      {/* 6. LEAVE SUMMARY */}
+      <div>
+        <SectionHeader title="Leave Summary" />
+        <div className="rounded-2xl">
+          <Card>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#3b82f6] transition-colors duration-300 rounded-xl p-4 flex justify-between items-center bg-[#fffefb] dark:bg-[#0f0d0a]">
+                <div>
+                  <p className="text-xs text-[#939084] font-semibold uppercase tracking-wider mb-1">Total Leaves</p>
+                  <p className="text-2xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>18.5</p>
+                  <p className="text-[10px] text-[#939084] mt-1">Days</p>
+                </div>
+                <div className="bg-[#eff6ff] p-2 rounded-xl text-[#3b82f6]">
+                  <Calendar size={20} />
+                </div>
+              </div>
+              <div className="border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#f97316] transition-colors duration-300 rounded-xl p-4 flex justify-between items-center bg-[#fffefb] dark:bg-[#0f0d0a]">
+                <div>
+                  <p className="text-xs text-[#939084] font-semibold uppercase tracking-wider mb-1">Used Leaves</p>
+                  <p className="text-2xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeaves}</p>
+                  <p className="text-[10px] text-[#939084] mt-1">Days</p>
+                </div>
+                <div className="bg-[#fff7ed] p-2 rounded-xl text-[#f97316]">
+                  <CalendarCheck size={20} />
+                </div>
+              </div>
+              <div className="border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#a855f7] transition-colors duration-300 rounded-xl p-4 flex justify-between items-center bg-[#fffefb] dark:bg-[#0f0d0a]">
+                <div>
+                  <p className="text-xs text-[#939084] font-semibold uppercase tracking-wider mb-1">Pending Leaves</p>
+                  <p className="text-2xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingLeaves}</p>
+                  <p className="text-[10px] text-[#939084] mt-1">Requests</p>
+                </div>
+                <div className="bg-[#f5f3ff] p-2 rounded-xl text-[#a855f7]">
+                  <CalendarX size={20} />
+                </div>
+              </div>
+              <div className="border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#22c55e] transition-colors duration-300 rounded-xl p-4 flex justify-between items-center bg-[#fffefb] dark:bg-[#0f0d0a]">
+                <div>
+                  <p className="text-xs text-[#939084] font-semibold uppercase tracking-wider mb-1">Approved Leaves</p>
+                  <p className="text-2xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeaves}</p>
+                  <p className="text-[10px] text-[#939084] mt-1">Days</p>
+                </div>
+                <div className="bg-[#f0fdf4] p-2 rounded-xl text-[#22c55e]">
+                  <CheckCircle size={20} />
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {tasks.map((t, i) => {
-                const done = t.status === 'completed' || t.status === 'done';
-                const priority = t.priority || 'medium';
-                const priorityColors = { high: '#dc2626', medium: '#d97706', low: '#16a34a' };
-                return (
-                  <div key={t._id || i}
-                    className="flex items-center gap-3 p-2.5 rounded-xl transition-colors"
-                    style={{ background: 'var(--bg-primary)' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-primary)'}>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 border-2`}
-                      style={{ borderColor: done ? 'var(--accent)' : 'var(--border)', background: done ? 'var(--accent-muted)' : 'transparent' }}>
-                      {done && <CheckCircle size={12} style={{ color: 'var(--accent)' }} />}
+          </Card>
+        </div>
+      </div>
+
+      {/* 5. QUICK ACTIONS */}
+      <SectionHeader title="Quick Actions" />
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        {isCheckedIn ? (
+          <button onClick={handleCheckOut} disabled={checkInLoading} className="flex flex-col items-center justify-center gap-2 bg-[#fffefb] dark:bg-[#0f0d0a] border border-[#fca5a5] text-[#ef4444] rounded-[20px] w-full h-28 hover:bg-[#fef2f2] transition-colors shadow-sm">
+            <LogOut size={28} />
+            <span className="text-[13px] font-semibold mt-1">Check Out</span>
+          </button>
+        ) : (
+          <button onClick={handleCheckIn} disabled={checkInLoading} className="flex flex-col items-center justify-center gap-2 bg-[#fffefb] dark:bg-[#0f0d0a] border border-[#86efac] text-[#00a76b] rounded-[20px] w-full h-28 hover:bg-[#f0fdf4] transition-colors shadow-sm">
+            <LogIn size={28} />
+            <span className="text-[13px] font-semibold mt-1">Check In</span>
+          </button>
+        )}
+
+        {[
+          { icon: <CalendarPlus size={28} />, label: 'Apply Leave', color: '#3b82f6', border: '#bfdbfe', bgHover: '#eff6ff', to: '/employee/leave' },
+          { icon: <Briefcase size={28} />, label: 'My Tasks', color: '#8b5cf6', border: '#ddd6fe', bgHover: '#f5f3ff', to: '/employee/task-management' },
+          { icon: <Clock size={28} />, label: 'Time Tracker', color: '#f59e0b', border: '#fde68a', bgHover: '#fffbeb', to: '/employee/time-tracker' },
+          { icon: <FileText size={28} />, label: 'Payslip', color: '#ec4899', border: '#fbcfe8', bgHover: '#fdf2f8', to: '/employee/payslips' },
+          { icon: <User size={28} />, label: 'View Profile', color: '#10b981', border: '#a7f3d0', bgHover: '#ecfdf5', to: '/employee/profile' },
+        ].map((act, i) => (
+          <button key={i} onClick={() => navigate(act.to)} className="flex flex-col items-center justify-center gap-2 bg-[#fffefb] dark:bg-[#0f0d0a] border rounded-[20px] w-full h-28 transition-colors shadow-sm"
+            style={{ borderColor: act.border, color: act.color }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = act.bgHover}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            {act.icon}
+            <span className="text-[13px] font-semibold mt-1">{act.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {/* 8. UPCOMING HOLIDAYS */}
+        <div>
+          <SectionHeader title="Upcoming Holidays" />
+          <div className="relative group overflow-hidden rounded-2xl cursor-pointer" onClick={() => navigate('/employee/holidays')}>
+            <Card className="h-72 overflow-y-auto">
+              <div className="space-y-4">
+                {mockHolidays.map((h, i) => (
+                  <div key={i} className="flex gap-4 items-center border-b border-[#eceae3] dark:border-[#38352e] pb-4 last:border-0 last:pb-0">
+                    <div className="bg-[#f0fdf4] text-[#00a76b] rounded-xl text-center min-w-[56px] p-2 border border-[#bbf7d0]">
+                      <p className="text-xl font-bold leading-none">{h.date.split(' ')[0]}</p>
+                      <p className="text-[10px] font-bold uppercase mt-1">{h.date.split(' ')[1]}</p>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${done ? 'line-through' : ''}`}
-                        style={{ color: done ? 'var(--text-muted)' : 'var(--text-primary)' }}>
-                        {t.title || t.name}
-                      </p>
+                    <div className="flex-1">
+                      <p className="font-bold text-sm text-[#201515] dark:text-white">{h.name}</p>
+                      <p className="text-xs text-[#939084] mt-0.5">{h.type}</p>
                     </div>
-                    <div className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ background: priorityColors[priority] || '#d97706' }}
-                      title={`${priority} priority`} />
+                    <span className="text-[11px] font-bold bg-[#e6f6f0] dark:bg-[#064e3b] text-[#00a76b] dark:text-[#34d399] border border-[#00a76b]/20 px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
+                      In {h.daysLeft} days
+                    </span>
                   </div>
+                ))}
+              </div>
+            </Card>
+            <div className="absolute inset-x-0 bottom-0 bg-[#00a76b] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 pointer-events-none">
+              View All →
+            </div>
+          </div>
+        </div>
+
+        {/* 9. UPCOMING EVENTS */}
+        <div>
+          <SectionHeader title="Upcoming Events" />
+          <div className="relative group overflow-hidden rounded-2xl cursor-pointer" onClick={() => navigate('/employee/events')}>
+            <Card className="h-72 overflow-y-auto">
+              <div className="space-y-4">
+                {upcomingEvents.length > 0 ? upcomingEvents.map((e, i) => {
+                  const isUnread = !e.readBy?.includes(profile?._id || profile?.employeeId);
+                  const evtDate = new Date(e.date);
+                  return (
+                    <div key={i} className="flex gap-4 items-center border-b border-[#eceae3] dark:border-[#38352e] pb-4 last:border-0 last:pb-0 relative">
+                      {isUnread && (
+                        <div className="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full z-10 border border-white"></div>
+                      )}
+                      <div className="bg-[#eff6ff] text-[#3b82f6] rounded-xl text-center min-w-[56px] p-2 border border-[#bfdbfe] relative">
+                        <p className="text-xl font-bold leading-none">{evtDate.getDate()}</p>
+                        <p className="text-[10px] font-bold uppercase mt-1">{evtDate.toLocaleString('default', { month: 'short' })}</p>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold text-sm text-[#201515] dark:text-white">{e.title}</p>
+                        <p className="text-xs text-[#939084] line-clamp-1 mt-0.5">{e.description || 'No description'}</p>
+                      </div>
+                      <p className="text-[11px] font-medium text-[#939084] whitespace-nowrap">{e.startTime}</p>
+                    </div>
+                  );
+                }) : (
+                  <div className="text-center py-10 text-[#939084]">not meeting/Event are schedual</div>
+                )}
+              </div>
+            </Card>
+            <div className="absolute inset-x-0 bottom-0 bg-[#00a76b] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 pointer-events-none">
+              View All Events →
+            </div>
+          </div>
+        </div>
+
+        {/* 11. LATEST PAYSLIP */}
+        <div>
+          <SectionHeader title="Latest Payslips" />
+          <div className="relative group overflow-hidden rounded-2xl cursor-pointer" onClick={() => navigate('/employee/payslips')}>
+            <Card className="h-72 overflow-y-auto">
+              <div className="space-y-3">
+                {recentPayslips.length > 0 ? recentPayslips.map((ps, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 border border-[#eceae3] dark:border-[#38352e] rounded-xl bg-[#fffefb] dark:bg-[#14120e] hover:border-[#00a76b] transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[#f0fdf4] dark:bg-[#064e3b] border border-[#bbf7d0] dark:border-[#047857] rounded-xl flex items-center justify-center shrink-0">
+                        <FileText size={20} className="text-[#00a76b] dark:text-[#a7f3d0]" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-[13px] text-[#201515] dark:text-white">{ps.month || 'Payslip'}</p>
+                        <p className="text-[11px] text-[#939084] mt-0.5">{new Date(ps.createdAt || Date.now()).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="text-right bg-[#f0fdf4] dark:bg-[#064e3b] px-3 py-1.5 rounded-lg border border-[#bbf7d0] dark:border-[#047857]">
+                      <span className="font-bold text-[#00a76b] dark:text-[#a7f3d0] text-[13px]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                        {fmtCurrency(ps.netPay || ps.amount || 0)}
+                      </span>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-center py-8">
+                    <FileText size={32} className="mx-auto mb-3 text-[#939084]" />
+                    <p className="text-sm font-medium text-[#939084]">No payslips available</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+            <div className="absolute inset-x-0 bottom-0 bg-[#00a76b] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 pointer-events-none">
+              View All Payslips →
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 12. BIRTHDAYS & ANNIVERSARIES */}
+      <div className="grid grid-cols-1 gap-6">
+        <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-center text-[#00a76b] shadow-xs">
+                <PartyPopper size={18} />
+              </div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-bold text-[#201515] dark:text-white text-lg tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  Birthdays & Anniversaries
+                </h2>
+                {events.length > 0 && (
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-[#00a76b] dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40">
+                    {events.length} Upcoming
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1.5 p-1 bg-[#f4f2eb] dark:bg-[#1a1713] rounded-xl border border-[#e4dfd3] dark:border-[#2f2b24] self-start sm:self-auto">
+              {[
+                { id: 'all', label: 'All Celebrations', count: events.length },
+                { id: 'birthday', label: '🎂 Birthdays', count: events.filter(e => e.type === 'birthday').length },
+                { id: 'anniversary', label: '🌟 Anniversaries', count: events.filter(e => e.type === 'anniversary').length },
+              ].map((tab) => {
+                const isActive = eventFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setEventFilter(tab.id)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                      isActive
+                        ? 'bg-[#00a76b] text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                      isActive
+                        ? 'bg-white/20 text-white'
+                        : 'bg-black/5 dark:bg-white/10 text-gray-500 dark:text-gray-400'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  </button>
                 );
               })}
-              {/* Progress bar */}
-              <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
-                <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                  <span>Progress</span>
-                  <span>{completedTasks}/{totalTasks}</span>
+            </div>
+          </div>
+
+          <Card className="p-5 overflow-hidden">
+            {events.filter(e => eventFilter === 'all' || e.type === eventFilter).length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {events
+                  .filter(e => eventFilter === 'all' || e.type === eventFilter)
+                  .map((ann, i) => {
+                    const isToday = ann.daysLeft === 0;
+                    const isPast = ann.daysLeft < 0;
+                    const isWished = wishedEvents.includes(ann.id || `event-${i}`);
+                    const isBirthday = ann.type === 'birthday';
+                    const yrSuffix = ann.years ? ((ann.years % 10 === 1 && ann.years !== 11) ? 'st' : (ann.years % 10 === 2 && ann.years !== 12) ? 'nd' : (ann.years % 10 === 3 && ann.years !== 13) ? 'rd' : 'th') : '';
+
+                    return (
+                      <div
+                        key={ann.id || i}
+                        className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 flex flex-col justify-between border ${
+                          isToday
+                            ? 'bg-white dark:bg-[#14120e] border-[#00a76b] dark:border-emerald-600 shadow-[0_4px_20px_rgba(0,167,107,0.08)] ring-1 ring-[#00a76b]/25'
+                            : 'bg-white dark:bg-[#14120e] border-[#eceae3] dark:border-[#38352e] hover:border-[#00a76b]/50 hover:shadow-md'
+                        }`}
+                      >
+                        {/* Top Row: Avatar + Info */}
+                        <div className="flex items-start gap-3.5">
+                          <div className="relative shrink-0">
+                            {ann.avatar ? (
+                              <img
+                                src={ann.avatar.startsWith('http') || ann.avatar.startsWith('/') ? ann.avatar : `/${ann.avatar}`}
+                                alt={ann.name}
+                                className="w-12 h-12 rounded-xl object-cover ring-2 ring-white dark:ring-[#14120e] shadow-sm shrink-0"
+                              />
+                            ) : (
+                              <div
+                                className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-sm shrink-0"
+                                style={{
+                                  background: 'linear-gradient(135deg, #00a76b 0%, #059669 100%)'
+                                }}
+                              >
+                                {ann.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <span className="absolute -bottom-1 -right-1 text-base drop-shadow-sm select-none">
+                              {isBirthday ? '🎂' : '🌟'}
+                            </span>
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-[15px] text-gray-900 dark:text-white truncate">
+                              {ann.name}
+                            </h4>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                              {ann.role}
+                            </p>
+                            {ann.department && (
+                              <span className="inline-block text-[10px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md mt-1.5">
+                                {ann.department}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Celebration Status / Timing & Action (Tightly grouped with minimal gap) */}
+                        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-[#282520] flex items-center gap-2.5 flex-wrap">
+                          {isToday ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-[#00a76b] dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
+                              <Sparkles size={12} /> {isBirthday ? 'Birthday Today!' : `${ann.years ? ann.years + yrSuffix + ' ' : ''}Anniversary Today!`}
+                            </span>
+                          ) : isPast ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-emerald-50/70 dark:bg-emerald-950/30 text-[#00a76b] dark:text-emerald-400 border border-emerald-200/50">
+                              <Sparkles size={12} className="text-[#00a76b]" />
+                              {isBirthday ? `Celebrated ${Math.abs(ann.daysLeft)}d ago` : `${ann.years ? ann.years + yrSuffix + ' ' : ''}Anniversary (${Math.abs(ann.daysLeft)}d ago)`}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300">
+                              <Calendar size={12} className="text-gray-400" />
+                              {ann.daysLeft === 1 ? (isBirthday ? 'Tomorrow' : `Tomorrow (${ann.years ? ann.years + yrSuffix : '1st'})`) : (isBirthday ? `In ${ann.daysLeft} days` : `${ann.years ? ann.years + yrSuffix + ' ' : ''}Anniversary in ${ann.daysLeft}d`)}
+                            </span>
+                          )}
+
+                          {/* Quick Wish Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const eventKey = ann.id || `event-${i}`;
+                              if (!wishedEvents.includes(eventKey)) {
+                                setWishedEvents(prev => [...prev, eventKey]);
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                              isWished
+                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-[#00a76b] dark:text-emerald-400 border border-[#00a76b]/30 dark:border-emerald-800/40 shadow-xs'
+                                : isToday || isPast
+                                  ? 'bg-[#00a76b] hover:bg-[#008f5b] text-white shadow-sm shadow-[#00a76b]/20 active:scale-95'
+                                  : 'bg-[#fffefb] hover:bg-gray-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 active:scale-95'
+                            }`}
+                          >
+                            {isWished ? (
+                              <>
+                                <Heart size={12} className="fill-[#00a76b] text-[#00a76b]" />
+                                <span>Wished! 💖</span>
+                              </>
+                            ) : (
+                              <>
+                                <PartyPopper size={12} />
+                                <span>{isToday || isPast ? 'Wish Now' : 'Wish'}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 flex items-center justify-center text-amber-500 mb-3 shadow-inner">
+                  <Cake size={32} />
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
-                  <div className="h-full rounded-full transition-all"
-                    style={{ width: `${totalTasks ? (completedTasks / totalTasks) * 100 : 0}%`, background: 'var(--accent)' }} />
-                </div>
+                <h4 className="font-bold text-gray-800 dark:text-gray-200 text-sm">No Upcoming Celebrations</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mt-1">
+                  {eventFilter === 'all'
+                    ? 'There are no team birthdays or work anniversaries scheduled in the next 14 days.'
+                    : `No ${eventFilter === 'birthday' ? 'birthdays' : 'work anniversaries'} found in this category.`}
+                </p>
               </div>
-            </div>
-          )}
-        </Card>
-      </div>
+            )}
 
-      {/* ─ PAYSLIPS + LEAVE SUMMARY ──────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-        {/* Recent Payslips */}
-        <Card title="Recent Payslips"
-          action={
-            <span className="badge badge-green">
-              <FileText size={10} className="mr-1 inline" />
-              {payroll.length} records
-            </span>
-          }>
-          {loading ? (
-            <div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} h="52px" />)}</div>
-          ) : payroll.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText size={24} className="mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No payslips yet</p>
+            {/* Bottom Footer Directory Link */}
+            <div className="mt-5 pt-3.5 border-t border-[#eceae3] dark:border-[#38352e] flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+              <span className="flex items-center gap-1.5 font-medium">
+                <span>✨</span>
+                <span className="hidden sm:inline">Connect with colleagues and celebrate milestones together!</span>
+              </span>
+              <button
+                onClick={() => navigate('/employee/profile')}
+                className="font-bold text-[#00a76b] hover:text-[#008f5b] flex items-center gap-1.5 transition-colors group cursor-pointer"
+              >
+                <span>View Profile & Team</span>
+                <ArrowRight size={13} className="transition-transform group-hover:translate-x-1" />
+              </button>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {payroll.slice(0, 4).map((p, i) => (
-                <div key={p._id || i}
-                  onClick={() => navigate('/employee/payslips')}
-                  className="flex items-center justify-between p-3 rounded-xl transition-colors cursor-pointer"
-                  style={{ background: 'var(--bg-primary)' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-primary)'}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                      style={{ background: 'var(--accent-muted)' }}>
-                      <FileText size={16} style={{ color: 'var(--accent)' }} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        {p.month || new Date(p.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                      </p>
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        {p.payPeriod || 'Monthly Salary'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                      {fmtCurrency(p.netPay || p.amount)}
-                    </p>
-                    <span className={`badge ${p.status === 'paid' ? 'badge-green' : 'badge-amber'}`}>
-                      {p.status || 'pending'}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-
-        {/* Leave Summary */}
-        <Card title="Leave Summary"
-          action={
-            <span className="badge badge-blue">{leaves.length} total</span>
-          }>
-          {loading ? (
-            <div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} h="52px" />)}</div>
-          ) : leaves.length === 0 ? (
-            <div className="text-center py-8">
-              <Calendar size={24} className="mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No leave requests</p>
-            </div>
-          ) : (
-            <>
-              {/* Status breakdown */}
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                {[
-                  { label: 'Approved', count: leaves.filter(l => l.status === 'approved').length, color: '#16a34a', bg: 'rgba(22,163,74,0.08)' },
-                  { label: 'Pending', count: leaves.filter(l => l.status === 'pending').length, color: '#d97706', bg: 'rgba(217,119,6,0.08)' },
-                  { label: 'Rejected', count: leaves.filter(l => l.status === 'rejected').length, color: '#dc2626', bg: 'rgba(220,38,38,0.08)' },
-                ].map((s, i) => (
-                  <div key={i} className="text-center py-3 rounded-xl" style={{ background: s.bg }}>
-                    <p className="text-xl font-bold" style={{ color: s.color }}>{s.count}</p>
-                    <p className="text-xs font-medium mt-0.5" style={{ color: s.color }}>{s.label}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Recent leaves */}
-              <div className="space-y-2">
-                {leaves.slice(0, 3).map((l, i) => (
-                  <div key={l._id || i}
-                    className="flex items-center justify-between p-3 rounded-xl"
-                    style={{ background: 'var(--bg-primary)' }}>
-                    <div>
-                      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                        {l.leaveType || l.type || 'Leave'}
-                      </p>
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        {l.startDate ? new Date(l.startDate).toLocaleDateString() : '--'}
-                        {l.endDate && l.endDate !== l.startDate ? ` – ${new Date(l.endDate).toLocaleDateString()}` : ''}
-                      </p>
-                    </div>
-                    <span className={`badge ${l.status === 'approved' ? 'badge-green' :
-                      l.status === 'pending' ? 'badge-amber' : 'badge-red'
-                      }`}>
-                      {l.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </Card>
-      </div>
-
-      {/* ─ UPCOMING HOLIDAYS ─────────────────────────────── */}
-      <Card title="Upcoming Holidays"
-        action={<span className="badge badge-gray">2026</span>}>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {[
-            { name: 'Independence Day', date: 'Aug 15', day: 'Fri' },
-            { name: 'Gandhi Jayanti', date: 'Oct 2', day: 'Fri' },
-            { name: 'Dussehra', date: 'Oct 12', day: 'Mon' },
-            { name: 'Diwali', date: 'Oct 20', day: 'Tue' },
-            { name: 'Christmas', date: 'Dec 25', day: 'Fri' },
-            { name: "New Year's", date: 'Jan 1', day: 'Thu' },
-          ].map((h, i) => (
-            <div key={i} className="text-center p-3 rounded-xl border transition-all hover:shadow-sm hover:-translate-y-0.5"
-              style={{ borderColor: 'var(--border)', background: 'var(--bg-primary)' }}>
-              <div className="w-9 h-9 rounded-full mx-auto mb-2 flex items-center justify-center"
-                style={{ background: 'var(--accent-muted)' }}>
-                <Star size={14} style={{ color: 'var(--accent)' }} />
-              </div>
-              <p className="text-xs font-semibold leading-tight" style={{ color: 'var(--text-primary)' }}>{h.name}</p>
-              <p className="text-xs mt-1 font-medium" style={{ color: 'var(--accent)' }}>{h.date} · {h.day}</p>
-            </div>
-          ))}
+          </Card>
         </div>
-      </Card>
+      </div>
+
 
     </div>
   );

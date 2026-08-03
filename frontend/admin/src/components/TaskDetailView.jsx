@@ -1124,7 +1124,7 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
                       status === 'Ongoing' ? 'bg-blue-500' : 
                       status === 'Review' ? 'bg-[#00a76b]' : 
                       status === 'Need to Improve' ? 'bg-red-500' : 'bg-[#939084]'
-                    }`}></span> {status} <ChevronDown size={10}/>
+                    }`}></span> {status === 'Pending' ? 'In process' : status} <ChevronDown size={10}/>
                   </button>
                   <button 
                     onClick={() => updateTaskProperty({ status: status === 'Completed' ? 'Ongoing' : 'Completed' })}
@@ -1151,7 +1151,7 @@ const TaskDetailView = ({ onClose, task: initialTask, onAddComment, onAddTimeLog
                             sOption === 'Review' ? 'bg-[#00a76b]' : 
                             sOption === 'Need to Improve' ? 'bg-red-500' : 'bg-[#939084]'
                           }`}></span>
-                          {sOption}
+                          {sOption === 'Pending' ? 'In process' : sOption}
                         </button>
                       ))}
                     </div>

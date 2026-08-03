@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { 
   X, Minus, Sparkles, CheckCircle2, FileText, Bell, Monitor, 
   LayoutDashboard, ChevronDown, User, Calendar, Flag, Tag, 
@@ -9,6 +10,7 @@ const CreateTaskModal = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState('Task');
   const [taskName, setTaskName] = useState('');
   const [description, setDescription] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const tabs = [
     { id: 'Task', label: 'Task' },
@@ -157,13 +159,56 @@ const CreateTaskModal = ({ onClose }) => {
               </button>
             </div>
 
-            <div className="flex items-center">
-              <button className="bg-[#00a76b] hover:bg-[#e64600] text-white px-4 py-1.5 rounded-l-md text-xs font-medium transition-colors shadow-lg shadow-emerald-500/20">
+            <div className="flex items-center relative">
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toast.success("Task created successfully!");
+                  onClose();
+                }}
+                className="bg-[#00a76b] hover:bg-[#e64600] text-white px-4 py-1.5 rounded-l-md text-xs font-medium transition-colors shadow-lg shadow-emerald-500/20"
+              >
                 Create Task
               </button>
-              <button className="bg-[#00a76b] hover:bg-[#e64600] border-l border-white/20 text-white px-1.5 py-1.5 rounded-r-md transition-colors shadow-lg shadow-emerald-500/20">
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowDropdown(!showDropdown);
+                }}
+                className="bg-[#00a76b] hover:bg-[#e64600] border-l border-white/20 text-white px-1.5 py-1.5 rounded-r-md transition-colors shadow-lg shadow-emerald-500/20"
+              >
                 <ChevronDown size={14} />
               </button>
+
+              {showDropdown && (
+                <div className="absolute bottom-full right-0 mb-1 w-48 bg-white border border-[#eceae3] rounded-[8px] shadow-xl overflow-hidden z-50">
+                  <div className="py-1">
+                    <button 
+                      onClick={() => {
+                        setShowDropdown(false);
+                        toast.success("Task created! Ready for another.");
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs font-bold text-[#36342e] hover:bg-[#f5f4f0] transition-colors"
+                    >
+                      Create & Add Another
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowDropdown(false);
+                        toast.success("Task saved as draft");
+                        onClose();
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs font-bold text-[#36342e] hover:bg-[#f5f4f0] transition-colors"
+                    >
+                      Save as Draft
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

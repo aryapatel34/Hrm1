@@ -98,6 +98,7 @@ const TaskCreate = ({ isModal = false, onClose, onSuccess, defaultStatus = 'Ongo
 
   // Tag Input & Custom Field states
   const [newTagInput, setNewTagInput] = useState('');
+  const [showCreateDropdown, setShowCreateDropdown] = useState(false);
   const [showTagInput, setShowTagInput] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [isAlertEnabled, setIsAlertEnabled] = useState(false);
@@ -212,6 +213,16 @@ const TaskCreate = ({ isModal = false, onClose, onSuccess, defaultStatus = 'Ongo
       if (registryFilterRef.current && !registryFilterRef.current.contains(e.target)) setShowRoleDropdown(false);
       if (personalCalendarRef.current && !personalCalendarRef.current.contains(e.target)) setShowPersonalCalendar(false);
       if (registryCalendarRef.current && !registryCalendarRef.current.contains(e.target)) setShowRegistryCalendar(false);
+      
+      // Also close the Create Task dropdown if clicked outside
+      const dropdownBtn = document.getElementById('create-task-dropdown-btn');
+      const dropdownMenu = document.getElementById('create-task-dropdown-menu');
+      if (
+        dropdownBtn && !dropdownBtn.contains(e.target) &&
+        dropdownMenu && !dropdownMenu.contains(e.target)
+      ) {
+        setShowCreateDropdown(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -1488,7 +1499,7 @@ const TaskCreate = ({ isModal = false, onClose, onSuccess, defaultStatus = 'Ongo
                       </button>
                     </div>
 
-                    <div className="flex items-center">
+                    <div className="flex items-center relative">
                       <button 
                         type="submit" 
                         disabled={loading || activeTab !== 'Task'} 
@@ -1497,12 +1508,45 @@ const TaskCreate = ({ isModal = false, onClose, onSuccess, defaultStatus = 'Ongo
                         {loading ? 'Creating...' : 'Create Task'}
                       </button>
                       <button 
+                        id="create-task-dropdown-btn"
                         type="button" 
-                        onClick={() => toast("Advanced creation options")}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowCreateDropdown(!showCreateDropdown);
+                        }}
                         className="bg-[#201515] hover:bg-[#2c1f1f] border-l border-white/20 text-white px-1.5 py-1.5 rounded-r-[4px] transition-colors"
                       >
                         <ChevronDown size={14} />
                       </button>
+
+                      {showCreateDropdown && (
+                        <div id="create-task-dropdown-menu" className="absolute bottom-full right-0 mb-1 w-48 bg-white border border-[#eceae3] rounded-[8px] shadow-xl overflow-hidden z-[9999]">
+                          <div className="py-1">
+                            <button 
+                              type="button"
+                              onClick={(e) => {
+                                setShowCreateDropdown(false);
+                                handleSubmit(e);
+                              }}
+                              className="w-full text-left px-4 py-2 text-xs font-bold text-[#36342e] hover:bg-[#f5f4f0] transition-colors"
+                            >
+                              Create & Add Another
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={(e) => {
+                                setShowCreateDropdown(false);
+                                setStatusVal('Pending');
+                                setTimeout(() => handleSubmit(e), 0);
+                              }}
+                              className="w-full text-left px-4 py-2 text-xs font-bold text-[#36342e] hover:bg-[#f5f4f0] transition-colors"
+                            >
+                              Save as Draft
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
