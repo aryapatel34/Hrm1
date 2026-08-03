@@ -236,6 +236,7 @@ async function triggerIdle(idleSeconds = 60) {
   updateUI();
 
   idleNotificationSent = true;
+  showIdleNotification();
   try {
     syncIndicator?.classList.add('online');
     const res = await fetch(`${API_BASE}/activity`, {
