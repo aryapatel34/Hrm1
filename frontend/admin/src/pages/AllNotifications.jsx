@@ -5,11 +5,11 @@ import { useNavigate } from 'react-router-dom';
 
 const TYPE_COLORS = {
   announcement: 'bg-orange-100 text-orange-600',
-  task:         'bg-blue-100 text-blue-600',
-  leave:        'bg-purple-100 text-purple-600',
-  attendance:   'bg-green-100 text-green-600',
-  emergency:    'bg-red-100 text-red-600',
-  default:      'bg-gray-100 text-gray-600',
+  task: 'bg-blue-100 text-blue-600',
+  leave: 'bg-purple-100 text-purple-600',
+  attendance: 'bg-green-100 text-green-600',
+  emergency: 'bg-red-100 text-red-600',
+  default: 'bg-gray-100 text-gray-600',
 };
 
 const AllNotifications = () => {
@@ -24,8 +24,8 @@ const AllNotifications = () => {
     const fetchNotifications = async () => {
       setLoading(true);
       try {
-        const res = await axios.get('/api/notifications', { 
-          headers: { Authorization: `Bearer ${token}` } 
+        const res = await axios.get('/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
         });
         let items = Array.isArray(res.data)
           ? res.data
@@ -34,7 +34,7 @@ const AllNotifications = () => {
             : Array.isArray(res.data?.data)
               ? res.data.data
               : [];
-              
+
         // Sort newest first
         items = items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setNotifications(items);
@@ -55,7 +55,7 @@ const AllNotifications = () => {
     yesterday.setDate(yesterday.getDate() - 1);
 
     let dateLabel = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    
+
     if (date.toDateString() === today.toDateString()) {
       dateLabel = 'Today';
     } else if (date.toDateString() === yesterday.toDateString()) {
@@ -73,7 +73,7 @@ const AllNotifications = () => {
     <div className="p-6 md:p-10 pb-20 max-w-5xl mx-auto animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#848E9C] hover:text-[#ff4f00] shadow-sm border border-[#eceae3] transition-all"
         >
@@ -130,9 +130,18 @@ const AllNotifications = () => {
                         <p className="text-[14px] leading-snug font-bold text-[#201515] break-words">
                           {notif.message}
                         </p>
-                        <div className="flex items-center gap-3 mt-2">
+                        <div className="flex items-center gap-3 mt-2 flex-wrap">
                           <span className={`px-2 py-0.5 rounded-[3px] text-[9px] font-black uppercase tracking-widest ${colorClass}`}>
                             {notif.type || 'general'}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="text-gray-400 font-semibold uppercase text-[9px]">By:</span>
+                            <span>{notif.senderName || notif.senderId?.name || 'HR / Management'}</span>
+                            {(notif.senderRole || notif.senderId?.role) && (
+                              <span className="text-[9px] font-black uppercase tracking-wider opacity-70">
+                                [{notif.senderRole || notif.senderId?.role}]
+                              </span>
+                            )}
                           </span>
                           <span className="text-[11px] font-bold text-[#939084]">
                             {new Date(notif.createdAt).toLocaleTimeString('en-US', {

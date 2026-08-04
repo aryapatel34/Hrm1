@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import {
   AreaChart, Area, LineChart, Line, LabelList, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
@@ -8,9 +10,12 @@ import {
   Clock, Calendar, FileText, CheckCircle,
   LogIn, LogOut, Briefcase, Target, Bell, Star,
   CalendarCheck, CalendarX, Cake, Gift, ArrowRight, CalendarPlus, User, Download,
-  PartyPopper, Sparkles, Heart, Smile
+  PartyPopper, Sparkles, Heart, Smile, TrendingUp, ChevronDown,
+  AlertTriangle, Monitor, X, ExternalLink, RefreshCw
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { startDesktopTracker, stopDesktopTracker } from '@shared/services/desktopTrackerService';
+import DesktopAppRequiredModal from '@shared/components/DesktopAppRequiredModal';
 
 // ─── HELPERS ─────────────────────────────────────────────────
 const token = () => sessionStorage.getItem('token');
@@ -82,13 +87,27 @@ const EmployeeDashboard = () => {
   const [eventFilter, setEventFilter] = useState('all');
   const [wishedEvents, setWishedEvents] = useState([]);
   const [attMetrics, setAttMetrics] = useState(null);
+  const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
   const [checkInLoading, setCheckInLoading] = useState(false);
+  const [trackerMissingModal, setTrackerMissingModal] = useState(false);
   const [timer, setTimer] = useState(0);
 
   // Charts
   const [timeRange, setTimeRange] = useState('weekly');
+  const [timeRangeOpen, setTimeRangeOpen] = useState(false);
+  const timeRangeRef = useRef(null);
   const [weeklyChart, setWeeklyChart] = useState([]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (timeRangeRef.current && !timeRangeRef.current.contains(e.target)) {
+        setTimeRangeOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchAll = useCallback(async (showSkeleton = true) => {
     if (showSkeleton) setLoading(true);
@@ -122,11 +141,15 @@ const EmployeeDashboard = () => {
       if (leaveRes.status === 'fulfilled') setLeaves(Array.isArray(leaveRes.value.data) ? leaveRes.value.data : []);
       if (taskRes.status === 'fulfilled') setTasks(Array.isArray(taskRes.value.data) ? taskRes.value.data : (taskRes.value.data?.data || []));
       if (notifRes.status === 'fulfilled') setNotifications(Array.isArray(notifRes.value.data) ? notifRes.value.data : []);
-      if (eventsRes.status === 'fulfilled') setEvents(Array.isArray(eventsRes.value.data) ? eventsRes.value.data : []);
+      if (eventsRes.status === 'fulfilled') {
+        const rawEvents = Array.isArray(eventsRes.value.data) ? eventsRes.value.data : [];
+        setEvents(rawEvents.filter(e => e.daysLeft >= 0));
+      }
       if (assignedEventsRes && assignedEventsRes.status === 'fulfilled') setAssignedEvents(Array.isArray(assignedEventsRes.value.data?.data) ? assignedEventsRes.value.data.data : []);
 
       if (attRes.status === 'fulfilled') {
         const att = Array.isArray(attRes.value.data) ? attRes.value.data : [];
+        setAttendance(att);
         const now = new Date();
         const thisMonthAtt = att.filter(a => {
           const d = new Date(a.date);
@@ -206,30 +229,50 @@ const EmployeeDashboard = () => {
   const handleCheckIn = async () => {
     setCheckInLoading(true);
     try {
+      // 1. Verify and automatically start FluidHR Desktop Tracker application
+      const trackerRes = await startDesktopTracker(token());
+      if (!trackerRes.success) {
+        setTrackerMissingModal(true);
+        return;
+      }
+
+      // 2. Register Attendance Check-in on backend
       await axios.post('/api/attendance/clock-in', {}, { headers: { Authorization: `Bearer ${token()}` } });
-      setTimerStatus(s => ({ ...s, isRunning: true }));
-      fetchAll(false);
-    } catch (e) {
       try {
         await axios.post('/api/time/start', {}, { headers: { Authorization: `Bearer ${token()}` } });
-        setTimerStatus(s => ({ ...s, isRunning: true }));
-        fetchAll(false);
-      } catch { }
+      } catch (_) { }
+      
+      setTimerStatus(s => ({ ...s, isRunning: true }));
+      toast.success('Check-in successful & Desktop Tracker started!', {
+        duration: 3500,
+        style: {
+          borderRadius: '12px',
+          background: '#1c1917',
+          color: '#fff',
+          border: '1px solid #10b981',
+          fontSize: '13px',
+          fontWeight: '600'
+        }
+      });
+      fetchAll(false);
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Check-in failed');
     } finally { setCheckInLoading(false); }
   };
 
   const handleCheckOut = async () => {
     setCheckInLoading(true);
     try {
+      await stopDesktopTracker();
       await axios.put('/api/attendance/clock-out', {}, { headers: { Authorization: `Bearer ${token()}` } });
-      setTimerStatus(s => ({ ...s, isRunning: false }));
-      fetchAll(false);
-    } catch (e) {
       try {
         await axios.post('/api/time/stop', {}, { headers: { Authorization: `Bearer ${token()}` } });
-        setTimerStatus(s => ({ ...s, isRunning: false }));
-        fetchAll(false);
-      } catch { }
+      } catch (_) { }
+      setTimerStatus(s => ({ ...s, isRunning: false }));
+      toast.success('Checked out successfully & Tracker stopped.');
+      fetchAll(false);
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Check-out failed');
     } finally { setCheckInLoading(false); }
   };
 
@@ -244,6 +287,22 @@ const EmployeeDashboard = () => {
   const role = profile?.role || 'UI/UX Designer';
 
   const todayHours = fmtHrs(timer);
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+  startOfWeek.setHours(0, 0, 0, 0);
+  const todayDateStr = now.toISOString().split('T')[0];
+
+  const pastDaysWeeklySeconds = attendance
+    .filter(a => {
+      const d = new Date(a.date);
+      return d >= startOfWeek && a.date !== todayDateStr;
+    })
+    .reduce((sum, a) => sum + ((Number(a.totalHours) || 0) * 3600), 0);
+
+  const totalWeeklySeconds = pastDaysWeeklySeconds + (timer || 0);
+  const weeklyHours = fmtHrs(totalWeeklySeconds);
+
   const approvedLeaves = leaves.filter(l => l.status === 'approved').length;
   const pendingLeaves = leaves.filter(l => l.status === 'pending').length;
   const leavesTakenThisMonth = leaves.filter(l => l.status === 'approved' && new Date(l.startDate).getMonth() === new Date().getMonth()).length;
@@ -312,17 +371,18 @@ const EmployeeDashboard = () => {
     <div className="space-y-6 pb-12 font-['Inter',sans-serif]" style={{ color: 'var(--zap-charcoal)' }}>
 
       {/* 1. WELCOME SECTION */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
-          <h1 className="text-[32px] font-bold text-[#201515] dark:text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <h1 className="text-[32px] font-bold text-[#201515] dark:text-white leading-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
             {getGreeting()}, {firstName}! 👋
           </h1>
           <p className="text-[#939084] mt-1">Have a productive day at work.</p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right hidden sm:block">
-            <p className="text-[#939084] font-medium"><Calendar className="inline mr-2" size={16} />{fmtDate()}</p>
-          </div>
+        <div className="text-right hidden sm:flex items-center pt-2">
+          <p className="text-[#939084] font-medium flex items-center gap-2">
+            <Calendar size={16} />
+            <span>{fmtDate()}</span>
+          </p>
         </div>
       </div>
 
@@ -365,6 +425,23 @@ const EmployeeDashboard = () => {
           </div>
         </Card>
 
+        {/* Total Weekly Hours */}
+        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#6366f1] cursor-pointer relative group overflow-hidden" onClick={() => navigate('/employee/time-tracker')}>
+          <div className="pb-2">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-[#ede9fe] dark:bg-[#312e81]/40 flex items-center justify-center">
+                <TrendingUp size={16} color="#6366f1" />
+              </div>
+              <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Total Weekly Hours</span>
+            </div>
+            <p className="text-xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{weeklyHours}</p>
+            <p className="text-xs text-[#939084] mt-1">This week's total</p>
+          </div>
+          <div className="absolute inset-x-0 bottom-0 bg-[#6366f1] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
+            View Time Tracker <ArrowRight size={12} />
+          </div>
+        </Card>
+
         {/* Pending Tasks */}
         <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#9333ea] cursor-pointer relative group overflow-hidden" onClick={() => navigate('/employee/task-management')}>
           <div className="pb-2">
@@ -398,23 +475,6 @@ const EmployeeDashboard = () => {
             View Leave Balance <ArrowRight size={12} />
           </div>
         </Card>
-
-        {/* Performance Score */}
-        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#e11d48] cursor-pointer relative group overflow-hidden">
-          <div className="pb-2">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#ffe4e6] flex items-center justify-center">
-                <Target size={16} color="#e11d48" />
-              </div>
-              <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Performance Score</span>
-            </div>
-            <p className="text-xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>4.5 <span className="text-sm font-normal">/ 5</span></p>
-            <p className="text-xs text-[#939084] mt-1">Great Performance!</p>
-          </div>
-          <div className="absolute inset-x-0 bottom-0 bg-[#f43f5e] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
-            View Performance <ArrowRight size={12} />
-          </div>
-        </Card>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
@@ -423,16 +483,45 @@ const EmployeeDashboard = () => {
             <SectionHeader
             title="Attendance Overview"
             action={
-              <div className="relative">
-                <select
-                  value={timeRange}
-                  onChange={e => setTimeRange(e.target.value)}
-                  className="bg-transparent text-[#00a76b] font-semibold text-sm outline-none cursor-pointer appearance-none pr-4"
+              <div className="relative" ref={timeRangeRef}>
+                <button
+                  type="button"
+                  onClick={() => setTimeRangeOpen(prev => !prev)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#d5d0c1] dark:border-[#38352e] bg-[#fffefb] dark:bg-[#1a1714] text-xs font-semibold text-[#36342e] dark:text-[#e5e2da] hover:border-[#00a76b] hover:bg-[#f7f6f2] dark:hover:bg-[#25211e] transition-all shadow-[0_1px_3px_rgba(0,0,0,0.04)] cursor-pointer select-none"
                 >
-                  <option value="weekly">This Week</option>
-                  <option value="monthly">This Month</option>
-                </select>
-                <span className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-[#00a76b] text-xs">▼</span>
+                  <Calendar size={13} className="text-[#00a76b]" />
+                  <span>{timeRange === 'weekly' ? 'This Week' : 'This Month'}</span>
+                  <ChevronDown size={13} className={`text-[#939084] transition-transform duration-200 ${timeRangeOpen ? 'rotate-180 text-[#00a76b]' : ''}`} />
+                </button>
+
+                {timeRangeOpen && (
+                  <div className="absolute right-0 mt-1.5 w-36 bg-[#fffefb] dark:bg-[#1a1714] border border-[#d5d0c1] dark:border-[#38352e] rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.08)] py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => { setTimeRange('weekly'); setTimeRangeOpen(false); }}
+                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                        timeRange === 'weekly'
+                          ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
+                          : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
+                      }`}
+                    >
+                      <span>This Week</span>
+                      {timeRange === 'weekly' && <span className="w-1.5 h-1.5 rounded-full bg-[#00a76b]" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setTimeRange('monthly'); setTimeRangeOpen(false); }}
+                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                        timeRange === 'monthly'
+                          ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
+                          : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
+                      }`}
+                    >
+                      <span>This Month</span>
+                      {timeRange === 'monthly' && <span className="w-1.5 h-1.5 rounded-full bg-[#00a76b]" />}
+                    </button>
+                  </div>
+                )}
               </div>
             }
           />
@@ -474,8 +563,8 @@ const EmployeeDashboard = () => {
         <div className="flex flex-col h-full">
             <SectionHeader title="My Tasks Overview" />
             <div className="rounded-2xl flex-1 flex flex-col">
-              <Card className="flex flex-col sm:flex-row items-center justify-center flex-1">
-                <div className="w-full sm:w-1/2 h-40 relative mb-4 sm:mb-0">
+              <Card className="flex-1 flex flex-col justify-between">
+                <div className="h-64 relative flex items-center justify-center">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={totalTasks === 0 ? [{ name: 'No Tasks', value: 1, color: '#e5e7eb' }] : [
@@ -483,7 +572,7 @@ const EmployeeDashboard = () => {
                         { name: 'Ongoing', value: ongoingTasks, color: '#f59e0b' },
                         { name: 'Upcoming', value: upcomingTasks, color: '#ef4444' },
                         { name: 'Pending', value: pendingTasks, color: '#3b82f6' }
-                      ]} cx="50%" cy="50%" innerRadius={60} outerRadius={80} dataKey="value" stroke="none" paddingAngle={3}>
+                      ]} cx="50%" cy="50%" innerRadius={65} outerRadius={90} dataKey="value" stroke="none" paddingAngle={3}>
                         {
                           (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#8b5cf6' }, { color: '#f59e0b' }, { color: '#ef4444' }, { color: '#3b82f6' }]).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
@@ -493,38 +582,40 @@ const EmployeeDashboard = () => {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-xl font-bold">{totalTasks}</span>
-                    <span className="text-[10px] text-[#939084] uppercase">Total Tasks</span>
+                    <span className="text-3xl font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
+                    <span className="text-[10px] font-bold text-[#939084] tracking-wider uppercase mt-1">Total Tasks</span>
                   </div>
                 </div>
-                <div className="w-full sm:w-1/2 space-y-4 pl-0 sm:pl-8 flex flex-col justify-center">
-                  <div className="flex items-start gap-3">
-                    <div className="w-3 h-3 mt-1.5 rounded-full bg-[#3b82f6]"></div>
-                    <div>
-                      <span className="text-xl font-bold leading-none">{pendingTasks}</span>
-                      <p className="text-xs text-gray-500 font-medium mt-0.5">Pending</p>
+
+                {/* 4 Stat Cards below Pie Chart */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                  <div className="bg-blue-50 dark:bg-blue-950/40 p-3 rounded-xl border border-blue-200/60 dark:border-blue-800/40 flex flex-col items-center justify-center text-center">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
+                      <span className="text-xl font-bold text-blue-700 dark:text-blue-300 leading-none">{pendingTasks}</span>
                     </div>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">Pending</p>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-3 h-3 mt-1.5 rounded-full bg-[#f59e0b]"></div>
-                    <div>
-                      <span className="text-xl font-bold leading-none">{ongoingTasks}</span>
-                      <p className="text-xs text-gray-500 font-medium mt-0.5">In Progress</p>
+                  <div className="bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200/60 dark:border-amber-800/40 flex flex-col items-center justify-center text-center">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
+                      <span className="text-xl font-bold text-amber-700 dark:text-amber-300 leading-none">{ongoingTasks}</span>
                     </div>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">In Progress</p>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-3 h-3 mt-1.5 rounded-full bg-[#8b5cf6]"></div>
-                    <div>
-                      <span className="text-xl font-bold leading-none">{completedTasks}</span>
-                      <p className="text-xs text-gray-500 font-medium mt-0.5">Completed</p>
+                  <div className="bg-purple-50 dark:bg-purple-950/40 p-3 rounded-xl border border-purple-200/60 dark:border-purple-800/40 flex flex-col items-center justify-center text-center">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="w-2 h-2 rounded-full bg-[#8b5cf6]"></span>
+                      <span className="text-xl font-bold text-purple-700 dark:text-purple-300 leading-none">{completedTasks}</span>
                     </div>
+                    <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold">Completed</p>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-3 h-3 mt-1.5 rounded-full bg-[#ef4444]"></div>
-                    <div>
-                      <span className="text-xl font-bold leading-none">{upcomingTasks}</span>
-                      <p className="text-xs text-gray-500 font-medium mt-0.5">Overdue</p>
+                  <div className="bg-red-50 dark:bg-red-950/40 p-3 rounded-xl border border-red-200/60 dark:border-red-800/40 flex flex-col items-center justify-center text-center">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="w-2 h-2 rounded-full bg-[#ef4444]"></span>
+                      <span className="text-xl font-bold text-red-700 dark:text-red-300 leading-none">{upcomingTasks}</span>
                     </div>
+                    <p className="text-xs text-red-600 dark:text-red-400 font-semibold">Overdue</p>
                   </div>
                 </div>
               </Card>
@@ -625,7 +716,7 @@ const EmployeeDashboard = () => {
               <div className="space-y-4">
                 {mockHolidays.map((h, i) => (
                   <div key={i} className="flex gap-4 items-center border-b border-[#eceae3] dark:border-[#38352e] pb-4 last:border-0 last:pb-0">
-                    <div className="bg-[#f0fdf4] text-[#00a76b] rounded-xl text-center min-w-[56px] p-2 border border-[#bbf7d0]">
+                    <div className="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl text-center min-w-[56px] p-2 border border-indigo-100 dark:border-indigo-800/50">
                       <p className="text-xl font-bold leading-none">{h.date.split(' ')[0]}</p>
                       <p className="text-[10px] font-bold uppercase mt-1">{h.date.split(' ')[1]}</p>
                     </div>
@@ -633,14 +724,14 @@ const EmployeeDashboard = () => {
                       <p className="font-bold text-sm text-[#201515] dark:text-white">{h.name}</p>
                       <p className="text-xs text-[#939084] mt-0.5">{h.type}</p>
                     </div>
-                    <span className="text-[11px] font-bold bg-[#e6f6f0] dark:bg-[#064e3b] text-[#00a76b] dark:text-[#34d399] border border-[#00a76b]/20 px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
+                    <span className="text-[11px] font-bold bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50 px-3 py-1 rounded-full whitespace-nowrap shadow-xs">
                       In {h.daysLeft} days
                     </span>
                   </div>
                 ))}
               </div>
             </Card>
-            <div className="absolute inset-x-0 bottom-0 bg-[#00a76b] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 pointer-events-none">
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-r from-indigo-600 to-sky-600 text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 pointer-events-none">
               View All →
             </div>
           </div>
@@ -660,7 +751,7 @@ const EmployeeDashboard = () => {
                       {isUnread && (
                         <div className="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full z-10 border border-white"></div>
                       )}
-                      <div className="bg-[#eff6ff] text-[#3b82f6] rounded-xl text-center min-w-[56px] p-2 border border-[#bfdbfe] relative">
+                      <div className="bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-xl text-center min-w-[56px] p-2 border border-orange-100 dark:border-orange-800/50 relative">
                         <p className="text-xl font-bold leading-none">{evtDate.getDate()}</p>
                         <p className="text-[10px] font-bold uppercase mt-1">{evtDate.toLocaleString('default', { month: 'short' })}</p>
                       </div>
@@ -668,15 +759,21 @@ const EmployeeDashboard = () => {
                         <p className="font-bold text-sm text-[#201515] dark:text-white">{e.title}</p>
                         <p className="text-xs text-[#939084] line-clamp-1 mt-0.5">{e.description || 'No description'}</p>
                       </div>
-                      <p className="text-[11px] font-medium text-[#939084] whitespace-nowrap">{e.startTime}</p>
+                      <p className="text-[11px] font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/40 px-2.5 py-0.5 rounded-full whitespace-nowrap">{e.startTime}</p>
                     </div>
                   );
                 }) : (
-                  <div className="text-center py-10 text-[#939084]">not meeting/Event are schedual</div>
+                  <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <div className="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-950/40 border border-orange-100 dark:border-orange-800/40 flex items-center justify-center text-orange-500 mb-2.5">
+                      <Calendar size={22} />
+                    </div>
+                    <p className="text-sm font-semibold text-[#201515] dark:text-white">No Upcoming Events</p>
+                    <p className="text-xs text-[#939084] mt-0.5">No meetings or events scheduled</p>
+                  </div>
                 )}
               </div>
             </Card>
-            <div className="absolute inset-x-0 bottom-0 bg-[#00a76b] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 pointer-events-none">
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 pointer-events-none">
               View All Events →
             </div>
           </div>
@@ -743,11 +840,12 @@ const EmployeeDashboard = () => {
             {/* Filter Tabs */}
             <div className="flex items-center gap-1.5 p-1 bg-[#f4f2eb] dark:bg-[#1a1713] rounded-xl border border-[#e4dfd3] dark:border-[#2f2b24] self-start sm:self-auto">
               {[
-                { id: 'all', label: 'All Celebrations', count: events.length },
-                { id: 'birthday', label: '🎂 Birthdays', count: events.filter(e => e.type === 'birthday').length },
-                { id: 'anniversary', label: '🌟 Anniversaries', count: events.filter(e => e.type === 'anniversary').length },
+                { id: 'all', label: 'All Celebrations', icon: PartyPopper, count: events.length },
+                { id: 'birthday', label: 'Birthdays', icon: Cake, count: events.filter(e => e.type === 'birthday').length },
+                { id: 'anniversary', label: 'Anniversaries', icon: Sparkles, count: events.filter(e => e.type === 'anniversary').length },
               ].map((tab) => {
                 const isActive = eventFilter === tab.id;
+                const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
@@ -758,6 +856,7 @@ const EmployeeDashboard = () => {
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
                   >
+                    <Icon size={14} className={isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'} />
                     <span>{tab.label}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                       isActive
@@ -812,8 +911,12 @@ const EmployeeDashboard = () => {
                                 {ann.name.charAt(0).toUpperCase()}
                               </div>
                             )}
-                            <span className="absolute -bottom-1 -right-1 text-base drop-shadow-sm select-none">
-                              {isBirthday ? '🎂' : '🌟'}
+                            <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white dark:bg-[#14120e] shadow-sm flex items-center justify-center border border-gray-100 dark:border-[#2f2b24]">
+                              {isBirthday ? (
+                                <Cake size={11} className="text-amber-500" />
+                              ) : (
+                                <Sparkles size={11} className="text-amber-500" />
+                              )}
                             </span>
                           </div>
 
@@ -916,7 +1019,14 @@ const EmployeeDashboard = () => {
         </div>
       </div>
 
-
+      {/* ⚠️ FluidHR Desktop Application Missing Modal */}
+      <DesktopAppRequiredModal
+        isOpen={trackerMissingModal}
+        onClose={() => setTrackerMissingModal(false)}
+        onRetry={handleCheckIn}
+        token={token()}
+        isRetrying={checkInLoading}
+      />
     </div>
   );
 };

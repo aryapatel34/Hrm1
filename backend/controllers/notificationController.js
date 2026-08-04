@@ -4,13 +4,15 @@ const User = require('../models/User');
 exports.getNotifications = async (req, res) => {
   try {
     const received = await Notification.find({ userId: req.user.id })
+      .populate('senderId', 'name email role')
       .sort({ createdAt: -1 })
       .lean();
-    
+
     const sent = await Notification.find({ senderId: req.user.id, batchId: { $exists: true } })
+      .populate('senderId', 'name email role')
       .sort({ createdAt: -1 })
       .lean();
-    
+
     const uniqueSent = [];
     const seenBatches = new Set();
     for (const s of sent) {
@@ -24,7 +26,17 @@ exports.getNotifications = async (req, res) => {
 
     const allNotifs = [...received, ...uniqueSent].sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
 
-    res.json({ notifications: allNotifs });
+    const formatted = allNotifs.map(n => {
+      const sName = n.senderName || (n.senderId && typeof n.senderId === 'object' ? n.senderId.name : null) || 'HR / Management';
+      const sRole = n.senderRole || (n.senderId && typeof n.senderId === 'object' ? n.senderId.role : null) || '';
+      return {
+        ...n,
+        senderName: sName,
+        senderRole: sRole
+      };
+    });
+
+    res.json({ notifications: formatted });
   } catch (error) {
     console.error('Get Notifications failed:', error);
     res.status(500).json({ message: 'Unable to fetch notifications', error: error.message });
@@ -64,6 +76,10 @@ exports.createNotification = async (req, res) => {
     const { message, type, targetRole, targetUserId, targetLabel } = req.body;
     if (!message) return res.status(400).json({ message: 'Message is required' });
 
+    const senderUser = await User.findById(req.user.id).select('name role');
+    const senderName = senderUser?.name || (req.user.role === 'admin' ? 'Admin' : 'HR');
+    const senderRole = senderUser?.role || req.user.role || 'admin';
+
     let users = [];
     if (targetUserId) {
       const user = await User.findById(targetUserId).select('_id');
@@ -79,6 +95,8 @@ exports.createNotification = async (req, res) => {
       users.map(u => ({
         userId: u._id,
         senderId: req.user.id,
+        senderName,
+        senderRole,
         batchId,
         message,
         type: type || 'announcement',
@@ -97,6 +115,8 @@ exports.createNotification = async (req, res) => {
           type: n.type,
           read: false,
           senderId: req.user.id,
+          senderName,
+          senderRole,
           batchId: batchId,
           createdAt: n.createdAt
         });
@@ -123,7 +143,7 @@ exports.updateNotification = async (req, res) => {
     } else {
       await Notification.findByIdAndUpdate(req.params.id, { message });
     }
-    
+
     // 🔔 Emit real-time update socket
     const io = req.app.get('io');
     if (io) {
@@ -158,7 +178,7 @@ exports.deleteNotification = async (req, res) => {
     } else {
       await Notification.findByIdAndDelete(req.params.id);
     }
-    
+
     // 🔔 Emit real-time delete socket
     const io = req.app.get('io');
     if (io) {

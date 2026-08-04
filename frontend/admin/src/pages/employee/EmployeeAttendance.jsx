@@ -6,8 +6,10 @@ import {
 } from 'recharts';
 import {
   Calendar as CalendarIcon, Clock, Search, Filter, Download,
-  CheckCircle, XCircle, RefreshCw, Play, Square, FileClock, X
+  CheckCircle, XCircle, RefreshCw, Play, Square, FileClock, X, Monitor, AlertTriangle, ExternalLink
 } from 'lucide-react';
+import { startDesktopTracker, stopDesktopTracker } from '@shared/services/desktopTrackerService';
+import DesktopAppRequiredModal from '@shared/components/DesktopAppRequiredModal';
 
 // Custom tooltip for Weekly chart
 const CustomWeeklyTooltip = ({ active, payload, label, isDark }) => {
@@ -54,6 +56,7 @@ const EmployeeAttendance = () => {
   // Live Timer/Session State
   const [session, setSession] = useState(null);
   const [timerSeconds, setTimerSeconds] = useState(0);
+  const [trackerMissingModal, setTrackerMissingModal] = useState(false);
 
   // Correction Modal State
   const [isCorrectionModalOpen, setIsCorrectionModalOpen] = useState(false);
@@ -136,6 +139,12 @@ const EmployeeAttendance = () => {
   const handleCheckIn = async () => {
     setActionLoading(true);
     try {
+      const trackerRes = await startDesktopTracker(token());
+      if (!trackerRes.success) {
+        setTrackerMissingModal(true);
+        return;
+      }
+
       const now = new Date();
       const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
       const dateStr = now.toISOString().split('T')[0];
@@ -152,16 +161,11 @@ const EmployeeAttendance = () => {
         headers: { Authorization: `Bearer ${token()}` }
       }).catch(() => null);
 
-      toast.success('Clock in recorded successfully!');
+      toast.success('Clock in recorded & Desktop Tracker started!');
       await loadData(false);
     } catch (err) {
       console.error(err);
-      toast.error('Simulation check-in activated');
-      setSession({
-        isRunning: true,
-        startTime: new Date().toISOString(),
-        activeTime: 0
-      });
+      toast.error('Clock-in failed');
     } finally {
       setActionLoading(false);
     }
@@ -170,6 +174,7 @@ const EmployeeAttendance = () => {
   const handleCheckOut = async () => {
     setActionLoading(true);
     try {
+      await stopDesktopTracker();
       const now = new Date();
       const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
       const dateStr = now.toISOString().split('T')[0];
@@ -598,6 +603,14 @@ const EmployeeAttendance = () => {
         </div>
       )}
 
+      {/* ⚠️ FluidHR Desktop Application Missing Modal */}
+      <DesktopAppRequiredModal
+        isOpen={trackerMissingModal}
+        onClose={() => setTrackerMissingModal(false)}
+        onRetry={handleCheckIn}
+        token={token()}
+        isRetrying={actionLoading}
+      />
     </div>
   );
 };

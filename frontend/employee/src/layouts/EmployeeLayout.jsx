@@ -149,7 +149,9 @@ const EmployeeLayout = () => {
     if (!token) return;
     const fetch = () => axios.get('/api/notifications', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => {
-        const items = Array.isArray(r.data) ? r.data : (r.data?.data || []);
+        const items = Array.isArray(r.data)
+          ? r.data
+          : (r.data?.notifications || r.data?.data || []);
         setNotifications(items.slice(0, 50));
       }).catch(() => { });
     fetch();
@@ -174,6 +176,7 @@ const EmployeeLayout = () => {
       if (u) s.emit('join_notifications', { userId: u._id || u.id, role: 'employee' });
     });
     s.on('notification', d => setNotifications(p => [d, ...p].slice(0, 50)));
+    s.on('new_notification', d => setNotifications(p => [d, ...p].slice(0, 50)));
     s.on('timer_paused', d => { setTimerActive(false); if (d.reason === 'inactivity') setIsPaused(true); });
     s.on('timer_resumed', () => { setTimerActive(true); setIsPaused(false); });
     return () => s.disconnect();
@@ -481,26 +484,46 @@ const EmployeeLayout = () => {
                         <p className="text-[10px] font-black uppercase tracking-widest text-[#939084] dark:text-[#a3b3af]">No Active Alerts</p>
                       </div>
                     ) : (
-                      notifications.map((n, i) => (
-                        <div
-                          key={i}
-                          onClick={() => {
-                            navigate(n.path || '/employee/dashboard');
-                            setNotifOpen(false);
-                          }}
-                          className="p-4 border-b border-[#eceae3] dark:border-[#1a2d29] hover:bg-[#fffdf9] dark:hover:bg-[#162722]/50 transition-all cursor-pointer group"
-                        >
-                          <div className="flex gap-3">
-                            <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-[#00a76b]"></div>
-                            <div>
-                              <p className="text-[12px] font-bold text-[#201515] dark:text-[#e2e8f0] leading-tight group-hover:text-[#00a76b] transition-colors">{n.message || n.text}</p>
-                              <p className="text-[9px] font-black text-[#939084] dark:text-[#a3b3af] uppercase tracking-widest mt-1">
-                                {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently'}
-                              </p>
+                      notifications.map((n, i) => {
+                        const senderName = n.senderName || n.sender?.name || n.senderId?.name || (typeof n.sender === 'string' ? n.sender : null);
+                        const senderRole = n.senderRole || n.sender?.role || n.senderId?.role || '';
+
+                        return (
+                          <div
+                            key={n._id || i}
+                            onClick={() => {
+                              navigate(n.path || '/employee/dashboard');
+                              setNotifOpen(false);
+                            }}
+                            className="p-4 border-b border-[#eceae3] dark:border-[#1a2d29] hover:bg-[#fffdf9] dark:hover:bg-[#162722]/50 transition-all cursor-pointer group"
+                          >
+                            <div className="flex gap-3 items-start">
+                              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.type === 'birthday' ? 'bg-pink-500' : n.type === 'anniversary' ? 'bg-purple-500' : 'bg-[#00a76b]'}`}></div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[12px] font-bold text-[#201515] dark:text-[#e2e8f0] leading-snug group-hover:text-[#00a76b] transition-colors break-words">
+                                  {n.message || n.text}
+                                </p>
+                                
+                                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                  {senderName ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#00a76b] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200/80 dark:border-emerald-800/50">
+                                      <span className="text-gray-500 dark:text-gray-400 font-semibold">From:</span> {senderName} {senderRole ? `(${senderRole.toUpperCase()})` : ''}
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                                      <span className="text-gray-500 dark:text-gray-400 font-semibold">From:</span> HR / Management
+                                    </span>
+                                  )}
+
+                                  <span className="text-[9px] font-black text-[#939084] dark:text-[#a3b3af] uppercase tracking-widest">
+                                    {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (n.time || 'Recently')}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>

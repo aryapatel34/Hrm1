@@ -452,7 +452,11 @@ const Notifications = () => {
                       
                       return currentItems.map((notif) => {
                         const colorClass = TYPE_COLORS[notif.type] || TYPE_COLORS.default;
-                        const isCreator = notif.senderId && String(notif.senderId) === currentUserId;
+                        const sId = notif.senderId?._id ? String(notif.senderId._id) : (notif.senderId ? String(notif.senderId) : '');
+                        const isCreator = sId && sId === currentUserId;
+                        const senderDisplayName = notif.senderName || notif.senderId?.name || (typeof notif.sender === 'string' ? notif.sender : (notif.sender?.name || 'HR / Management'));
+                        const senderRole = notif.senderRole || notif.senderId?.role || notif.sender?.role || '';
+
                         return (
                           <div
                             key={notif._id}
@@ -470,15 +474,27 @@ const Notifications = () => {
                                   {notif.message}
                                 </p>
                               </div>
-                              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                              <div className="flex items-center gap-3 mt-2.5 flex-wrap">
                                 <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${colorClass}`}>
                                   {notif.type || 'general'}
                                 </span>
+
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 shadow-xs">
+                                  <span className="text-gray-400 dark:text-gray-500 font-semibold uppercase text-[9px]">By:</span>
+                                  <span>{isCreator ? `${senderDisplayName} (You)` : senderDisplayName}</span>
+                                  {senderRole && (
+                                    <span className="text-[9px] font-black uppercase tracking-wider opacity-70">
+                                      [{senderRole}]
+                                    </span>
+                                  )}
+                                </span>
+
                                 {isCreator && notif.targetLabel && (
                                   <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-slate-100 dark:bg-[#1a2d29] text-slate-500 dark:text-[#829e92]">
                                     Sent to: {notif.targetLabel}
                                   </span>
                                 )}
+                                
                                 <span className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-widest">
                                   {new Date(notif.createdAt).toLocaleString('en-US', {
                                     month: 'short', day: 'numeric',

@@ -10,6 +10,12 @@ const notificationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
+  senderName: {
+    type: String,
+  },
+  senderRole: {
+    type: String,
+  },
   batchId: {
     type: String,
   },

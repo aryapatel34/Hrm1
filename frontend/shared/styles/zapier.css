@@ -48,13 +48,56 @@
   padding: 0;
 }
 
+/* 🌐 Google Translate Zero-Offset Layout Fix */
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame,
+.goog-te-banner,
+.VIpgJd-ZVi9od-OR94Gd,
+.VIpgJd-ZVi9od-OR94Gd-header,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+.skiptranslate,
+#goog-gt-tt,
+#google_translate_element {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0px !important;
+  max-height: 0px !important;
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+html {
+  top: 0px !important;
+  margin-top: 0px !important;
+  padding-top: 0px !important;
+}
+
 body {
+  top: 0px !important;
+  margin-top: 0px !important;
+  padding-top: 0px !important;
+  position: static !important;
   background-color: var(--zap-cream);
   color: var(--zap-charcoal);
   font-family: 'Inter', -apple-system, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.25;
+}
+
+.goog-tooltip,
+.goog-tooltip:hover {
+  display: none !important;
+}
+
+.goog-text-highlight {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Typography Classes */

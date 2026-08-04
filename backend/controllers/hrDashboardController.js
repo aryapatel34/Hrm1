@@ -155,22 +155,58 @@ exports.getDashboardStats = async (req, res) => {
 
     // 8. Pending Approvals (Leaves)
     const pendingLeaves = await Leave.find({ status: { $regex: /^pending$/i } })
-      .populate('user', 'name')
+      .populate('user', 'name email role employeeId profileImage')
       .sort({ createdAt: -1 })
-      .limit(5);
+      .limit(10);
 
-    // 9. Announcements
-    const announcements = await Notification.find({ type: 'announcement', userId: req.user.id })
+    // 9. Announcements & Latest Notifications from Database
+    const rawAnnouncements = await Notification.find({
+      $or: [
+        { type: { $in: ['announcement', 'general', 'emergency', 'task', 'broadcast'] } },
+        { userId: req.user.id },
+        { senderId: req.user.id },
+        { type: { $exists: false } }
+      ]
+    })
+      .populate('senderId', 'name email role')
       .sort({ createdAt: -1 })
-      .limit(3);
+      .limit(40)
+      .lean();
+
+    const announcements = [];
+    const seenBatches = new Set();
+    for (const item of rawAnnouncements) {
+      if (item.type === 'birthday' || item.type === 'anniversary') continue;
+      const key = item.batchId || String(item._id);
+      if (!seenBatches.has(key)) {
+        seenBatches.add(key);
+        const sName = item.senderName || (item.senderId && typeof item.senderId === 'object' ? item.senderId.name : null) || (item.senderRole === 'admin' ? 'Admin' : 'HR Manager');
+        const sRole = item.senderRole || (item.senderId && typeof item.senderId === 'object' ? item.senderId.role : null) || 'HR / Management';
+        announcements.push({
+          ...item,
+          senderName: sName,
+          senderRole: sRole
+        });
+      }
+      if (announcements.length >= 3) break;
+    }
 
     // 10. Birthdays & Anniversaries (Upcoming in 30 days)
     const upcomingCelebrations = [];
-    const activeEmps = await Employee.find({ status: { $in: ['active', 'Active'] } }).populate('userId', 'name profile');
+    const activeEmps = await Employee.find({ status: { $in: ['active', 'Active'] } }).populate('userId', 'name profile email role');
     const today = new Date();
     today.setHours(0, 0, 0, 0); // start of day for accurate day diff
 
+    const wishesToday = await Notification.find({
+      senderId: req.user.id,
+      type: { $in: ['birthday', 'anniversary'] },
+      createdAt: { $gte: startOfToday, $lte: endOfToday }
+    }).select('userId type');
+
+    const wishedSet = new Set(wishesToday.map(w => `${w.type}-${String(w.userId)}`));
+
     activeEmps.forEach(emp => {
+      const uId = emp.userId?._id || emp.userId;
       // Check Birthday
       if (emp.dob) {
         let nextBirthday = new Date(today.getFullYear(), emp.dob.getMonth(), emp.dob.getDate());
@@ -179,13 +215,21 @@ exports.getDashboardStats = async (req, res) => {
         }
         const diffDays = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
         if (diffDays >= 0 && diffDays <= 30) {
+          const isToday = diffDays === 0;
+          const isWished = isToday ? wishedSet.has(`birthday-${String(uId)}`) : false;
           upcomingCelebrations.push({
             _id: `bday-${emp._id}`,
+            employeeId: emp._id,
+            userId: uId,
             name: emp.fullName || emp.userId?.name,
             profileImage: emp.profileImage,
+            email: emp.email || emp.userId?.email,
+            role: emp.role || emp.designation || 'Employee',
             type: 'Birthday',
             date: nextBirthday,
-            diffDays
+            diffDays,
+            isToday,
+            isWished
           });
         }
       }
@@ -200,13 +244,21 @@ exports.getDashboardStats = async (req, res) => {
         if (diffDays >= 0 && diffDays <= 30) {
           const years = nextAnniversary.getFullYear() - new Date(emp.joinDate).getFullYear();
           if (years > 0) {
+            const isToday = diffDays === 0;
+            const isWished = isToday ? wishedSet.has(`anniversary-${String(uId)}`) : false;
             upcomingCelebrations.push({
               _id: `anniv-${emp._id}`,
+              employeeId: emp._id,
+              userId: uId,
               name: emp.fullName || emp.userId?.name,
               profileImage: emp.profileImage,
+              email: emp.email || emp.userId?.email,
+              role: emp.role || emp.designation || 'Employee',
               type: `${years} Yr Anniversary`,
               date: nextAnniversary,
-              diffDays
+              diffDays,
+              isToday,
+              isWished
             });
           }
         }
@@ -261,14 +313,26 @@ exports.getDashboardStats = async (req, res) => {
           joinDate: r.joinDate,
           profileImage: r.profileImage || r.userId?.profile?.avatar
         })),
-        pendingApprovals: pendingLeaves.map(l => ({
-          _id: l._id,
-          type: 'Leave Request',
-          subType: l.leaveType,
-          name: l.user?.name,
-          date: l.createdAt,
-          details: `${new Date(l.startDate).toLocaleDateString()} - ${new Date(l.endDate).toLocaleDateString()}`
-        })),
+        pendingApprovals: pendingLeaves.map(l => {
+          const diffDays = Math.max(1, Math.round((new Date(l.endDate) - new Date(l.startDate)) / (1000 * 60 * 60 * 24)) + 1);
+          return {
+            _id: l._id,
+            type: 'Leave Request',
+            subType: l.leaveType,
+            name: l.user?.name || 'Employee',
+            email: l.user?.email || '',
+            role: l.user?.role || 'employee',
+            employeeId: l.user?.employeeId || '',
+            profileImage: l.user?.profileImage || '',
+            startDate: l.startDate,
+            endDate: l.endDate,
+            totalDays: l.totalDays || diffDays,
+            reason: l.reason || 'No reason provided',
+            status: l.status || 'pending',
+            date: l.createdAt,
+            details: `${new Date(l.startDate).toLocaleDateString()} - ${new Date(l.endDate).toLocaleDateString()}`
+          };
+        }),
         announcements,
         upcomingCelebrations: topCelebrations
       }
