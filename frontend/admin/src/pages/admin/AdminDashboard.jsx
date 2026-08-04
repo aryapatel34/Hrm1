@@ -511,18 +511,76 @@ const AdminDashboard = () => {
           <h3 className="font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
           <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
             {[
-              { label: 'Add Employee', icon: UserPlus, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/40', path: `/${pathRole}/create-user` },
-              { label: 'Add Department', icon: Layers, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950/40', path: `/${pathRole}/departments` },
-              { label: 'Create Job', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950/40', path: `/${pathRole}/jobs` },
-              { label: 'Approve Leave', icon: CheckCircle, color: 'text-[#00a76b]', bg: 'bg-green-50 dark:bg-green-950/40', path: `/${pathRole}/leave` },
-              { label: 'Run Payroll', icon: Activity, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/40', path: `/${pathRole}/payroll` },
-              { label: 'Announcement', icon: Bell, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-950/40', path: `/${pathRole}/notifications` },
+              { 
+                label: 'Add Employee', 
+                icon: UserPlus, 
+                color: 'text-blue-500', 
+                bg: 'bg-blue-50 dark:bg-blue-950/40', 
+                hoverBorder: 'hover:border-blue-400 dark:hover:border-blue-500',
+                hoverBg: 'hover:bg-blue-50/40 dark:hover:bg-blue-950/20',
+                hoverText: 'group-hover:text-blue-600 dark:group-hover:text-blue-400',
+                path: `/${pathRole}/create-user` 
+              },
+              { 
+                label: 'Add Department', 
+                icon: Layers, 
+                color: 'text-indigo-500', 
+                bg: 'bg-indigo-50 dark:bg-indigo-950/40', 
+                hoverBorder: 'hover:border-indigo-400 dark:hover:border-indigo-500',
+                hoverBg: 'hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20',
+                hoverText: 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400',
+                path: `/${pathRole}/departments` 
+              },
+              { 
+                label: 'Create Job', 
+                icon: Briefcase, 
+                color: 'text-purple-500', 
+                bg: 'bg-purple-50 dark:bg-purple-950/40', 
+                hoverBorder: 'hover:border-purple-400 dark:hover:border-purple-500',
+                hoverBg: 'hover:bg-purple-50/40 dark:hover:bg-purple-950/20',
+                hoverText: 'group-hover:text-purple-600 dark:group-hover:text-purple-400',
+                path: `/${pathRole}/jobs` 
+              },
+              { 
+                label: 'Approve Leave', 
+                icon: CheckCircle, 
+                color: 'text-[#00a76b]', 
+                bg: 'bg-green-50 dark:bg-green-950/40', 
+                hoverBorder: 'hover:border-[#00a76b] dark:hover:border-[#00a76b]',
+                hoverBg: 'hover:bg-green-50/40 dark:hover:bg-green-950/20',
+                hoverText: 'group-hover:text-[#00a76b] dark:group-hover:text-[#00a76b]',
+                path: `/${pathRole}/leave` 
+              },
+              { 
+                label: 'Run Payroll', 
+                icon: Activity, 
+                color: 'text-orange-500', 
+                bg: 'bg-orange-50 dark:bg-orange-950/40', 
+                hoverBorder: 'hover:border-orange-400 dark:hover:border-orange-500',
+                hoverBg: 'hover:bg-orange-50/40 dark:hover:bg-orange-950/20',
+                hoverText: 'group-hover:text-orange-600 dark:group-hover:text-orange-400',
+                path: `/${pathRole}/payroll` 
+              },
+              { 
+                label: 'Announcement', 
+                icon: Bell, 
+                color: 'text-red-500', 
+                bg: 'bg-red-50 dark:bg-red-950/40', 
+                hoverBorder: 'hover:border-red-400 dark:hover:border-red-500',
+                hoverBg: 'hover:bg-red-50/40 dark:hover:bg-red-950/20',
+                hoverText: 'group-hover:text-red-600 dark:group-hover:text-red-400',
+                path: `/${pathRole}/notifications` 
+              },
             ].map((action, i) => (
-              <button key={i} onClick={() => navigate(action.path)} className="flex flex-col items-center justify-center p-4 border border-gray-100 dark:border-[#2b2722] bg-white dark:bg-[#1a1714] rounded-xl hover:border-blue-200 dark:hover:border-blue-800 hover:bg-blue-50/30 dark:hover:bg-blue-950/20 transition-all group cursor-pointer">
+              <button 
+                key={i} 
+                onClick={() => navigate(action.path)} 
+                className={`flex flex-col items-center justify-center p-4 border border-gray-100 dark:border-[#2b2722] bg-white dark:bg-[#1a1714] rounded-xl ${action.hoverBorder} ${action.hoverBg} transition-all group cursor-pointer shadow-xs hover:shadow-md`}
+              >
                 <div className={`p-3 rounded-xl mb-3 ${action.bg} ${action.color} group-hover:scale-110 transition-transform`}>
                   <action.icon size={22} />
                 </div>
-                <span className="text-[11px] font-bold text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white text-center uppercase tracking-wider">{action.label}</span>
+                <span className={`text-[11px] font-bold text-gray-600 dark:text-gray-300 ${action.hoverText} text-center uppercase tracking-wider transition-colors`}>{action.label}</span>
               </button>
             ))}
           </div>
