@@ -84,6 +84,27 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // 🌐 Enforce zero-offset so Google Translate does not shift or cut the navbar
+    const fixTranslateOffset = () => {
+      if (document.body.style.top && document.body.style.top !== '0px') {
+        document.body.style.top = '0px';
+      }
+      if (document.body.style.marginTop && document.body.style.marginTop !== '0px') {
+        document.body.style.marginTop = '0px';
+      }
+      if (document.body.style.position === 'relative') {
+        document.body.style.position = 'static';
+      }
+      if (document.documentElement.style.top && document.documentElement.style.top !== '0px') {
+        document.documentElement.style.top = '0px';
+      }
+    };
+
+    const observer = new MutationObserver(fixTranslateOffset);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'] });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
+    fixTranslateOffset();
+
     const savedLang = localStorage.getItem('appLanguage');
     if (savedLang && savedLang !== 'English') {
       const langMap = { 'English': 'en', 'Gujarati': 'gu', 'Hindi': 'hi' };
@@ -94,6 +115,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
         if (select) {
           select.value = langCode;
           select.dispatchEvent(new Event('change'));
+          fixTranslateOffset();
         } else {
           setTimeout(() => triggerTranslation(langCode), 500);
         }
@@ -111,15 +133,25 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
 
         const style = document.createElement('style');
         style.innerHTML = `
-          .skiptranslate iframe { display: none !important; }
-          body { top: 0px !important; }
-          #google_translate_element { display: none !important; }
+          .goog-te-banner-frame, .goog-te-banner-frame.skiptranslate, iframe.goog-te-banner-frame,
+          .VIpgJd-ZVi9od-OR94Gd, .VIpgJd-ZVi9od-OR94Gd-header, .VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+          .skiptranslate, #google_translate_element, #goog-gt-tt {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            position: absolute !important;
+            top: -9999px !important;
+            left: -9999px !important;
+          }
+          html, body { top: 0px !important; margin-top: 0px !important; padding-top: 0px !important; }
         `;
         document.head.appendChild(style);
 
         setTimeout(() => triggerTranslation(translateTo), 1000);
       }
     }
+
+    return () => observer.disconnect();
   }, [location.pathname]);
 
   const toggleTheme = () => {
@@ -904,9 +936,17 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
 
                             const style = document.createElement('style');
                             style.innerHTML = `
-                              .skiptranslate iframe { display: none !important; }
-                              body { top: 0px !important; }
-                              #google_translate_element { display: none !important; }
+                              .goog-te-banner-frame, .goog-te-banner-frame.skiptranslate, iframe.goog-te-banner-frame,
+                              .VIpgJd-ZVi9od-OR94Gd, .VIpgJd-ZVi9od-OR94Gd-header, .VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+                              .skiptranslate, #google_translate_element, #goog-gt-tt {
+                                display: none !important;
+                                visibility: hidden !important;
+                                height: 0 !important;
+                                position: absolute !important;
+                                top: -9999px !important;
+                                left: -9999px !important;
+                              }
+                              html, body { top: 0px !important; margin-top: 0px !important; padding-top: 0px !important; }
                             `;
                             document.head.appendChild(style);
 
@@ -969,7 +1009,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
                           const currentUserId = (() => { try { return JSON.parse(atob(token.split('.')[1]))?.id; } catch { return null; } })();
                           const otherParticipant = c.isGroup ? null : c.participants.find(p => String(p._id) !== String(currentUserId));
                           const displayName = c.isGroup ? c.groupName : (otherParticipant?.name || 'User');
-                          
+
                           return (
                             <div
                               key={i}
@@ -983,7 +1023,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
                               <div className="flex gap-3">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-100 to-violet-100 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0 border">
                                   {c.isGroup ? (
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
                                   ) : displayName.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="min-w-0 flex-1">

@@ -347,14 +347,14 @@ exports.getUpcomingEvents = async (req, res) => {
           let diffTime = targetBday.getTime() - today.getTime();
           let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
-          // If birthday passed more than 7 days ago this year, check next year
-          if (diffDays < -7) {
+          // If birthday passed this year, check next year
+          if (diffDays < 0) {
             targetBday.setFullYear(today.getFullYear() + 1);
             diffTime = targetBday.getTime() - today.getTime();
             diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
           }
           
-          if (diffDays >= -7 && diffDays <= 60) {
+          if (diffDays >= 0 && diffDays <= 60) {
             events.push({
               id: `bday-${emp._id}`,
               name,
@@ -369,9 +369,7 @@ exports.getUpcomingEvents = async (req, res) => {
                 ? 'Birthday Today' 
                 : (diffDays === 1 
                     ? 'Birthday Tomorrow' 
-                    : (diffDays < 0 
-                        ? `Celebrated ${Math.abs(diffDays)}d ago` 
-                        : `Birthday in ${diffDays} days`)),
+                    : `Birthday in ${diffDays} days`),
               icon: 'Cake',
               color: '#00a76b'
             });
@@ -393,8 +391,8 @@ exports.getUpcomingEvents = async (req, res) => {
           let diffTime = targetAnn.getTime() - today.getTime();
           let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
-          // If anniversary passed more than 7 days ago this year, check next year
-          if (diffDays < -7) {
+          // If anniversary passed this year, check next year
+          if (diffDays < 0) {
             targetAnn.setFullYear(today.getFullYear() + 1);
             diffTime = targetAnn.getTime() - today.getTime();
             diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
@@ -402,7 +400,7 @@ exports.getUpcomingEvents = async (req, res) => {
 
           const years = targetAnn.getFullYear() - doj.getFullYear();
           
-          if (diffDays >= -7 && diffDays <= 60 && years > 0) {
+          if (diffDays >= 0 && diffDays <= 60 && years > 0) {
             const suffix = (years % 10 === 1 && years !== 11) ? 'st' :
                            (years % 10 === 2 && years !== 12) ? 'nd' :
                            (years % 10 === 3 && years !== 13) ? 'rd' : 'th';
@@ -421,9 +419,7 @@ exports.getUpcomingEvents = async (req, res) => {
                 ? `${years}${suffix} Work Anniversary Today` 
                 : (diffDays === 1 
                     ? `${years}${suffix} Anniversary Tomorrow` 
-                    : (diffDays < 0 
-                        ? `${years}${suffix} Anniversary (${Math.abs(diffDays)}d ago)` 
-                        : `${years}${suffix} Anniversary in ${diffDays} days`)),
+                    : `${years}${suffix} Anniversary in ${diffDays} days`),
               icon: 'Gift',
               color: '#00a76b'
             });

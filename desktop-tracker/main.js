@@ -22,8 +22,10 @@ app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('disable-gpu-rasterization');
 
+const http = require('http');
 const store = new Store();
 let mainWindow;
+let localServer = null;
 
 // Handle deep link logic
 function handleDeepLink(urlStr) {
@@ -31,13 +33,95 @@ function handleDeepLink(urlStr) {
     const parsedUrl = new URL(urlStr);
     if (parsedUrl.protocol === 'fluidhr-tracker:') {
       const token = parsedUrl.searchParams.get('token');
-      if (token && mainWindow) {
-        mainWindow.webContents.send('deep-link-token', token);
+      const action = parsedUrl.searchParams.get('action') || (parsedUrl.hostname === 'start' ? 'start' : parsedUrl.pathname.replace(/^\/+/, '')) || 'start';
+      
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+
+        if (token) {
+          mainWindow.webContents.send('deep-link-token', token);
+        }
+        if (action) {
+          mainWindow.webContents.send('deep-link-action', action);
+        }
       }
     }
   } catch (err) {
     console.error('Failed to parse deep link:', err);
   }
+}
+
+// ── LOCAL HTTP BRIDGE SERVER (for instant browser-to-desktop communication) ──
+function startLocalBridgeServer() {
+  const PORT = 28734;
+  localServer = http.createServer((req, res) => {
+    // Set standard CORS headers so web app (http://localhost:4000) can interact seamlessly
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    try {
+      const reqUrl = new URL(req.url, `http://127.0.0.1:${PORT}`);
+      const pathname = reqUrl.pathname;
+
+      if (pathname === '/ping' || pathname === '/status') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          ok: true,
+          app: 'FluidHR Tracker',
+          version: app.getVersion()
+        }));
+        return;
+      }
+
+      if (pathname === '/start') {
+        const token = reqUrl.searchParams.get('token');
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore();
+          mainWindow.show();
+          mainWindow.focus();
+          if (token) {
+            mainWindow.webContents.send('deep-link-token', token);
+          }
+          mainWindow.webContents.send('deep-link-action', 'start');
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, message: 'Tracking started' }));
+        return;
+      }
+
+      if (pathname === '/stop') {
+        if (mainWindow) {
+          mainWindow.webContents.send('deep-link-action', 'stop');
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, message: 'Tracking stopped' }));
+        return;
+      }
+
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Not Found' }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+
+  localServer.on('error', (err) => {
+    console.warn('[Local Server Error] Could not bind to port 28734:', err.message);
+  });
+
+  localServer.listen(PORT, '127.0.0.1', () => {
+    console.log(`[Desktop Tracker] Local bridge listening on http://127.0.0.1:${PORT}`);
+  });
 }
 
 // macOS open-url handler
@@ -110,6 +194,7 @@ if (!gotTheLock) {
 
   app.whenReady().then(() => {
     createWindow();
+    startLocalBridgeServer();
 
     const url = process.argv.find(arg => arg.startsWith('fluidhr-tracker://'));
     if (url) {

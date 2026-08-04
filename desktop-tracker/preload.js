@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   onDeepLinkToken: (callback) =>
     ipcRenderer.on('deep-link-token', (event, data) => callback(data)),
+  onDeepLinkAction: (callback) =>
+    ipcRenderer.on('deep-link-action', (event, data) => callback(data)),
 
   // ── SYSTEM-WIDE IDLE STATUS ───────────────────────────
   // Fired every second from main process using powerMonitor.getSystemIdleTime()

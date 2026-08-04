@@ -603,6 +603,29 @@ if (window.electronAPI?.onDeepLinkToken) {
   });
 }
 
+if (window.electronAPI?.onDeepLinkAction) {
+  window.electronAPI.onDeepLinkAction(async (action) => {
+    console.log('[Remote/DeepLink Action]', action);
+    if (!authToken) {
+      authToken = await window.electronAPI.getStoreValue('authToken');
+    }
+    if (action === 'start') {
+      if (authToken) {
+        hideAuthSection();
+        await startSession();
+      }
+    } else if (action === 'stop') {
+      if (authToken) {
+        await stopSession();
+      }
+    } else if (action === 'pause') {
+      if (authToken) {
+        await pauseSession();
+      }
+    }
+  });
+}
+
 async function logout() {
   if (socket) {
     socket.disconnect();

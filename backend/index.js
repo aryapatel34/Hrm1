@@ -173,6 +173,7 @@ app.use('/api/audit-logs', require('./routes/auditLogRoutes'));
 app.use('/api/search', searchRoutes);
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/hr-dashboard', require('./routes/hrDashboardRoutes'));
+app.use('/api/desktop-app', require('./routes/desktopAppRoutes'));
 
 
 // Health check
