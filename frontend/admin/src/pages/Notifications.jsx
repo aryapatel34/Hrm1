@@ -35,7 +35,9 @@ const Notifications = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   
-  const formRef = useRef(null);
+  const targetRoleRef = useRef(null);
+  const roleFilterRef = useRef(null);
+  const empSelectRef  = useRef(null);
 
   const token   = sessionStorage.getItem('token');
   const role    = sessionStorage.getItem('role') || 'admin';
@@ -45,13 +47,14 @@ const Notifications = () => {
   // Click outside handler for custom dropdowns
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (formRef.current && !formRef.current.contains(event.target)) {
-        setForm(f => {
-          if (f._targetRoleOpen || f._roleFilterOpen || f._empSelectOpen) {
-            return { ...f, _targetRoleOpen: false, _roleFilterOpen: false, _empSelectOpen: false };
-          }
-          return f;
-        });
+      if (targetRoleRef.current && !targetRoleRef.current.contains(event.target)) {
+        setForm(f => f._targetRoleOpen ? { ...f, _targetRoleOpen: false } : f);
+      }
+      if (roleFilterRef.current && !roleFilterRef.current.contains(event.target)) {
+        setForm(f => f._roleFilterOpen ? { ...f, _roleFilterOpen: false } : f);
+      }
+      if (empSelectRef.current && !empSelectRef.current.contains(event.target)) {
+        setForm(f => f._empSelectOpen ? { ...f, _empSelectOpen: false } : f);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -163,7 +166,7 @@ const Notifications = () => {
   };
 
   return (
-    <div className="px-3 md:px-5 pb-20 pt-0 max-w-7xl mx-auto">
+    <div className="px-3 md:px-5 pb-20 pt-0 w-full">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between gap-4 w-full">
         <h1 className="text-[28px] font-black text-[#201515] dark:text-white tracking-tight">
@@ -203,7 +206,7 @@ const Notifications = () => {
               </button>
               <div className="p-4 border-b border-[#eceae3] bg-white">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-[5px] bg-[#00a76b] flex items-center justify-center">
+                <div className="w-9 h-9 rounded-[12px] bg-[#00a76b] flex items-center justify-center">
                   <Send size={16} className="text-white" />
                 </div>
                 <div>
@@ -213,17 +216,17 @@ const Notifications = () => {
               </div>
             </div>
 
-            <form ref={formRef} onSubmit={handleSend} className="p-5 pb-6 space-y-4">
+            <form onSubmit={handleSend} className="p-5 pb-6 space-y-4">
               {/* Target Role - Hide in edit mode */}
               {!editingId && (
               <div>
                 <label className="block text-[11px] font-black uppercase tracking-widest text-[#939084] mb-2">
                   Send To
                 </label>
-                <div className="relative">
+                <div ref={targetRoleRef} className="relative">
                   <div 
                     onClick={() => setForm(f => ({ ...f, _targetRoleOpen: !f._targetRoleOpen, _roleFilterOpen: false, _empSelectOpen: false }))}
-                    className={`w-full bg-white border ${form._targetRoleOpen ? 'border-[#00a76b]' : 'border-[#eceae3]'} rounded-[5px] px-4 py-3 text-[13px] font-bold text-[#201515] cursor-pointer flex justify-between items-center transition-colors`}
+                    className={`w-full bg-white border ${form._targetRoleOpen ? 'border-[#00a76b]' : 'border-[#eceae3]'} rounded-[12px] px-4 py-3 text-[13px] font-bold text-[#201515] cursor-pointer flex justify-between items-center transition-colors`}
                   >
                     <span>
                       {{
@@ -239,7 +242,7 @@ const Notifications = () => {
                   </div>
                   
                   {form._targetRoleOpen && (
-                    <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#eceae3] rounded-[8px] shadow-lg overflow-hidden z-20">
+                    <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#eceae3] rounded-[12px] shadow-lg overflow-hidden z-20">
                       {[
                         {v: 'all', l: 'All Employees'},
                         {v: 'employee', l: 'Employees Only'},
@@ -270,10 +273,10 @@ const Notifications = () => {
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     {/* Role Filter */}
-                    <div className="relative">
+                    <div ref={roleFilterRef} className="relative">
                       <div 
                         onClick={() => setForm(f => ({ ...f, _roleFilterOpen: !f._roleFilterOpen, _targetRoleOpen: false, _empSelectOpen: false }))}
-                        className={`w-full bg-white border ${form._roleFilterOpen ? 'border-[#00a76b]' : 'border-[#eceae3]'} rounded-[5px] px-4 py-3 text-[13px] font-bold text-[#201515] cursor-pointer flex justify-between items-center transition-colors`}
+                        className={`w-full bg-white border ${form._roleFilterOpen ? 'border-[#00a76b]' : 'border-[#eceae3]'} rounded-[12px] px-4 py-3 text-[13px] font-bold text-[#201515] cursor-pointer flex justify-between items-center transition-colors`}
                       >
                         <span>
                           {{
@@ -288,7 +291,7 @@ const Notifications = () => {
                       </div>
                       
                       {form._roleFilterOpen && (
-                        <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#eceae3] rounded-[8px] shadow-lg overflow-hidden z-20">
+                        <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#eceae3] rounded-[12px] shadow-lg overflow-hidden z-20">
                           {[
                             {v: 'all', l: 'Any Role'},
                             {v: 'employee', l: 'Employees'},
@@ -309,10 +312,10 @@ const Notifications = () => {
                     </div>
 
                     {/* Employee Name Select */}
-                    <div className="relative">
+                    <div ref={empSelectRef} className="relative">
                       <div 
                         onClick={() => setForm(f => ({ ...f, _empSelectOpen: !f._empSelectOpen, _targetRoleOpen: false, _roleFilterOpen: false }))}
-                        className={`w-full bg-white border ${form._empSelectOpen ? 'border-[#00a76b]' : 'border-[#eceae3]'} rounded-[5px] px-4 py-3 text-[13px] font-bold text-[#201515] cursor-pointer flex justify-between items-center transition-colors`}
+                        className={`w-full bg-white border ${form._empSelectOpen ? 'border-[#00a76b]' : 'border-[#eceae3]'} rounded-[12px] px-4 py-3 text-[13px] font-bold text-[#201515] cursor-pointer flex justify-between items-center transition-colors`}
                       >
                         <span className="truncate">
                           {form.targetUserId ? employees.find(e => e.userId && e.userId._id === form.targetUserId)?.userId?.name || '-- Name --' : '-- Name --'}
@@ -321,7 +324,7 @@ const Notifications = () => {
                       </div>
                       
                       {form._empSelectOpen && (
-                        <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#eceae3] rounded-[8px] shadow-lg overflow-hidden z-20 max-h-60 overflow-y-auto">
+                        <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#eceae3] rounded-[12px] shadow-lg overflow-hidden z-20 max-h-60 overflow-y-auto">
                           <div 
                             onClick={() => setForm(f => ({ ...f, targetUserId: '', _empSelectOpen: false }))}
                             className={`px-4 py-2.5 text-[13px] font-bold cursor-pointer transition-colors ${!form.targetUserId ? 'bg-[#00a76b]/10 text-[#00a76b]' : 'text-[#201515] hover:bg-slate-50'}`}
@@ -358,7 +361,7 @@ const Notifications = () => {
                       key={t}
                       type="button"
                       onClick={() => setForm(f => ({ ...f, type: t }))}
-                      className={`px-3 py-2 rounded-[5px] text-[11px] font-black uppercase tracking-wider border transition-all capitalize ${
+                      className={`px-3 py-2 rounded-[12px] text-[11px] font-black uppercase tracking-wider border transition-all capitalize ${
                         form.type === t
                           ? 'bg-[#00a76b] text-white border-[#00a76b]'
                           : 'bg-white text-[#36342e] border-[#eceae3] hover:border-[#00a76b]'
@@ -380,14 +383,14 @@ const Notifications = () => {
                   onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
                   rows={3}
                   placeholder="Type your announcement here..."
-                  className="w-full bg-white border border-[#eceae3] rounded-[5px] px-4 py-3 text-[13px] font-medium text-[#201515] placeholder-[#c5c0b1] focus:outline-none focus:border-[#00a76b] resize-none transition-colors"
+                  className="w-full bg-white border border-[#eceae3] rounded-[12px] px-4 py-3 text-[13px] font-medium text-[#201515] placeholder-[#c5c0b1] focus:outline-none focus:border-[#00a76b] resize-none transition-colors"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full flex items-center justify-center gap-2 bg-[#00a76b] hover:bg-[#00915c] disabled:opacity-60 text-white px-6 py-3 rounded-[5px] font-black text-[13px] transition-all"
+                className="w-full flex items-center justify-center gap-2 bg-[#00a76b] hover:bg-[#00915c] disabled:opacity-60 text-white px-6 py-3 rounded-[12px] font-black text-[13px] transition-all"
               >
                 {sending ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -402,7 +405,7 @@ const Notifications = () => {
                 <button
                   type="button"
                   onClick={() => { setEditingId(null); setForm({ message: '', type: 'announcement', targetRole: 'all', targetUserId: '', specificRoleFilter: 'all' }); setIsModalOpen(false); }}
-                  className="w-full mt-2 flex items-center justify-center bg-white border border-[#eceae3] hover:bg-gray-50 text-[#201515] px-6 py-3 rounded-[5px] font-black text-[13px] transition-all"
+                  className="w-full mt-2 flex items-center justify-center bg-[#00a76b] hover:bg-[#00915c] text-white px-6 py-3 rounded-[12px] font-black text-[13px] transition-all"
                 >
                   Cancel Edit
                 </button>
@@ -514,30 +517,51 @@ const Notifications = () => {
                   {(() => {
                     const totalPages = Math.max(Math.ceil(displayNotifications.length / itemsPerPage), 1);
                     return (
-                      <div className="px-6 py-4 bg-slate-50 dark:bg-[#111c18] border-t border-[#e2eae7] dark:border-[#13221e] flex items-center justify-between">
+                      <div className="px-6 py-4 bg-slate-50 dark:bg-[#111c18] border-t border-[#e2eae7] dark:border-[#13221e] flex items-center justify-between flex-wrap gap-3">
                         <button
                           onClick={() => {
                             setCurrentPage(prev => Math.max(prev - 1, 1));
-                            document.querySelector('.max-h-\\[680px\\]')?.scrollTo({ top: 0, behavior: 'smooth' });
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
                           }}
                           disabled={currentPage === 1}
                           className="px-4 py-2 text-xs font-bold bg-white dark:bg-[#0c1512] border border-[#e2eae7] dark:border-[#13221e] rounded-xl text-slate-600 dark:text-[#a3b3af] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-[#111c18] transition-all cursor-pointer"
                         >
                           Previous
                         </button>
-                        <span className="text-xs font-bold text-slate-500 dark:text-[#829e92]">
-                          Page {currentPage} of {totalPages}
-                        </span>
-                        <button
-                          onClick={() => {
-                            setCurrentPage(prev => Math.min(prev + 1, totalPages));
-                            document.querySelector('.max-h-\\[680px\\]')?.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          disabled={currentPage === totalPages}
-                          className="px-4 py-2 text-xs font-bold bg-white dark:bg-[#0c1512] border border-[#e2eae7] dark:border-[#13221e] rounded-xl text-slate-600 dark:text-[#a3b3af] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-[#111c18] transition-all cursor-pointer"
-                        >
-                          Next
-                        </button>
+
+                        <div className="flex items-center gap-3">
+                          {totalPages > 1 && (
+                            <div className="flex items-center gap-1.5 overflow-x-auto max-w-[280px] sm:max-w-none py-1">
+                              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => {
+                                    setCurrentPage(pageNum);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  }}
+                                  className={`min-w-[32px] h-8 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer border flex items-center justify-center ${
+                                    currentPage === pageNum
+                                      ? 'bg-[#00a76b] text-white border-[#00a76b] shadow-sm shadow-[#00a76b]/20'
+                                      : 'bg-white dark:bg-[#0c1512] border-[#e2eae7] dark:border-[#13221e] text-slate-600 dark:text-[#a3b3af] hover:bg-slate-100 dark:hover:bg-[#152420]'
+                                  }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          <button
+                            onClick={() => {
+                              setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            disabled={currentPage === totalPages}
+                            className="px-4 py-2 text-xs font-bold bg-white dark:bg-[#0c1512] border border-[#e2eae7] dark:border-[#13221e] rounded-xl text-slate-600 dark:text-[#a3b3af] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-[#111c18] transition-all cursor-pointer"
+                          >
+                            Next
+                          </button>
+                        </div>
                       </div>
                     );
                   })()}

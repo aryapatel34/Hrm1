@@ -676,7 +676,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
 
       {/* 1. LEFT SIDEBAR (Full height sticky sidebar / slide-out drawer on mobile) */}
       <aside
-        className={`flex flex-col shrink-0 border-r transition-all duration-300 ease-in-out h-screen overflow-hidden z-40 fixed md:sticky top-0 ${isSidebarOpen
+        className={`flex flex-col shrink-0 border-r transition-all duration-300 ease-in-out h-screen overflow-hidden z-[150] fixed md:sticky top-0 ${isSidebarOpen
           ? 'left-0 w-[250px] translate-x-0'
           : '-left-[250px] md:left-0 md:translate-x-0 md:w-[72px]'
           }`}
@@ -757,9 +757,10 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           <div className="flex items-center h-full w-full px-6">
             <button
               onClick={toggleSidebar}
-              className="md:hidden flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-full text-[#374151] dark:text-[#cbd5e1] transition-all cursor-pointer border-none bg-transparent mr-4"
+              className="flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-full text-[#374151] dark:text-[#cbd5e1] transition-all cursor-pointer border-none bg-transparent mr-2 sm:mr-3 shrink-0"
+              title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             >
-              <Menu size={22} />
+              <Menu size={20} />
             </button>
 
             {/* Role-based Search bar in the center-left (hidden on mobile) */}
@@ -1228,7 +1229,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
             </div>
           ) : (
             <div className="animate-fade-in w-full min-h-full flex flex-col">
-              <div className="flex-1 max-w-[1440px] mx-auto w-full">
+              <div className="flex-1 w-full">
                 <ErrorBoundary>
                   <Outlet />
                 </ErrorBoundary>
