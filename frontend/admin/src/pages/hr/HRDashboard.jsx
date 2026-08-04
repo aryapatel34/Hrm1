@@ -18,7 +18,7 @@ const COLORS = ['#00a76b', '#3b82f6', '#f43f5e', '#f59e0b', '#8b5cf6', '#64748b'
 
 // Small generic card wrapper
 const Card = ({ children, className = '' }) => (
-  <div className={`bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-[#eceae3] ${className}`}>
+  <div className={`bg-white dark:bg-[#161311] rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-[#eceae3] dark:border-[#28251e] ${className}`}>
     {children}
   </div>
 );
@@ -45,14 +45,14 @@ const CustomDropdown = ({ value, onChange, options, className = '' }) => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-[#F8F9FB] hover:bg-[#eceae3] text-gray-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-[#eceae3] transition-all cursor-pointer shadow-xs"
+        className="flex items-center gap-2 bg-[#F8F9FB] dark:bg-[#1f1b17] hover:bg-[#eceae3] dark:hover:bg-[#2a2520] text-gray-700 dark:text-gray-200 text-xs font-bold px-3 py-1.5 rounded-lg border border-[#eceae3] dark:border-[#38332c] transition-all cursor-pointer shadow-xs"
       >
         <span>{selectedLabel}</span>
-        <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1.5 w-36 bg-white rounded-xl shadow-xl border border-[#eceae3] py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute right-0 mt-1.5 w-36 bg-white dark:bg-[#1e1a17] rounded-xl shadow-xl border border-[#eceae3] dark:border-[#38332c] py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
           {options.map((opt, idx) => {
             const optVal = typeof opt === 'object' ? opt.value : opt;
             const optLabel = typeof opt === 'object' ? opt.label : opt;
@@ -66,7 +66,7 @@ const CustomDropdown = ({ value, onChange, options, className = '' }) => {
                   setIsOpen(false);
                 }}
                 className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors flex items-center justify-between cursor-pointer ${
-                  isSelected ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold' : 'text-gray-700 hover:bg-gray-50'
+                  isSelected ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#28231e]'
                 }`}
               >
                 <span>{optLabel}</span>
@@ -245,10 +245,10 @@ const HRDashboard = () => {
       {/* 1. Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">Good Morning, {firstName}! 👋</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">Good Morning, {firstName}! 👋</h1>
         </div>
         <div className="flex flex-wrap md:flex-nowrap items-center gap-4 mt-4 md:mt-0">
-          <div className="flex items-center whitespace-nowrap text-gray-600 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 font-medium">
+          <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-[#161311] px-4 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-[#28251e] font-medium">
             <Calendar size={18} className="mr-2 text-[#00a76b] shrink-0" />
             {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
@@ -258,11 +258,11 @@ const HRDashboard = () => {
       {/* 2. Stats Cards Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
         {[
-          { label: 'Total Employees', val: stats.totalEmployees, subtext: '+12 this month', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50', hoverBorder: 'hover:border-blue-400 hover:shadow-blue-500/10' },
-          { label: 'Active Employees', val: stats.activeEmployees, subtext: `${stats.activeEmployeesPercent}% of total`, icon: CheckCircle, color: 'text-[#00a76b]', bg: 'bg-green-50', hoverBorder: 'hover:border-[#00a76b] hover:shadow-green-500/10' },
-          { label: 'New Joiners', val: stats.newJoiners, subtext: '+3 this month', icon: UserPlus, color: 'text-indigo-500', bg: 'bg-indigo-50', hoverBorder: 'hover:border-indigo-400 hover:shadow-indigo-500/10' },
-          { label: 'Employees on Leave', val: stats.employeesOnLeave, subtext: `${stats.employeesOnLeavePercent}% of total`, icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50', hoverBorder: 'hover:border-orange-400 hover:shadow-orange-500/10' },
-          { label: 'Pending Leave', val: stats.pendingLeaveApprovals, subtext: 'Requires your action', icon: Clock, color: 'text-red-500', bg: 'bg-red-50', hoverBorder: 'hover:border-red-400 hover:shadow-red-500/10' },
+          { label: 'Total Employees', val: stats.totalEmployees, subtext: '+12 this month', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/40', hoverBorder: 'hover:border-blue-400 hover:shadow-blue-500/10' },
+          { label: 'Active Employees', val: stats.activeEmployees, subtext: `${stats.activeEmployeesPercent}% of total`, icon: CheckCircle, color: 'text-[#00a76b]', bg: 'bg-green-50 dark:bg-green-950/40', hoverBorder: 'hover:border-[#00a76b] hover:shadow-green-500/10' },
+          { label: 'New Joiners', val: stats.newJoiners, subtext: '+3 this month', icon: UserPlus, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950/40', hoverBorder: 'hover:border-indigo-400 hover:shadow-indigo-500/10' },
+          { label: 'Employees on Leave', val: stats.employeesOnLeave, subtext: `${stats.employeesOnLeavePercent}% of total`, icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/40', hoverBorder: 'hover:border-orange-400 hover:shadow-orange-500/10' },
+          { label: 'Pending Leave', val: stats.pendingLeaveApprovals, subtext: 'Requires your action', icon: Clock, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-950/40', hoverBorder: 'hover:border-red-400 hover:shadow-red-500/10' },
         ].map((stat, i) => (
           <Card key={i} className={`p-4 flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md ${stat.hoverBorder}`}>
             <div className="mb-3">
@@ -271,9 +271,9 @@ const HRDashboard = () => {
               </div>
             </div>
             <div className="flex-1 flex flex-col justify-end">
-              <p className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 leading-tight">{stat.label}</p>
-              <h3 className="text-2xl font-black text-gray-900 leading-none">{stat.val}</h3>
-              <p className={`text-[10px] mt-1.5 font-medium ${stat.subtext.includes('+') ? 'text-green-600' : 'text-gray-400'}`}>
+              <p className="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 leading-tight">{stat.label}</p>
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none">{stat.val}</h3>
+              <p className={`text-[10px] mt-1.5 font-medium ${stat.subtext.includes('+') ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
                 {stat.subtext}
               </p>
             </div>
@@ -286,7 +286,7 @@ const HRDashboard = () => {
         {/* Attendance */}
         <Card className="lg:col-span-1 p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900">Attendance Overview</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white">Attendance Overview</h3>
             <CustomDropdown
               value={attPeriod}
               onChange={setAttPeriod}
@@ -297,10 +297,10 @@ const HRDashboard = () => {
             {charts.attendanceOverview.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={charts.attendanceOverview} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.5)' }} />
                   <Line type="monotone" dataKey="present" stroke="#00a76b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
                   <Line type="monotone" dataKey="absent" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />
                   <Line type="monotone" dataKey="late" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />
@@ -314,7 +314,7 @@ const HRDashboard = () => {
 
         {/* Role Distribution */}
         <Card className="p-6">
-          <h3 className="font-bold text-gray-900 mb-6">Role-wise Employees</h3>
+          <h3 className="font-bold text-gray-900 dark:text-white mb-6">Role-wise Employees</h3>
           <div className="flex flex-col items-center justify-center">
             {hrRoleDistribution.length > 0 ? (
               <>
@@ -324,19 +324,19 @@ const HRDashboard = () => {
                       <Pie data={hrRoleDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
                         {hrRoleDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                       </Pie>
-                      <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                      <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff' }} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-2xl font-black text-gray-900">{hrRoleTotal}</span>
-                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total</span>
+                    <span className="text-2xl font-black text-gray-900 dark:text-white">{hrRoleTotal}</span>
+                    <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</span>
                   </div>
                 </div>
                 <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 w-full">
                   {hrRoleDistribution.map((entry, index) => (
-                    <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
+                    <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
-                      {entry.name}: <span className="text-gray-900 font-bold">{entry.value}</span>
+                      {entry.name}: <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
                     </div>
                   ))}
                 </div>
@@ -349,7 +349,7 @@ const HRDashboard = () => {
 
         {/* Gender Distribution */}
         <Card className="p-6">
-          <h3 className="font-bold text-gray-900 mb-6">Gender Distribution</h3>
+          <h3 className="font-bold text-gray-900 dark:text-white mb-6">Gender Distribution</h3>
           <div className="flex flex-col items-center justify-center">
             {charts.genderDistribution.length > 0 ? (
               <>
@@ -359,19 +359,19 @@ const HRDashboard = () => {
                       <Pie data={charts.genderDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
                         {charts.genderDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={['#3b82f6', '#f43f5e', '#f59e0b'][index % 3]} />)}
                       </Pie>
-                      <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                      <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff' }} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-2xl font-black text-gray-900">{stats.totalEmployees}</span>
-                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total</span>
+                    <span className="text-2xl font-black text-gray-900 dark:text-white">{stats.totalEmployees}</span>
+                    <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</span>
                   </div>
                 </div>
                 <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 w-full">
                   {charts.genderDistribution.map((entry, index) => (
-                    <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
+                    <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ['#3b82f6', '#f43f5e', '#f59e0b'][index % 3] }}></span>
-                      {entry.name}: <span className="text-gray-900 font-bold">{entry.value}</span>
+                      {entry.name}: <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
                     </div>
                   ))}
                 </div>
@@ -387,7 +387,7 @@ const HRDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900">Leave Overview</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white">Leave Overview</h3>
             <CustomDropdown
               value={leavePeriod}
               onChange={setLeavePeriod}
@@ -395,28 +395,28 @@ const HRDashboard = () => {
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-gray-50 rounded-xl">
-              <p className="text-xs font-bold text-gray-500 mb-1">Total Leaves</p>
-              <p className="text-2xl font-black text-gray-900">{currentLeaveOverview.total || 0}</p>
+            <div className="p-4 bg-gray-50 dark:bg-[#1a1714] border border-transparent dark:border-[#2b2722] rounded-xl">
+              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Total Leaves</p>
+              <p className="text-2xl font-black text-gray-900 dark:text-white">{currentLeaveOverview.total || 0}</p>
             </div>
-            <div className="p-4 bg-green-50 rounded-xl">
-              <p className="text-xs font-bold text-green-700 mb-1">Approved</p>
-              <p className="text-2xl font-black text-green-800">{currentLeaveOverview.approved || 0}</p>
-              <p className="text-[10px] font-semibold text-green-600">
+            <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-transparent dark:border-green-900/30 rounded-xl">
+              <p className="text-xs font-bold text-green-700 dark:text-green-300 mb-1">Approved</p>
+              <p className="text-2xl font-black text-green-800 dark:text-green-200">{currentLeaveOverview.approved || 0}</p>
+              <p className="text-[10px] font-semibold text-green-600 dark:text-green-400">
                 {currentLeaveOverview.total ? Math.round((currentLeaveOverview.approved / currentLeaveOverview.total) * 100) : 0}%
               </p>
             </div>
-            <div className="p-4 bg-red-50 rounded-xl">
-              <p className="text-xs font-bold text-red-700 mb-1">Rejected</p>
-              <p className="text-2xl font-black text-red-800">{currentLeaveOverview.rejected || 0}</p>
-              <p className="text-[10px] font-semibold text-red-600">
+            <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-transparent dark:border-red-900/30 rounded-xl">
+              <p className="text-xs font-bold text-red-700 dark:text-red-300 mb-1">Rejected</p>
+              <p className="text-2xl font-black text-red-800 dark:text-red-200">{currentLeaveOverview.rejected || 0}</p>
+              <p className="text-[10px] font-semibold text-red-600 dark:text-red-400">
                 {currentLeaveOverview.total ? Math.round((currentLeaveOverview.rejected / currentLeaveOverview.total) * 100) : 0}%
               </p>
             </div>
-            <div className="p-4 bg-orange-50 rounded-xl">
-              <p className="text-xs font-bold text-orange-700 mb-1">Cancelled</p>
-              <p className="text-2xl font-black text-orange-800">{currentLeaveOverview.cancelled || 0}</p>
-              <p className="text-[10px] font-semibold text-orange-600">
+            <div className="p-4 bg-orange-50 dark:bg-orange-950/30 border border-transparent dark:border-orange-900/30 rounded-xl">
+              <p className="text-xs font-bold text-orange-700 dark:text-orange-300 mb-1">Cancelled</p>
+              <p className="text-2xl font-black text-orange-800 dark:text-orange-200">{currentLeaveOverview.cancelled || 0}</p>
+              <p className="text-[10px] font-semibold text-orange-600 dark:text-orange-400">
                 {currentLeaveOverview.total ? Math.round((currentLeaveOverview.cancelled / currentLeaveOverview.total) * 100) : 0}%
               </p>
             </div>
@@ -426,39 +426,39 @@ const HRDashboard = () => {
         <Card className="p-6 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-gray-900">Payroll Summary</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white">Payroll Summary</h3>
               <CustomDropdown
                 value={payrollPeriod}
                 onChange={setPayrollPeriod}
                 options={[payrollPeriod]}
               />
             </div>
-            <h2 className="text-3xl font-black text-gray-900 mb-1">{formatCurrency(payrollSummary.total)}</h2>
-            <p className="text-sm font-semibold text-gray-500 mb-6">Total Payroll Cost</p>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-1">{formatCurrency(payrollSummary.total)}</h2>
+            <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-6">Total Payroll Cost</p>
 
-            <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mb-4">
+            <div className="w-full h-3 bg-gray-100 dark:bg-[#2b2722] rounded-full overflow-hidden mb-4">
               <div className="h-full bg-[#00a76b] rounded-full transition-all duration-500" style={{ width: `${payrollSummary.total ? (payrollSummary.processed/payrollSummary.total)*100 : 0}%` }}></div>
             </div>
             
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-xs font-bold text-gray-500">Processed</p>
-                <p className="text-lg font-bold text-gray-900">{formatCurrency(payrollSummary.processed)}</p>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400">Processed</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(payrollSummary.processed)}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs font-bold text-gray-500">Pending</p>
-                <p className="text-lg font-bold text-gray-900">{formatCurrency(payrollSummary.pending)}</p>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400">Pending</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(payrollSummary.pending)}</p>
               </div>
             </div>
           </div>
-          <button onClick={() => navigate('/hr/payroll')} className="w-full mt-6 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+          <button onClick={() => navigate('/hr/payroll')} className="w-full mt-6 bg-gray-50 dark:bg-[#1e1a17] hover:bg-gray-100 dark:hover:bg-[#28231e] text-gray-700 dark:text-gray-200 border border-transparent dark:border-[#38332c] font-bold py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer">
             View Payroll Details <ChevronRight size={16} />
           </button>
         </Card>
 
         <Card className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900">Recruitment Overview</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white">Recruitment Overview</h3>
             <CustomDropdown
               value="This Month"
               options={['This Month', 'Last Month', 'This Year']}
@@ -466,20 +466,20 @@ const HRDashboard = () => {
           </div>
           <div className="space-y-4">
             {[
-              { label: 'New Applications', val: '0', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' },
-              { label: 'Shortlisted', val: '0', icon: CheckCircle, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-              { label: 'Interviews Scheduled', val: '0', icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50' },
-              { label: 'Offers Issued', val: '0', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50' },
-              { label: 'Hires This Month', val: '0', icon: UserPlus, color: 'text-[#00a76b]', bg: 'bg-green-50' }
+              { label: 'New Applications', val: '0', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/40' },
+              { label: 'Shortlisted', val: '0', icon: CheckCircle, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950/40' },
+              { label: 'Interviews Scheduled', val: '0', icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/40' },
+              { label: 'Offers Issued', val: '0', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950/40' },
+              { label: 'Hires This Month', val: '0', icon: UserPlus, color: 'text-[#00a76b]', bg: 'bg-green-50 dark:bg-green-950/40' }
             ].map((r, i) => (
-              <div key={i} className="flex justify-between items-center p-3 rounded-xl border border-gray-50 hover:bg-gray-50 transition-colors">
+              <div key={i} className="flex justify-between items-center p-3 rounded-xl border border-gray-50 dark:border-[#2b2722] hover:bg-gray-50 dark:hover:bg-[#1a1714] transition-colors">
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-lg ${r.bg} ${r.color}`}>
                     <r.icon size={16} />
                   </div>
-                  <span className="text-sm font-semibold text-gray-700">{r.label}</span>
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{r.label}</span>
                 </div>
-                <span className="font-black text-gray-900">{r.val}</span>
+                <span className="font-black text-gray-900 dark:text-white">{r.val}</span>
               </div>
             ))}
           </div>
@@ -489,21 +489,21 @@ const HRDashboard = () => {
       {/* 5. Fourth Row (Quick Actions, Pending Approvals) */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <Card className="p-6 xl:col-span-1">
-          <h3 className="font-bold text-gray-900 mb-6">Quick Actions</h3>
+          <h3 className="font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
           <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
             {[
-              { label: 'Add Employee', icon: UserPlus, color: 'text-blue-500', bg: 'bg-blue-50', path: '/hr/create-user' },
-              { label: 'Add Department', icon: Layers, color: 'text-indigo-500', bg: 'bg-indigo-50', path: '/hr/departments' },
-              { label: 'Create Job', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50', path: '/hr/jobs' },
-              { label: 'Approve Leave', icon: CheckCircle, color: 'text-[#00a76b]', bg: 'bg-green-50', path: '/hr/leave' },
-              { label: 'Run Payroll', icon: Activity, color: 'text-orange-500', bg: 'bg-orange-50', path: '/hr/payroll' },
-              { label: 'Announcement', icon: Bell, color: 'text-red-500', bg: 'bg-red-50', path: '/hr/notifications' },
+              { label: 'Add Employee', icon: UserPlus, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/40', path: '/hr/create-user' },
+              { label: 'Add Department', icon: Layers, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950/40', path: '/hr/departments' },
+              { label: 'Create Job', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950/40', path: '/hr/jobs' },
+              { label: 'Approve Leave', icon: CheckCircle, color: 'text-[#00a76b]', bg: 'bg-green-50 dark:bg-green-950/40', path: '/hr/leave' },
+              { label: 'Run Payroll', icon: Activity, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/40', path: '/hr/payroll' },
+              { label: 'Announcement', icon: Bell, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-950/40', path: '/hr/notifications' },
             ].map((action, i) => (
-              <button key={i} onClick={() => navigate(action.path)} className="flex flex-col items-center justify-center p-4 border border-gray-100 rounded-xl hover:border-blue-200 hover:bg-blue-50/30 transition-all group">
+              <button key={i} onClick={() => navigate(action.path)} className="flex flex-col items-center justify-center p-4 border border-gray-100 dark:border-[#2b2722] bg-white dark:bg-[#1a1714] rounded-xl hover:border-blue-200 dark:hover:border-blue-800 hover:bg-blue-50/30 dark:hover:bg-blue-950/20 transition-all group cursor-pointer">
                 <div className={`p-3 rounded-xl mb-3 ${action.bg} ${action.color} group-hover:scale-110 transition-transform`}>
                   <action.icon size={22} />
                 </div>
-                <span className="text-[11px] font-bold text-gray-600 text-center uppercase tracking-wider">{action.label}</span>
+                <span className="text-[11px] font-bold text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white text-center uppercase tracking-wider">{action.label}</span>
               </button>
             ))}
           </div>
@@ -511,8 +511,8 @@ const HRDashboard = () => {
 
         <Card className="p-6 xl:col-span-2 flex flex-col">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900">Pending Approvals</h3>
-            <button onClick={() => navigate('/hr/leave')} className="text-xs font-bold text-[#00a76b] hover:underline">View All</button>
+            <h3 className="font-bold text-gray-900 dark:text-white">Pending Approvals</h3>
+            <button onClick={() => navigate('/hr/leave')} className="text-xs font-bold text-[#00a76b] hover:underline cursor-pointer">View All</button>
           </div>
           <div className="flex-1 overflow-y-auto">
             {pendingApprovals.length > 0 ? (
@@ -521,32 +521,32 @@ const HRDashboard = () => {
                   <div 
                     key={approval._id} 
                     onClick={() => setSelectedLeaveApproval(approval)}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50/50 hover:bg-white rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all cursor-pointer group"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50/50 dark:bg-[#1a1714] hover:bg-white dark:hover:bg-[#221e19] rounded-xl border border-gray-100 dark:border-[#2b2722] hover:border-gray-200 dark:hover:border-[#38332c] hover:shadow-md transition-all cursor-pointer group"
                   >
                     <div className="flex items-start sm:items-center gap-4">
-                      <div className="p-3 bg-white group-hover:bg-blue-50 shadow-sm rounded-xl text-blue-500 transition-colors">
+                      <div className="p-3 bg-white dark:bg-[#25201b] group-hover:bg-blue-50 dark:group-hover:bg-blue-950/40 shadow-sm rounded-xl text-blue-500 transition-colors">
                         <FileText size={20} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-gray-900 text-sm group-hover:text-[#00a76b] transition-colors">{approval.name}</h4>
-                          <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full capitalize">
+                          <h4 className="font-bold text-gray-900 dark:text-white text-sm group-hover:text-[#00a76b] transition-colors">{approval.name}</h4>
+                          <span className="text-[10px] bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full capitalize">
                             {approval.subType || approval.type}
                           </span>
                         </div>
-                        <p className="text-xs font-semibold text-gray-500 mt-1 flex items-center gap-1.5">
-                          <Calendar size={13} className="text-gray-400" />
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1.5">
+                          <Calendar size={13} className="text-gray-400 dark:text-gray-400" />
                           {approval.details}
                         </p>
                         {approval.reason && (
-                          <p className="text-xs text-gray-400 italic mt-1 line-clamp-1 max-w-md">
+                          <p className="text-xs text-gray-400 dark:text-gray-400 italic mt-1 line-clamp-1 max-w-md">
                             "{approval.reason}"
                           </p>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-3 mt-4 sm:mt-0" onClick={(e) => e.stopPropagation()}>
-                      <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-md uppercase">
+                      <span className="text-[10px] font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/50 px-2 py-1 rounded-md uppercase">
                         {Math.floor((new Date() - new Date(approval.date)) / (1000 * 60 * 60 * 24)) || 1} days ago
                       </span>
                       <button 
@@ -555,7 +555,7 @@ const HRDashboard = () => {
                           handleApproveLeave(approval._id);
                         }} 
                         title="Approve Leave"
-                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#00a76b] text-white hover:bg-[#00915c] transition-colors shadow-sm"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#00a76b] text-white hover:bg-[#00915c] transition-colors shadow-sm cursor-pointer"
                       >
                         <Check size={16} strokeWidth={3} />
                       </button>
@@ -565,7 +565,7 @@ const HRDashboard = () => {
                           handleRejectLeave(approval._id);
                         }} 
                         title="Reject Leave"
-                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm cursor-pointer"
                       >
                         <X size={16} strokeWidth={3} />
                       </button>
@@ -575,7 +575,7 @@ const HRDashboard = () => {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                <ShieldCheck size={48} className="mb-3 text-gray-200" />
+                <ShieldCheck size={48} className="mb-3 text-gray-200 dark:text-neutral-700" />
                 <p className="font-medium text-sm">No pending approvals required.</p>
               </div>
             )}
@@ -587,19 +587,19 @@ const HRDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="p-6 h-[380px] flex flex-col">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900">Recent Joiners</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white">Recent Joiners</h3>
           </div>
           <div className="space-y-4 flex-1 overflow-y-auto pr-2">
             {recentJoiners.length > 0 ? recentJoiners.map((rj) => (
               <div key={rj._id} className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <img src={rj.profileImage ? `http://localhost:5000${rj.profileImage}` : `https://ui-avatars.com/api/?name=${rj.name}&background=random`} alt={rj.name} className="w-10 h-10 rounded-full border-2 border-white shadow-sm" />
+                  <img src={rj.profileImage ? `http://localhost:5000${rj.profileImage}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(rj.name)}&background=random`} alt={rj.name} className="w-10 h-10 rounded-full border-2 border-white dark:border-[#2b2722] shadow-sm object-cover" />
                   <div>
-                    <p className="font-bold text-sm text-gray-900">{rj.name}</p>
-                    <p className="text-xs font-medium text-gray-500">{rj.role}</p>
+                    <p className="font-bold text-sm text-gray-900 dark:text-white">{rj.name}</p>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{rj.role}</p>
                   </div>
                 </div>
-                <span className="text-[11px] font-bold text-gray-400">{new Date(rj.joinDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric'})}</span>
+                <span className="text-[11px] font-bold text-gray-400 dark:text-gray-400">{new Date(rj.joinDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric'})}</span>
               </div>
             )) : <p className="text-sm text-gray-400 text-center py-4">No recent joiners</p>}
           </div>
@@ -608,9 +608,9 @@ const HRDashboard = () => {
         <Card className="p-6 h-[380px] flex flex-col">
           <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-gray-900">Birthdays & Anniv.</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white">Birthdays & Anniv.</h3>
               {upcomingCelebrations.some(c => checkIsToday(c.date, c.diffDays)) && (
-                <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 animate-pulse">
+                <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 animate-pulse">
                   🎉 Today
                 </span>
               )}
@@ -625,7 +625,7 @@ const HRDashboard = () => {
                 <div 
                   key={celeb._id} 
                   className={`flex items-center justify-between gap-2.5 p-2.5 rounded-xl transition-all ${
-                    isToday ? 'bg-emerald-50/70 border border-emerald-200/70 shadow-2xs' : 'hover:bg-gray-50'
+                    isToday ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-800/40 shadow-2xs' : 'hover:bg-gray-50 dark:hover:bg-[#1a1714]'
                   }`}
                 >
                   {/* Left: Avatar + Info */}
@@ -634,7 +634,7 @@ const HRDashboard = () => {
                       <img 
                         src={celeb.profileImage ? `http://localhost:5000${celeb.profileImage}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(celeb.name)}&background=random`} 
                         alt={celeb.name} 
-                        className="w-9 h-9 rounded-full border-2 border-white shadow-xs object-cover" 
+                        className="w-9 h-9 rounded-full border-2 border-white dark:border-[#2b2722] shadow-xs object-cover" 
                       />
                       {isToday && (
                         <span className="absolute -bottom-1 -right-1 text-xs select-none">
@@ -643,8 +643,8 @@ const HRDashboard = () => {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-bold text-xs text-gray-900 truncate leading-tight">{celeb.name}</p>
-                      <p className="text-[11px] font-medium text-gray-400 flex items-center gap-1 mt-0.5 truncate">
+                      <p className="font-bold text-xs text-gray-900 dark:text-white truncate leading-tight">{celeb.name}</p>
+                      <p className="text-[11px] font-medium text-gray-400 dark:text-gray-400 flex items-center gap-1 mt-0.5 truncate">
                         {celeb.type === 'Birthday' ? <Cake size={11} className="text-pink-500 shrink-0" /> : <Gift size={11} className="text-purple-500 shrink-0" />}
                         <span className="truncate">{celeb.type}</span>
                       </p>
@@ -655,7 +655,7 @@ const HRDashboard = () => {
                   <div className="shrink-0 flex items-center">
                     {isToday ? (
                       isWished ? (
-                        <span className="flex items-center gap-1 text-[11px] font-bold text-[#00a76b] bg-emerald-100/90 px-2 py-1 rounded-lg border border-emerald-200 shadow-2xs">
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-[#00a76b] bg-emerald-100/90 dark:bg-emerald-950/80 px-2 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60 shadow-2xs">
                           <Heart size={11} className="fill-[#00a76b] text-[#00a76b]" />
                           <span>Wished!</span>
                         </span>
@@ -670,7 +670,7 @@ const HRDashboard = () => {
                         </button>
                       )
                     ) : (
-                      <span className="text-[11px] font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-lg">
+                      <span className="text-[11px] font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-[#25201b] px-2 py-1 rounded-lg">
                         {new Date(celeb.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                       </span>
                     )}
@@ -679,7 +679,7 @@ const HRDashboard = () => {
               );
             }) : (
               <div className="flex flex-col items-center justify-center h-32 text-gray-400">
-                <Gift size={40} className="mb-3 text-gray-200" />
+                <Gift size={40} className="mb-3 text-gray-200 dark:text-neutral-700" />
                 <p className="font-medium text-sm">No upcoming events this week</p>
               </div>
             )}
@@ -738,7 +738,7 @@ const HRDashboard = () => {
       {/* 7. Bottom Row (Analytics) */}
       <Card className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-gray-900">HR Analytics</h3>
+          <h3 className="font-bold text-gray-900 dark:text-white">HR Analytics</h3>
           <CustomDropdown
             value="This Quarter"
             options={['This Quarter', 'Last Quarter', 'This Year']}
@@ -752,9 +752,9 @@ const HRDashboard = () => {
             { id: 'absenteeism', label: 'Absenteeism Rate', val: '2.6%', trend: 'down', trendVal: '0.8%', color: '#f59e0b', trendColor: 'text-[#f59e0b]', data: [{v:3.2},{v:3.0},{v:3.1},{v:2.8},{v:2.9},{v:2.5},{v:2.7},{v:2.9}] },
             { id: 'training', label: 'Training Completion Rate', val: '76%', trend: 'up', trendVal: '6%', color: '#14b8a6', trendColor: 'text-[#14b8a6]', data: [{v:65},{v:68},{v:66},{v:70},{v:70},{v:74},{v:73},{v:76}] },
           ].map((metric, i) => (
-            <div key={i} className="p-4 border border-gray-100 rounded-xl bg-white shadow-sm relative overflow-hidden flex flex-col h-36">
-              <p className="text-[11px] font-bold text-gray-700 tracking-tight mb-2 truncate">{metric.label}</p>
-              <h4 className="text-2xl font-black text-gray-900">{metric.val}</h4>
+            <div key={i} className="p-4 border border-gray-100 dark:border-[#2b2722] rounded-xl bg-white dark:bg-[#1a1714] shadow-sm relative overflow-hidden flex flex-col h-36">
+              <p className="text-[11px] font-bold text-gray-700 dark:text-gray-300 tracking-tight mb-2 truncate">{metric.label}</p>
+              <h4 className="text-2xl font-black text-gray-900 dark:text-white">{metric.val}</h4>
               <p className={`text-[10px] font-bold mt-1 flex items-center gap-1 ${metric.trendColor}`}>
                 {metric.trend === 'up' ? '↑' : '↓'} {metric.trendVal} vs last quarter
               </p>
@@ -783,18 +783,18 @@ const HRDashboard = () => {
           onClick={() => setSelectedLeaveApproval(null)}
         >
           <div 
-            className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-gray-100 relative my-auto flex flex-col max-h-[90vh] overflow-hidden transform animate-in zoom-in-95 duration-200"
+            className="bg-white dark:bg-[#161311] rounded-3xl max-w-lg w-full shadow-2xl border border-gray-100 dark:border-[#28251e] relative my-auto flex flex-col max-h-[90vh] overflow-hidden transform animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header (Fixed at top) */}
-            <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100 shrink-0 bg-white">
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100 dark:border-[#28251e] shrink-0 bg-white dark:bg-[#161311]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
                   <FileText size={20} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-gray-900 leading-tight">Leave Application Details</h3>
-                  <span className="inline-block mt-0.5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-amber-100 text-amber-800">
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white leading-tight">Leave Application Details</h3>
+                  <span className="inline-block mt-0.5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
                     Pending Approval
                   </span>
                 </div>
@@ -802,7 +802,7 @@ const HRDashboard = () => {
               <button 
                 type="button"
                 onClick={() => setSelectedLeaveApproval(null)}
-                className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#28251e] rounded-full transition-colors cursor-pointer"
               >
                 <X size={20} />
               </button>
@@ -811,13 +811,13 @@ const HRDashboard = () => {
             {/* Scrollable Body */}
             <div className="p-6 overflow-y-auto space-y-4 flex-1">
               {/* Employee Profile Card */}
-              <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-50/50 rounded-2xl border border-gray-100 flex items-center gap-4">
+              <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-50/50 dark:from-[#1f1b17] dark:to-[#1a1714] rounded-2xl border border-gray-100 dark:border-[#28251e] flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-[#00a76b] text-white font-bold text-lg flex items-center justify-center uppercase shadow-sm">
                   {selectedLeaveApproval.name ? selectedLeaveApproval.name.charAt(0) : 'E'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-black text-gray-900 text-base truncate">{selectedLeaveApproval.name}</h4>
-                  <div className="flex items-center gap-2 text-xs text-gray-500 font-semibold mt-0.5">
+                  <h4 className="font-black text-gray-900 dark:text-white text-base truncate">{selectedLeaveApproval.name}</h4>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 font-semibold mt-0.5">
                     <span className="capitalize">{selectedLeaveApproval.role || 'Employee'}</span>
                     {selectedLeaveApproval.employeeId && (
                       <>
@@ -827,29 +827,29 @@ const HRDashboard = () => {
                     )}
                   </div>
                   {selectedLeaveApproval.email && (
-                    <p className="text-xs text-gray-400 truncate mt-0.5">{selectedLeaveApproval.email}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">{selectedLeaveApproval.email}</p>
                   )}
                 </div>
               </div>
 
               {/* Leave Details Grid */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3.5 bg-gray-50/80 rounded-2xl border border-gray-100">
+                <div className="p-3.5 bg-gray-50/80 dark:bg-[#1f1b17] rounded-2xl border border-gray-100 dark:border-[#28251e]">
                   <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Leave Type</p>
-                  <p className="text-sm font-black text-gray-900 capitalize mt-1 flex items-center gap-1.5">
+                  <p className="text-sm font-black text-gray-900 dark:text-white capitalize mt-1 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                     {selectedLeaveApproval.subType || selectedLeaveApproval.type}
                   </p>
                 </div>
-                <div className="p-3.5 bg-gray-50/80 rounded-2xl border border-gray-100">
+                <div className="p-3.5 bg-gray-50/80 dark:bg-[#1f1b17] rounded-2xl border border-gray-100 dark:border-[#28251e]">
                   <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Duration</p>
-                  <p className="text-sm font-black text-gray-900 mt-1">
+                  <p className="text-sm font-black text-gray-900 dark:text-white mt-1">
                     {selectedLeaveApproval.totalDays || 1} {selectedLeaveApproval.totalDays === 1 ? 'Day' : 'Days'}
                   </p>
                 </div>
-                <div className="p-3.5 bg-gray-50/80 rounded-2xl border border-gray-100 col-span-2">
+                <div className="p-3.5 bg-gray-50/80 dark:bg-[#1f1b17] rounded-2xl border border-gray-100 dark:border-[#28251e] col-span-2">
                   <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Leave Duration</p>
-                  <p className="text-sm font-black text-gray-900 mt-1 flex items-center gap-2">
+                  <p className="text-sm font-black text-gray-900 dark:text-white mt-1 flex items-center gap-2">
                     <Calendar size={15} className="text-[#00a76b]" />
                     {selectedLeaveApproval.startDate ? new Date(selectedLeaveApproval.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : selectedLeaveApproval.details}
                     <span className="text-gray-400 font-normal">to</span>
@@ -860,10 +860,10 @@ const HRDashboard = () => {
 
               {/* Reason For Leave Box (Main Requirement) */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
                   Reason for Leave (રજા શેના માટે મૂકી છે):
                 </label>
-                <div className="p-4 bg-amber-50/40 rounded-2xl border border-amber-200/70 text-gray-800 text-sm leading-relaxed font-medium">
+                <div className="p-4 bg-amber-50/40 dark:bg-amber-950/20 rounded-2xl border border-amber-200/70 dark:border-amber-900/40 text-gray-800 dark:text-amber-200 text-sm leading-relaxed font-medium">
                   {selectedLeaveApproval.reason || 'No detailed explanation provided.'}
                 </div>
               </div>
@@ -877,14 +877,14 @@ const HRDashboard = () => {
             </div>
 
             {/* Action Buttons (Fixed at bottom) */}
-            <div className="p-6 pt-4 border-t border-gray-100 shrink-0 bg-gray-50/50 rounded-b-3xl grid grid-cols-2 gap-3">
+            <div className="p-6 pt-4 border-t border-gray-100 dark:border-[#28251e] shrink-0 bg-gray-50/50 dark:bg-[#161311] rounded-b-3xl grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => {
                   handleRejectLeave(selectedLeaveApproval._id);
                   setSelectedLeaveApproval(null);
                 }}
-                className="w-full py-3 px-4 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 rounded-xl bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-950/60 text-red-600 dark:text-red-400 font-bold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <X size={16} strokeWidth={2.5} />
                 Reject Leave
@@ -895,7 +895,7 @@ const HRDashboard = () => {
                   handleApproveLeave(selectedLeaveApproval._id);
                   setSelectedLeaveApproval(null);
                 }}
-                className="w-full py-3 px-4 rounded-xl bg-[#00a76b] hover:bg-[#00915c] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-md shadow-[#00a76b]/20"
+                className="w-full py-3 px-4 rounded-xl bg-[#00a76b] hover:bg-[#00915c] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-md shadow-[#00a76b]/20 cursor-pointer"
               >
                 <Check size={16} strokeWidth={2.5} />
                 Approve Leave
@@ -913,28 +913,28 @@ const HRDashboard = () => {
           onClick={() => setSelectedWishCeleb(null)}
         >
           <div
-            className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-gray-100 relative my-auto flex flex-col max-h-[90vh] overflow-hidden transform animate-in zoom-in-95 duration-200"
+            className="bg-white dark:bg-[#161311] rounded-3xl max-w-lg w-full shadow-2xl border border-gray-100 dark:border-[#28251e] relative my-auto flex flex-col max-h-[90vh] overflow-hidden transform animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100 shrink-0 bg-gradient-to-r from-emerald-50 to-teal-50/30">
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100 dark:border-[#28251e] shrink-0 bg-gradient-to-r from-emerald-50 to-teal-50/30 dark:from-emerald-950/40 dark:to-teal-950/20">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-emerald-100 text-[#00a76b] flex items-center justify-center font-bold text-xl shadow-xs">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-900/60 text-[#00a76b] flex items-center justify-center font-bold text-xl shadow-xs">
                   {selectedWishCeleb.type === 'Birthday' ? '🎂' : '🌟'}
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-gray-900 leading-tight">
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white leading-tight">
                     {selectedWishCeleb.type === 'Birthday' ? 'Send Birthday Wishes 🎉' : 'Send Anniversary Wishes 🌟'}
                   </h3>
-                  <p className="text-xs font-semibold text-gray-500 mt-0.5">
-                    Express your greetings to <span className="text-gray-900 font-bold">{selectedWishCeleb.name}</span>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
+                    Express your greetings to <span className="text-gray-900 dark:text-white font-bold">{selectedWishCeleb.name}</span>
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedWishCeleb(null)}
-                className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#28251e] rounded-full transition-colors cursor-pointer"
               >
                 <X size={20} />
               </button>
@@ -943,15 +943,15 @@ const HRDashboard = () => {
             {/* Modal Body */}
             <div className="p-6 space-y-4 overflow-y-auto flex-1">
               {/* Employee Preview Badge */}
-              <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3">
+              <div className="p-3.5 bg-gray-50 dark:bg-[#1f1b17] rounded-2xl border border-gray-100 dark:border-[#28251e] flex items-center gap-3">
                 <img
                   src={selectedWishCeleb.profileImage ? `http://localhost:5000${selectedWishCeleb.profileImage}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedWishCeleb.name)}&background=random`}
                   alt={selectedWishCeleb.name}
-                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-xs"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-[#28251e] shadow-xs"
                 />
                 <div>
-                  <h4 className="font-bold text-gray-900 text-sm">{selectedWishCeleb.name}</h4>
-                  <p className="text-xs text-gray-500 font-medium">
+                  <h4 className="font-bold text-gray-900 dark:text-white text-sm">{selectedWishCeleb.name}</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                     {selectedWishCeleb.type === 'Birthday' ? '🎂 Celebrating Birthday Today' : `🌟 Celebrating ${selectedWishCeleb.type} Today`}
                   </p>
                 </div>
@@ -959,7 +959,7 @@ const HRDashboard = () => {
 
               {/* Quick Template Chips */}
               <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">
                   Quick Message Templates:
                 </label>
                 <div className="flex flex-col gap-2">
@@ -978,8 +978,8 @@ const HRDashboard = () => {
                       onClick={() => setCustomWishMessage(template)}
                       className={`text-left p-2.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
                         customWishMessage === template
-                          ? 'bg-emerald-50 border-[#00a76b] text-[#00a76b] font-bold shadow-xs'
-                          : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 border-[#00a76b] text-[#00a76b] font-bold shadow-xs'
+                          : 'bg-white dark:bg-[#1f1b17] border-gray-200 dark:border-[#28251e] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#28251e] hover:border-gray-300'
                       }`}
                     >
                       {template}
@@ -990,7 +990,7 @@ const HRDashboard = () => {
 
               {/* Custom Message Area */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
                   Your Personalized Message:
                 </label>
                 <textarea
@@ -998,17 +998,17 @@ const HRDashboard = () => {
                   value={customWishMessage}
                   onChange={(e) => setCustomWishMessage(e.target.value)}
                   placeholder="Write your wishes here..."
-                  className="w-full p-3.5 text-sm bg-gray-50/70 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#00a76b]/20 focus:border-[#00a76b] resize-none text-gray-800 font-medium"
+                  className="w-full p-3.5 text-sm bg-gray-50/70 dark:bg-[#1f1b17] border border-gray-200 dark:border-[#28251e] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#00a76b]/20 focus:border-[#00a76b] resize-none text-gray-800 dark:text-white font-medium"
                 />
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="p-6 pt-4 border-t border-gray-100 shrink-0 bg-gray-50/50 rounded-b-3xl flex items-center gap-3">
+            <div className="p-6 pt-4 border-t border-gray-100 dark:border-[#28251e] shrink-0 bg-gray-50/50 dark:bg-[#161311] rounded-b-3xl flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setSelectedWishCeleb(null)}
-                className="flex-1 py-3 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm transition-colors cursor-pointer"
+                className="flex-1 py-3 px-4 rounded-xl bg-gray-100 dark:bg-[#28251e] hover:bg-gray-200 dark:hover:bg-[#342f27] text-gray-700 dark:text-gray-200 font-bold text-sm transition-colors cursor-pointer"
               >
                 Cancel
               </button>
