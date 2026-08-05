@@ -3,15 +3,17 @@ import axios from 'axios';
 import { API_BASE_URL, getImageUrl } from '@shared/services/api';
 import { Eye, Shield, Lock, FileText, Upload, Trash2, Check, RefreshCw, Plus, Edit2, Save, X, Camera } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const Profile = () => {
   const [userData, setUserData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
-  const [status, setStatus] = useState({ type: '', message: '' });
+  // Status removed in favor of toast
   const [loading, setLoading] = useState(false);
   const [uploadingDocType, setUploadingDocType] = useState(null);
   const [syncing, setSyncing] = useState(true);
+  const [viewingDoc, setViewingDoc] = useState(null);
 
   const token = sessionStorage.getItem('token');
   const location = useLocation();
@@ -97,12 +99,11 @@ const Profile = () => {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      setStatus({ type: 'error', message: 'Please select a valid document format (PDF, JPG, PNG, DOC, DOCX).' });
+      toast.error('Please select a valid document format (PDF, JPG, PNG, DOC, DOCX).');
       return;
     }
 
     setUploadingDocType(type);
-    setStatus({ type: '', message: '' });
     
     try {
       const reader = new FileReader();
@@ -116,50 +117,50 @@ const Profile = () => {
           });
           if (response.data) {
             await fetchProfile();
-            setStatus({ type: 'success', message: `${type} updated successfully` });
+            const friendlyName = type === 'adharCard' ? 'Aadhar Card' : type === 'panCard' ? 'PAN Card' : type === 'bankDetails' ? 'Bank Details' : type;
+            toast.success(`${friendlyName} updated successfully`);
           }
         } catch (err) {
-          setStatus({ type: 'error', message: err.response?.data?.message || 'Upload failed' });
+          toast.error(err.response?.data?.message || 'Upload failed');
         } finally {
           setUploadingDocType(null);
         }
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      setStatus({ type: 'error', message: 'Failed to read file' });
+      toast.error('Failed to read file');
       setUploadingDocType(null);
     }
   };
 
   const handleSaveProfile = async () => {
     if (!editForm.personalEmail?.trim() || !editForm.phone?.trim() || !editForm.address?.trim()) {
-      setStatus({ type: 'error', message: 'Personal Email, Phone Number, and Address are required fields.' });
+      toast.error('Personal Email, Phone Number, and Address are required fields.');
       return;
     }
 
     if (editForm.address && editForm.address.length > 250) {
-      setStatus({ type: 'error', message: 'Address cannot exceed 250 characters.' });
+      toast.error('Address cannot exceed 250 characters.');
       return;
     }
 
     if (editForm.phone && !/^\d+$/.test(editForm.phone)) {
-      setStatus({ type: 'error', message: 'Phone number must contain only numeric values.' });
+      toast.error('Phone number must contain only numeric values.');
       return;
     }
 
     if (editForm.personalEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.personalEmail)) {
-      setStatus({ type: 'error', message: 'Please enter a valid email address.' });
+      toast.error('Please enter a valid email address.');
       return;
     }
 
     if (editForm.address && !/^[a-zA-Z0-9\s,.\-/#]*$/.test(editForm.address)) {
-      setStatus({ type: 'error', message: 'Address contains invalid special characters.' });
+      toast.error('Address contains invalid special characters.');
       return;
     }
 
     try {
       setLoading(true);
-      setStatus({ type: '', message: '' });
       const payload = {
         fullName: editForm.fullName,
         personalEmail: editForm.personalEmail,
@@ -182,10 +183,10 @@ const Profile = () => {
         }));
         await fetchProfile();
         setIsEditing(false);
-        setStatus({ type: 'success', message: 'Profile updated successfully' });
+        toast.success('Profile updated successfully');
       }
     } catch (err) {
-      setStatus({ type: 'error', message: err.response?.data?.message || 'Update failed' });
+      toast.error(err.response?.data?.message || 'Update failed');
     } finally {
       setLoading(false);
     }
@@ -207,15 +208,7 @@ const Profile = () => {
     <div style={{ fontFamily: "'Inter', -apple-system, sans-serif", background: isDark ? '#08100e' : '#f9fdfc', minHeight: 'calc(100vh - 56px)', color: isDark ? '#cbd5e1' : '#3b3e3c', width: '100%', boxSizing: 'border-box', transition: 'background-color 0.3s ease, color 0.3s ease' }}>
       <div style={{ width: '100%', maxWidth: '100%', padding: '32px 32px 60px', boxSizing: 'border-box' }}>
 
-        {/* ALERTS */}
-        {status.message && (
-          <div style={{ marginBottom: 20, padding: 16, borderRadius: 12, border: status.type === 'success' ? (isDark ? '1px solid #047857' : '1px solid #10b981') : (isDark ? '1px solid #b91c1c' : '1px solid #f87171'), background: status.type === 'success' ? (isDark ? '#062f22' : '#f0fdf4') : (isDark ? '#4c1d1d' : '#fef2f2'), display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <h4 style={{ fontSize: 11, fontWeight: 900, textTransform: 'uppercase', tracking: 1, margin: 0, color: status.type === 'success' ? (isDark ? '#34d399' : '#065f46') : (isDark ? '#f87171' : '#991b1b') }}>
-              {status.type === 'success' ? 'Protocol Verified' : 'Security Alert'}
-            </h4>
-            <p style={{ fontSize: 13, color: isDark ? '#cbd5e1' : '#3b3e3c', margin: 0 }}>{status.message}</p>
-          </div>
-        )}
+        {/* Alerts are handled via toast notifications */}
 
         {/* HEADER SECTION */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
@@ -239,7 +232,28 @@ const Profile = () => {
             <p style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#fff' : '#3b3e3c', margin: '0 0 24px', textAlign: 'left' }}>Identity</p>
 
             <div style={{ display: 'inline-flex', position: 'relative', margin: '0 auto 16px' }}>
-              <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#00a76b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 800, overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,167,107,0.1)' }}>
+              <div 
+                onClick={() => {
+                  if (!isEditing && userData?.profileImage) {
+                    setViewingDoc({ url: getImageUrl(userData.profileImage), name: 'Profile Picture' });
+                  }
+                }}
+                style={{ 
+                  width: 100, 
+                  height: 100, 
+                  borderRadius: '50%', 
+                  background: '#00a76b', 
+                  color: '#fff', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  fontSize: 32, 
+                  fontWeight: 800, 
+                  overflow: 'hidden', 
+                  boxShadow: '0 4px 10px rgba(0,167,107,0.1)',
+                  cursor: (!isEditing && userData?.profileImage) ? 'pointer' : 'default'
+                }}
+              >
                 {editForm.profileImage ? (
                   <img src={editForm.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : userData?.profileImage ? (
@@ -256,7 +270,7 @@ const Profile = () => {
                     if (file) {
                       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
                       if (!validTypes.includes(file.type)) {
-                        setStatus({ type: 'error', message: 'Please upload a valid image file (JPG, PNG, WEBP).' });
+                        toast.error('Please upload a valid image file (JPG, PNG, WEBP).');
                         e.target.value = '';
                         return;
                       }
@@ -285,9 +299,12 @@ const Profile = () => {
                 <div style={{ textAlign: 'left' }}>
                   <p style={{ fontSize: 9, fontWeight: 900, textTransform: 'uppercase', tracking: 1, color: isDark ? '#a3b3af' : '#8c918f', margin: '0 0 4px' }}>National ID</p>
                   {adharCard ? (
-                    <a href={getImageUrl(adharCard)} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                      <p style={{ fontSize: 14, fontWeight: 800, color: isDark ? '#34d399' : '#00a76b', margin: '0 0 4px', cursor: 'pointer' }}>Adharcard</p>
-                    </a>
+                    <button 
+                      onClick={() => setViewingDoc({ url: getImageUrl(adharCard), name: 'Adharcard' })} 
+                      style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', outline: 'none' }}
+                    >
+                      <p style={{ fontSize: 14, fontWeight: 800, color: isDark ? '#34d399' : '#00a76b', margin: '0 0 4px', textDecoration: 'underline' }}>Adharcard</p>
+                    </button>
                   ) : (
                     <p style={{ fontSize: 14, fontWeight: 800, color: isDark ? '#fff' : '#3b3e3c', margin: '0 0 4px' }}>Adharcard</p>
                   )}
@@ -309,9 +326,12 @@ const Profile = () => {
                 <div style={{ textAlign: 'left' }}>
                   <p style={{ fontSize: 9, fontWeight: 900, textTransform: 'uppercase', tracking: 1, color: isDark ? '#a3b3af' : '#8c918f', margin: '0 0 4px' }}>Financial ID</p>
                   {bankDetails ? (
-                    <a href={getImageUrl(bankDetails)} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                      <p style={{ fontSize: 14, fontWeight: 800, color: isDark ? '#34d399' : '#00a76b', margin: '0 0 4px', cursor: 'pointer' }}>Bank Details</p>
-                    </a>
+                    <button 
+                      onClick={() => setViewingDoc({ url: getImageUrl(bankDetails), name: 'Bank Details' })} 
+                      style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', outline: 'none' }}
+                    >
+                      <p style={{ fontSize: 14, fontWeight: 800, color: isDark ? '#34d399' : '#00a76b', margin: '0 0 4px', textDecoration: 'underline' }}>Bank Details</p>
+                    </button>
                   ) : (
                     <p style={{ fontSize: 14, fontWeight: 800, color: isDark ? '#fff' : '#3b3e3c', margin: '0 0 4px' }}>Bank Details</p>
                   )}
@@ -333,9 +353,12 @@ const Profile = () => {
                 <div style={{ textAlign: 'left' }}>
                   <p style={{ fontSize: 9, fontWeight: 900, textTransform: 'uppercase', tracking: 1, color: isDark ? '#a3b3af' : '#8c918f', margin: '0 0 4px' }}>Identity Node</p>
                   {panCard ? (
-                    <a href={getImageUrl(panCard)} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                      <p style={{ fontSize: 14, fontWeight: 800, color: isDark ? '#34d399' : '#00a76b', margin: '0 0 4px', cursor: 'pointer' }}>Pancard</p>
-                    </a>
+                    <button 
+                      onClick={() => setViewingDoc({ url: getImageUrl(panCard), name: 'Pancard' })} 
+                      style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', outline: 'none' }}
+                    >
+                      <p style={{ fontSize: 14, fontWeight: 800, color: isDark ? '#34d399' : '#00a76b', margin: '0 0 4px', textDecoration: 'underline' }}>Pancard</p>
+                    </button>
                   ) : (
                     <p style={{ fontSize: 14, fontWeight: 800, color: isDark ? '#fff' : '#3b3e3c', margin: '0 0 4px' }}>Pancard</p>
                   )}
@@ -453,6 +476,101 @@ const Profile = () => {
             </div>
           )}
         </div>
+
+        {/* DOCUMENT VIEW POPUP MODAL */}
+        {viewingDoc && (
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100vw',
+              height: '100vh',
+              backgroundColor: 'rgba(0, 0, 0, 0.85)',
+              backdropFilter: 'blur(8px)',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 40,
+              boxSizing: 'border-box'
+            }}
+            onClick={() => setViewingDoc(null)}
+          >
+            {/* Content Area (Borderless) */}
+            <div 
+              style={{
+                position: 'relative',
+                width: 'auto',
+                maxWidth: viewingDoc.url.toLowerCase().includes('.pdf') ? '1000px' : '90%',
+                maxHeight: '90vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Close Button positioned at the top-right corner of the content */}
+              <button 
+                onClick={() => setViewingDoc(null)}
+                style={{
+                  position: 'absolute',
+                  top: -15,
+                  right: -15,
+                  background: '#201515',
+                  border: '2px solid #fff',
+                  cursor: 'pointer',
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 8,
+                  borderRadius: '50%',
+                  transition: 'background-color 0.2s, transform 0.2s',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                  zIndex: 1010
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ff4f00';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#201515';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <X size={16} />
+              </button>
+
+              {viewingDoc.url.toLowerCase().includes('.pdf') ? (
+                <iframe 
+                  src={viewingDoc.url} 
+                  title={viewingDoc.name}
+                  style={{
+                    width: '100%',
+                    height: '80vh',
+                    border: 'none',
+                    borderRadius: 16,
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                    backgroundColor: '#fff'
+                  }}
+                />
+              ) : (
+                <img 
+                  src={viewingDoc.url} 
+                  alt={viewingDoc.name}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '85vh',
+                    objectFit: 'contain',
+                    borderRadius: 16,
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

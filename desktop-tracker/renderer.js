@@ -23,6 +23,7 @@ let status = 'OFFLINE';
 let isIdle = false;
 let idleNotificationSent = false;
 let authToken = '';
+let lastStartOrResumeTime = 0;
 
 // ── Local Ticking Engine State (for smooth UI updates) ────
 let baseActiveSeconds = 0;
@@ -75,6 +76,11 @@ if (window.electronAPI?.onSystemIdleStatus) {
 
     if (systemIsIdle) {
       // ── System has been idle >= threshold ──
+      // Ignore idle triggers during the first 15 seconds of starting/resuming
+      if (Date.now() - lastStartOrResumeTime < 15000) {
+        console.log('[IDLE IGNORED] Ignoring system idle trigger during start/resume grace period.');
+        return;
+      }
       // Only trigger once per idle event (idleNotificationSent guards re-entry)
       if (status === 'ACTIVE' && !idleNotificationSent) {
         console.log(`[IDLE TRIGGER] ${idleSeconds}s idle — sending idle signal to backend`);
@@ -109,6 +115,13 @@ async function loadSession() {
   }
 
   BACKEND_HOST = 'https://hrm1.onrender.com';
+  try {
+    const localPing = await fetch('http://localhost:4000/api/time/status').catch(() => null);
+    if (localPing && (localPing.ok || localPing.status === 401)) {
+      BACKEND_HOST = 'http://localhost:4000';
+      console.log('🔌 Local development backend detected! Connected to http://localhost:4000');
+    }
+  } catch (e) {}
   API_BASE = `${BACKEND_HOST}/api/time`;
 
   const savedToken = await window.electronAPI.getStoreValue('authToken');
@@ -276,6 +289,7 @@ async function startSession() {
     notifyDesktop('Session Started', 'Your tracking session is now active.');
 
     idleNotificationSent = false;
+    lastStartOrResumeTime = Date.now();
     await pollSessionStatus();
     startPolling();
     startHeartbeat();
@@ -324,6 +338,7 @@ async function resumeSession() {
       if (!err.message?.toLowerCase().includes('already')) alert(err.message || 'Unable to resume.');
     }
     idleNotificationSent = false;
+    lastStartOrResumeTime = Date.now();
     await pollSessionStatus();
     startPolling();
     startHeartbeat();

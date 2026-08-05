@@ -210,22 +210,13 @@ exports.updateProfile = async (req, res) => {
     user.profileImage = imagePath;
     await user.save();
 
-    // Update Shadow Registry
-    let shadowModel;
-    if (user.role === 'hr') {
-      shadowModel = HR;
-    } else if (user.role === 'manager') {
-      shadowModel = Manager;
-    } else {
-      shadowModel = Employee;
-    }
-
+    // Update Shadow Registry (documents and personal details reside in Employee model)
     if (fullName) updateData.fullName = fullName;
     if (personalEmail !== undefined) updateData.personalEmail = personalEmail;
     if (phone !== undefined) updateData.phone = phone;
     if (address !== undefined) updateData.address = address;
 
-    const updatedProfile = await shadowModel.findOneAndUpdate(
+    const updatedProfile = await Employee.findOneAndUpdate(
       { userId: req.user.id }, 
       { $set: updateData },
       { new: true }
@@ -272,17 +263,8 @@ exports.uploadProfileImage = async (req, res) => {
     // Update User
     user = await User.findByIdAndUpdate(req.user.id, { profileImage: imagePath }, { new: true });
 
-    // Update Shadow Registry (Employee/HR/Manager)
-    let shadowModel;
-    if (user.role === 'hr') {
-      shadowModel = HR;
-    } else if (user.role === 'manager') {
-      shadowModel = Manager;
-    } else {
-      shadowModel = Employee;
-    }
-
-    await shadowModel.findOneAndUpdate({ userId: req.user.id }, { profileImage: imagePath });
+    // Update Shadow Registry (profile image resides in Employee model)
+    await Employee.findOneAndUpdate({ userId: req.user.id }, { profileImage: imagePath });
 
     res.json({
       message: 'Profile image updated successfully',

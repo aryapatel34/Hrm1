@@ -291,10 +291,22 @@ exports.updateActivity = async (req, res) => {
         if (!session.idleApplied) {
           // ✅ Dynamic Rewind: Subtract the EXACT seconds of idleness reported by the OS
           // This eliminates gaps caused by heartbeat delays or network latency.
-          const rewindAmount = req.body.idleSeconds || IDLE_THRESHOLD_SECONDS;
+          const rawRewind = req.body.idleSeconds || IDLE_THRESHOLD_SECONDS;
+
+          // Calculate the maximum possible active time in the current start/resume period
+          let maxActiveInPeriod = sinceHeartbeat;
+          if (session.sessions && session.sessions.length > 0) {
+            const lastPeriod = session.sessions[session.sessions.length - 1];
+            const periodStart = lastPeriod.resume || lastPeriod.start;
+            if (periodStart) {
+              maxActiveInPeriod = Math.max(0, (now - new Date(periodStart)) / 1000);
+            }
+          }
+
+          const rewindAmount = Math.min(maxActiveInPeriod, rawRewind);
 
           session.activeTime += Math.max(0, sinceHeartbeat);
-          // Subtract the idle period (1 minute) from active time and assign it to inactive time
+          // Subtract the idle period from active time and assign it to inactive time
           session.activeTime = Math.max(0, session.activeTime - rewindAmount);
 
           session.inactivityCount += 1;

@@ -151,7 +151,7 @@ function createWindow() {
     show: false,
     skipTaskbar: false,
     autoHideMenuBar: true,
-    backgroundColor: '#1E2026',
+    backgroundColor: '#F8F9FA',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,

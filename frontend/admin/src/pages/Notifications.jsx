@@ -417,7 +417,7 @@ const Notifications = () => {
 
         {/* ── NOTIFICATIONS LIST ── */}
         <div className="w-full">
-          <div className="bg-white dark:bg-[#0c1512] border border-[#e2eae7] dark:border-[#13221e] rounded-[24px] shadow-[0_4px_20px_rgba(0,0,0,0.01)] overflow-hidden">
+          <div className="bg-white dark:bg-[#0c1512] border border-[#e2eae7] dark:border-[#13221e] rounded-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.01)] overflow-hidden">
 
             {loading ? (
               <div className="flex items-center justify-center py-20">
@@ -460,7 +460,7 @@ const Notifications = () => {
                         return (
                           <div
                             key={notif._id}
-                            className="p-6 flex items-start gap-4 transition-colors bg-white dark:bg-[#0c1512] hover:bg-slate-50 dark:hover:bg-[#111c18] group relative"
+                            className="py-3 px-5 flex items-center gap-4 transition-colors bg-white dark:bg-[#0c1512] hover:bg-slate-50 dark:hover:bg-[#111c18] group relative"
                           >
                             {/* Icon */}
                             <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${colorClass}`}>
@@ -468,13 +468,11 @@ const Notifications = () => {
                             </div>
 
                             {/* Content */}
-                            <div className="flex-1 min-w-0 pr-16">
-                              <div className="flex items-start justify-between gap-3">
-                                <p className="text-[14px] leading-snug font-bold text-slate-800 dark:text-white">
-                                  {notif.message}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-3 mt-2.5 flex-wrap">
+                            <div className="flex-1 min-w-0 pr-16 flex md:flex-row flex-col md:items-center justify-between gap-3">
+                              <p className="text-[13px] leading-snug font-medium text-slate-800 dark:text-white">
+                                {notif.message}
+                              </p>
+                              <div className="flex items-center gap-2 flex-wrap shrink-0">
                                 <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${colorClass}`}>
                                   {notif.type || 'general'}
                                 </span>
@@ -495,7 +493,7 @@ const Notifications = () => {
                                   </span>
                                 )}
                                 
-                                <span className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-widest">
+                                <span className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-widest whitespace-nowrap">
                                   {new Date(notif.createdAt).toLocaleString('en-US', {
                                     month: 'short', day: 'numeric',
                                     hour: '2-digit', minute: '2-digit'
@@ -506,7 +504,7 @@ const Notifications = () => {
 
                             {/* Edit / Delete Actions */}
                             {isCreator && (
-                              <div className="absolute right-5 top-5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                              <div className="absolute right-5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
                                 <button 
                                   onClick={() => handleEdit(notif)}
                                   className="p-1.5 text-slate-450 hover:text-[#00a76b] hover:bg-emerald-50 rounded"
@@ -533,7 +531,7 @@ const Notifications = () => {
                   {(() => {
                     const totalPages = Math.max(Math.ceil(displayNotifications.length / itemsPerPage), 1);
                     return (
-                      <div className="px-6 py-4 bg-slate-50 dark:bg-[#111c18] border-t border-[#e2eae7] dark:border-[#13221e] flex items-center justify-between flex-wrap gap-3">
+                      <div className="px-6 py-4 bg-white dark:bg-[#0c1512] border-t border-[#e2eae7] dark:border-[#13221e] flex items-center justify-between flex-wrap gap-3">
                         <button
                           onClick={() => {
                             setCurrentPage(prev => Math.max(prev - 1, 1));

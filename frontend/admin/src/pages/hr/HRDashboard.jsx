@@ -86,6 +86,12 @@ const HRDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [error, setError] = useState(null);
+  const [liveTime, setLiveTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setLiveTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Dropdown states
   const [attPeriod, setAttPeriod] = useState('This Week');
@@ -160,7 +166,7 @@ const HRDashboard = () => {
 
       // Fetch Profile
       const profRes = await axios.get('/api/auth/me', { headers });
-      setProfile(profRes.data.data);
+      setProfile(profRes.data);
 
       // Fetch Aggregated Dashboard Data
       const dashRes = await axios.get('/api/hr-dashboard/summary', { headers });
@@ -248,6 +254,10 @@ const HRDashboard = () => {
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">Good Morning, {firstName}! 👋</h1>
         </div>
         <div className="flex flex-wrap md:flex-nowrap items-center gap-4 mt-4 md:mt-0">
+          <div className="flex items-center whitespace-nowrap text-gray-600 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 font-medium font-mono tabular-nums">
+            <Clock size={18} className="mr-2 text-[#00a76b] shrink-0 animate-pulse" />
+            {liveTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+          </div>
           <div className="flex items-center whitespace-nowrap text-gray-600 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 font-medium">
             <Calendar size={18} className="mr-2 text-[#00a76b] shrink-0" />
             {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -264,16 +274,16 @@ const HRDashboard = () => {
           { label: 'Employees on Leave', val: stats.employeesOnLeave, subtext: `${stats.employeesOnLeavePercent}% of total`, icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50', hoverBorder: 'hover:border-orange-400 hover:shadow-orange-500/10' },
           { label: 'Pending Leave', val: stats.pendingLeaveApprovals, subtext: 'Requires your action', icon: Clock, color: 'text-red-500', bg: 'bg-red-50', hoverBorder: 'hover:border-red-400 hover:shadow-red-500/10' },
         ].map((stat, i) => (
-          <Card key={i} className={`p-4 flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md ${stat.hoverBorder}`}>
-            <div className="mb-3">
-              <div className={`inline-flex p-2 rounded-lg ${stat.bg} ${stat.color}`}>
-                <stat.icon size={18} strokeWidth={2.5} />
+          <Card key={i} className={`py-3.5 px-4 flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md ${stat.hoverBorder}`}>
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <div className={`inline-flex p-1.5 rounded-lg shrink-0 ${stat.bg} ${stat.color}`}>
+                <stat.icon size={16} strokeWidth={2.5} />
               </div>
+              <p className="text-[10px] sm:text-[11px] font-bold text-gray-500 uppercase tracking-wider leading-tight">{stat.label}</p>
             </div>
-            <div className="flex-1 flex flex-col justify-end">
-              <p className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 leading-tight">{stat.label}</p>
+            <div className="flex items-baseline gap-2.5 mt-0.5">
               <h3 className="text-2xl font-black text-gray-900 leading-none">{stat.val}</h3>
-              <p className={`text-[10px] mt-1.5 font-medium ${stat.subtext.includes('+') ? 'text-green-600' : 'text-gray-400'}`}>
+              <p className={`text-[10px] font-bold ${stat.subtext.includes('+') ? 'text-green-600' : 'text-gray-400'}`}>
                 {stat.subtext}
               </p>
             </div>

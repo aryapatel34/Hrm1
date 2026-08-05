@@ -99,7 +99,7 @@ const App = () => {
   return (
     <>
       <ScrollToTop />
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster position="bottom-right" toastOptions={{ duration: 3500 }} reverseOrder={false} />
       <Routes>
         {/* PUBLIC ROUTES */}
         <Route path="/" element={<RootRedirect />} />

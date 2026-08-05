@@ -408,20 +408,22 @@ const Screenshots = () => {
             )}
 
             {/* View Mode Toggle (Placed at the end) */}
-            <div className="flex bg-[#eceae3] p-1 rounded-xl h-10 items-center">
-               <button 
-                 onClick={() => setViewMode('grid')}
-                 className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-[#00a76b]' : 'text-[#939084] hover:text-[#201515]'}`}
-               >
-                  <LayoutGrid size={16} />
-               </button>
-               <button 
-                 onClick={() => setViewMode('list')}
-                 className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-[#00a76b]' : 'text-[#939084] hover:text-[#201515]'}`}
-               >
-                  <ListIcon size={16} />
-               </button>
-            </div>
+            {navigationPath.length === (role === 'manager' ? 1 : 2) && (
+               <div className="flex bg-[#eceae3] p-1 rounded-xl h-10 items-center">
+                  <button 
+                    onClick={() => setViewMode('grid')}
+                    className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-[#00a76b]' : 'text-[#939084] hover:text-[#201515]'}`}
+                  >
+                     <LayoutGrid size={16} />
+                  </button>
+                  <button 
+                    onClick={() => setViewMode('list')}
+                    className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-[#00a76b]' : 'text-[#939084] hover:text-[#201515]'}`}
+                  >
+                     <ListIcon size={16} />
+                  </button>
+               </div>
+            )}
 
             {/* Refresh Button (Placed at the very end) */}
             <button 
@@ -438,7 +440,7 @@ const Screenshots = () => {
         <div className="flex gap-3 mb-8 animate-fade-in">
            <button 
              onClick={() => setQuickDate('today')}
-             className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterDate === getToday() ? 'bg-[#00a76b] text-white shadow-lg' : 'bg-[#eceae3] text-[#939084] hover:text-[#201515]'}`}
+             className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterDate === getLocalISODate() ? 'bg-[#00a76b] text-white shadow-lg' : 'bg-[#eceae3] text-[#939084] hover:text-[#201515]'}`}
            >
               Today
            </button>
