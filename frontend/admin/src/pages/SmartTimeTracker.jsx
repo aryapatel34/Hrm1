@@ -544,19 +544,19 @@ const SmartTimeTracker = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white dark:bg-[#181612] rounded-xl border border-gray-200 dark:border-[#38352e] p-6 shadow-sm">
             <p className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase tracking-widest mb-1">Present Today</p>
-            <p className="text-2xl font-black text-gray-800 dark:text-white">{totalEmployeesPresent}</p>
+            <p className="text-[18px] font-black text-gray-800 dark:text-white">{totalEmployeesPresent}</p>
           </div>
           <div className="bg-white dark:bg-[#181612] rounded-xl border border-gray-200 dark:border-[#38352e] p-6 shadow-sm">
             <p className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase tracking-widest mb-1">Total Hours</p>
-            <p className="text-2xl font-black text-gray-800 dark:text-white">{formatMinutes(totalHoursLogged)}</p>
+            <p className="text-[18px] font-black text-gray-800 dark:text-white">{formatMinutes(totalHoursLogged)}</p>
           </div>
           <div className="bg-white dark:bg-[#181612] rounded-xl border border-gray-200 dark:border-[#38352e] p-6 shadow-sm">
             <p className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase tracking-widest mb-1">Currently Active</p>
-            <p className="text-2xl font-black text-[#10B981]">{currentlyActive}</p>
+            <p className="text-[18px] font-black text-[#10B981]">{currentlyActive}</p>
           </div>
           <div className="bg-white dark:bg-[#181612] rounded-xl border border-gray-200 dark:border-[#38352e] p-6 shadow-sm">
             <p className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase tracking-widest mb-1">On Break</p>
-            <p className="text-2xl font-black text-amber-500">{onBreak}</p>
+            <p className="text-[18px] font-black text-amber-500">{onBreak}</p>
           </div>
         </div>
       )}

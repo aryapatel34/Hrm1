@@ -406,7 +406,7 @@ const EmployeeAttendance = () => {
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-400 dark:text-[#a3b3af] uppercase tracking-wider">{card.label}</p>
-              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-1 tabular-nums">{card.value}</h2>
+              <h2 className="text-[18px] font-black text-slate-800 dark:text-slate-100 mt-1 tabular-nums">{card.value}</h2>
             </div>
             {card.progress && (
               <div className="mt-4 w-full bg-slate-100 dark:bg-slate-800 h-1 rounded-full">

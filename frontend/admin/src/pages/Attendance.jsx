@@ -349,7 +349,7 @@ const Attendance = () => {
                 </span>
               )}
             </div>
-            <h3 className={`text-2xl font-extrabold ${card.color} leading-none mb-1`}>{card.value}</h3>
+            <h3 className={`text-[18px] font-extrabold ${card.color} leading-none mb-1`}>{card.value}</h3>
             <p className="text-[11px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">{card.label}</p>
           </Card>
         ))}
@@ -363,7 +363,7 @@ const Attendance = () => {
           </div>
           <div>
             <p className="text-sm font-bold text-slate-500 dark:text-[#829e92]">Today's Attendance Rate</p>
-            <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{summaryStats.pct}%</h2>
+            <h2 className="text-[18px] font-black text-slate-900 dark:text-white tracking-tight">{summaryStats.pct}%</h2>
           </div>
         </div>
         <div className="flex items-center gap-6">

@@ -227,7 +227,7 @@ export default function Training() {
               </div>
             </div>
             <div>
-              <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-none mb-1">{card.val}</h3>
+              <h3 className="text-[18px] font-black text-slate-800 dark:text-white leading-none mb-1">{card.val}</h3>
               <p className="text-[9px] font-bold text-[#829e92] dark:text-[#527068] uppercase tracking-widest">{card.info}</p>
             </div>
           </div>
