@@ -91,14 +91,15 @@ exports.getDashboardStats = async (req, res) => {
       else pendingPayroll += stat.total;
     });
 
-    // 5. Attendance Overview (Last 7 days)
-    const sevenDaysAgo = new Date(startOfToday);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    // 5. Attendance Overview (Current Week: Mon - Sun)
+    const currentDayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1; // 0 for Mon, 6 for Sun
+    const startOfCurrentWeek = new Date(startOfToday);
+    startOfCurrentWeek.setDate(startOfCurrentWeek.getDate() - currentDayOfWeek);
 
-    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+    const startOfCurrentWeekStr = startOfCurrentWeek.toISOString().split('T')[0];
 
     const attRecords = await Attendance.aggregate([
-      { $match: { date: { $gte: sevenDaysAgoStr } } },
+      { $match: { date: { $gte: startOfCurrentWeekStr } } },
       {
         $group: {
           _id: "$date",
@@ -111,10 +112,10 @@ exports.getDashboardStats = async (req, res) => {
       { $sort: { _id: 1 } }
     ]);
 
-    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const attendanceOverview = [];
     for (let i = 0; i < 7; i++) {
-      const d = new Date(sevenDaysAgo);
+      const d = new Date(startOfCurrentWeek);
       d.setDate(d.getDate() + i);
       const dStr = d.toISOString().split('T')[0];
       const match = attRecords.find(r => r._id === dStr);
@@ -125,7 +126,7 @@ exports.getDashboardStats = async (req, res) => {
       let halfDay = match ? match.halfDay : 0;
 
       attendanceOverview.push({
-        name: weekDays[d.getDay()],
+        name: weekDays[i],
         present,
         absent,
         late,

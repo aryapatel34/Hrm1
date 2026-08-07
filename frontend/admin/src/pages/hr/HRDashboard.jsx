@@ -20,7 +20,7 @@ const COLORS = ['#00a76b', '#3b82f6', '#f43f5e', '#f59e0b', '#8b5cf6', '#64748b'
 const Card = ({ children, className = '', style = {}, ...props }) => (
   <div
     style={style}
-    className={`bg-white dark:bg-[#161311] rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-[#eceae3] dark:border-[#28251e] transition-all duration-300 ${className}`}
+    className={`bg-white dark:bg-[#161311] rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-[#eceae3] dark:border-[#28251e] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${className}`}
     {...props}
   >
     {children}
@@ -51,7 +51,7 @@ const CustomDropdown = ({ value, onChange, options, className = '' }) => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 bg-[#F8F9FB] dark:bg-[#1f1b17] hover:bg-[#eceae3] dark:hover:bg-[#2a2520] text-gray-700 dark:text-gray-200 text-xs font-bold px-3 py-1.5 rounded-lg border border-[#eceae3] dark:border-[#38332c] transition-all cursor-pointer shadow-xs"
       >
-        <span>{selectedLabel}</span>
+        <span className="whitespace-nowrap">{selectedLabel}</span>
         <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -223,7 +223,7 @@ const HRDashboard = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] text-[#939084] bg-[#F8F9FB]">
         <Activity className="animate-pulse mb-4 text-[#00a76b]" size={48} />
-        <p className="font-semibold text-lg">Gathering insights...</p>
+        <p className="font-semibold text-lg animate-pulse">Loading Dashboard...</p>
       </div>
     );
   }
@@ -268,7 +268,10 @@ const HRDashboard = () => {
       {/* 1. Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">{getGreeting()}, {firstName}! 👋</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+            <span>{getGreeting()}, {firstName}!</span>
+            <span className="inline-flex items-center">👋</span>
+          </h1>
         </div>
         <div className="flex flex-wrap md:flex-nowrap items-center gap-4 mt-4 md:mt-0">
           <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-[#161311] px-4 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-[#28251e] font-medium">
@@ -352,7 +355,7 @@ const HRDashboard = () => {
               <div className="flex-1 flex flex-col justify-end">
                 <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 leading-tight">{stat.label}</p>
                 <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none">{stat.val}</h3>
-                <p className={`text-[10px] mt-1.5 font-medium ${stat.subtext.includes('+') ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                <p className={`text-xs mt-1.5 font-medium ${stat.subtext.includes('+') ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
                   {stat.subtext}
                 </p>
               </div>
@@ -364,9 +367,9 @@ const HRDashboard = () => {
       {/* 3. Second Row (Charts) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Attendance */}
-        <Card className="lg:col-span-1 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900 dark:text-white">Attendance Overview</h3>
+        <Card className="lg:col-span-1 p-4 sm:p-5">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="font-bold text-gray-900 dark:text-white whitespace-nowrap">Attendance Overview</h3>
             <CustomDropdown
               value={attPeriod}
               onChange={setAttPeriod}
@@ -376,14 +379,14 @@ const HRDashboard = () => {
           <div className="h-48 w-full">
             {charts.attendanceOverview.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={charts.attendanceOverview} margin={{ top: 25, right: 20, left: 0, bottom: 5 }}>
+                <LineChart data={charts.attendanceOverview} margin={{ top: 25, right: 20, left: 0, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} domain={[0, 120]} ticks={[0, 25, 50, 75, 100]} tickMargin={6} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} dy={15} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} tickMargin={12} allowDecimals={false} />
                   <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.5)' }} />
-                  <Line type="monotone" dataKey="present" stroke="#00a76b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="absent" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />
-                  <Line type="monotone" dataKey="late" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />
+                  {charts.attendanceOverview.some(d => d.present > 0) && <Line type="monotone" dataKey="present" stroke="#00a76b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />}
+                  {charts.attendanceOverview.some(d => d.absent > 0) && <Line type="monotone" dataKey="absent" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />}
+                  {charts.attendanceOverview.some(d => d.late > 0) && <Line type="monotone" dataKey="late" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />}
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -393,18 +396,18 @@ const HRDashboard = () => {
         </Card>
 
         {/* Role Distribution */}
-        <Card className="p-6">
-          <h3 className="font-bold text-gray-900 dark:text-white mb-6">Role-wise Employees</h3>
+        <Card className="p-4 sm:p-5">
+          <h3 className="font-bold text-gray-900 dark:text-white mb-3">Role-wise Employees</h3>
           <div className="flex flex-col items-center justify-center">
             {hrRoleDistribution.length > 0 ? (
               <>
-                <div className="h-40 w-full relative">
+                <div className="h-48 w-full relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={hrRoleDistribution} cx="50%" cy="50%" innerRadius={42} outerRadius={60} paddingAngle={2} dataKey="value">
+                      <Pie data={hrRoleDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={2} dataKey="value">
                         {hrRoleDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                       </Pie>
-                      <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff' }} />
+                      <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -428,18 +431,18 @@ const HRDashboard = () => {
         </Card>
 
         {/* Gender Distribution */}
-        <Card className="p-6">
-          <h3 className="font-bold text-gray-900 dark:text-white mb-6">Gender Distribution</h3>
+        <Card className="p-4 sm:p-5">
+          <h3 className="font-bold text-gray-900 dark:text-white mb-3">Gender Distribution</h3>
           <div className="flex flex-col items-center justify-center">
             {charts.genderDistribution.length > 0 ? (
               <>
-                <div className="h-40 w-full relative">
+                <div className="h-48 w-full relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={charts.genderDistribution} cx="50%" cy="50%" innerRadius={42} outerRadius={60} paddingAngle={2} dataKey="value">
+                      <Pie data={charts.genderDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={2} dataKey="value">
                         {charts.genderDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={['#3b82f6', '#f43f5e', '#f59e0b'][index % 3]} />)}
                       </Pie>
-                      <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff' }} />
+                      <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -465,8 +468,8 @@ const HRDashboard = () => {
 
       {/* 4. Third Row (Leave, Payroll, Recruitment) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="p-6">
-          <div className="flex justify-between items-center mb-6">
+        <Card className="p-3 sm:p-4">
+          <div className="flex justify-between items-center mb-3">
             <h3 className="font-bold text-gray-900 dark:text-white">Leave Overview</h3>
             <CustomDropdown
               value={leavePeriod}
@@ -474,38 +477,38 @@ const HRDashboard = () => {
               options={['This Month', 'This Week', 'This Year', 'All Time', 'Today']}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-gray-50 dark:bg-[#1a1714] border border-transparent dark:border-[#2b2722] rounded-xl">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-2.5 bg-gray-50 dark:bg-[#1a1714] border border-transparent dark:border-[#2b2722] rounded-xl">
               <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Total Leaves</p>
               <p className="text-2xl font-black text-gray-900 dark:text-white">{currentLeaveOverview.total || 0}</p>
             </div>
-            <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-transparent dark:border-green-900/30 rounded-xl">
+            <div className="p-2.5 bg-green-50 dark:bg-green-950/30 border border-transparent dark:border-green-900/30 rounded-xl">
               <p className="text-xs font-bold text-green-700 dark:text-green-300 mb-1">Approved</p>
               <p className="text-2xl font-black text-green-800 dark:text-green-200">{currentLeaveOverview.approved || 0}</p>
-              <p className="text-[10px] font-semibold text-green-600 dark:text-green-400">
+              <p className="text-sm font-semibold text-green-600 dark:text-green-400">
                 {currentLeaveOverview.total ? Math.round((currentLeaveOverview.approved / currentLeaveOverview.total) * 100) : 0}%
               </p>
             </div>
-            <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-transparent dark:border-red-900/30 rounded-xl">
+            <div className="p-2.5 bg-red-50 dark:bg-red-950/30 border border-transparent dark:border-red-900/30 rounded-xl">
               <p className="text-xs font-bold text-red-700 dark:text-red-300 mb-1">Rejected</p>
               <p className="text-2xl font-black text-red-800 dark:text-red-200">{currentLeaveOverview.rejected || 0}</p>
-              <p className="text-[10px] font-semibold text-red-600 dark:text-red-400">
+              <p className="text-sm font-semibold text-red-600 dark:text-red-400">
                 {currentLeaveOverview.total ? Math.round((currentLeaveOverview.rejected / currentLeaveOverview.total) * 100) : 0}%
               </p>
             </div>
-            <div className="p-4 bg-orange-50 dark:bg-orange-950/30 border border-transparent dark:border-orange-900/30 rounded-xl">
+            <div className="p-2.5 bg-orange-50 dark:bg-orange-950/30 border border-transparent dark:border-orange-900/30 rounded-xl">
               <p className="text-xs font-bold text-orange-700 dark:text-orange-300 mb-1">Cancelled</p>
               <p className="text-2xl font-black text-orange-800 dark:text-orange-200">{currentLeaveOverview.cancelled || 0}</p>
-              <p className="text-[10px] font-semibold text-orange-600 dark:text-orange-400">
+              <p className="text-sm font-semibold text-orange-600 dark:text-orange-400">
                 {currentLeaveOverview.total ? Math.round((currentLeaveOverview.cancelled / currentLeaveOverview.total) * 100) : 0}%
               </p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-4 sm:p-5 flex flex-col justify-between">
+        <Card className="p-3 sm:p-4 flex flex-col justify-between">
           <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-gray-900 dark:text-white">Payroll Summary</h3>
               <CustomDropdown
                 value={payrollPeriod}
@@ -514,9 +517,9 @@ const HRDashboard = () => {
               />
             </div>
             <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-1">{formatCurrency(payrollSummary.total)}</h2>
-            <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-6">Total Payroll Cost</p>
+            <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">Total Payroll Cost</p>
 
-            <div className="w-full h-3 bg-gray-100 dark:bg-[#2b2722] rounded-full overflow-hidden mb-4">
+            <div className="w-full h-3 bg-gray-100 dark:bg-[#2b2722] rounded-full overflow-hidden mb-3">
               <div className="h-full bg-[#00a76b] rounded-full transition-all duration-500" style={{ width: `${payrollSummary.total ? (payrollSummary.processed / payrollSummary.total) * 100 : 0}%` }}></div>
             </div>
 
@@ -531,7 +534,7 @@ const HRDashboard = () => {
               </div>
             </div>
           </div>
-          <button onClick={() => navigate('/hr/payroll')} className="w-full mt-6 bg-gray-50 dark:bg-[#1e1a17] hover:bg-gray-100 dark:hover:bg-[#28231e] text-gray-700 dark:text-gray-200 border border-transparent dark:border-[#38332c] font-bold py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer">
+          <button onClick={() => navigate('/hr/payroll')} className="w-full mt-3 bg-gray-50 dark:bg-[#1e1a17] hover:bg-gray-100 dark:hover:bg-[#28231e] text-gray-700 dark:text-gray-200 border border-transparent dark:border-[#38332c] font-bold py-2 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer">
             View Payroll Details <ChevronRight size={16} />
           </button>
         </Card>
@@ -746,7 +749,7 @@ const HRDashboard = () => {
         <Card className="p-6 h-[320px] flex flex-col">
           <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-gray-900 dark:text-white">Birthdays & Anniv.</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white truncate pr-2">Birthdays & Anniversaries</h3>
               {upcomingCelebrations.some(c => checkIsToday(c.date, c.diffDays)) && (
                 <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 animate-pulse">
                   🎉 Today
@@ -815,9 +818,12 @@ const HRDashboard = () => {
                 </div>
               );
             }) : (
-              <div className="flex flex-col items-center justify-center h-32 text-gray-400">
-                <Gift size={40} className="mb-3 text-gray-200 dark:text-neutral-700" />
-                <p className="font-medium text-sm">No upcoming events this week</p>
+              <div className="flex flex-col items-center justify-center h-full text-center p-6 group">
+                <div className="w-16 h-16 bg-pink-50/50 dark:bg-pink-900/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Gift size={32} className="text-pink-300 dark:text-pink-800 group-hover:-rotate-12 transition-transform duration-300" />
+                </div>
+                <p className="text-gray-900 dark:text-white font-bold text-sm mb-1">No Upcoming Events</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">There are no birthdays or work anniversaries in the next 30 days.</p>
               </div>
             )}
           </div>
