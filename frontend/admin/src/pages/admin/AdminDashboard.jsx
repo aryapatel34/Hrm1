@@ -127,8 +127,7 @@ const AdminDashboard = () => {
     try {
       localStorage.removeItem('hrm_wished_events');
     } catch { }
-  } catch { }
-}, []);
+  }, []);
 
 const checkIsToday = (celebDate, diffDays) => {
   if (diffDays === 0) return true;
@@ -332,7 +331,6 @@ return (
           {(() => {
             const isMock = !charts.attendanceOverview || charts.attendanceOverview.length === 0 || charts.attendanceOverview.every(d => d.present === 0 && d.absent === 0 && d.late === 0);
             const displayData = isMock
-            const displayData = isMock
               ? [
                 { name: 'Mon', present: 85, absent: 5, late: 10 },
                 { name: 'Tue', present: 90, absent: 2, late: 8 },
@@ -342,15 +340,7 @@ return (
                 { name: 'Sat', present: 40, absent: 50, late: 10 },
                 { name: 'Sun', present: 0, absent: 100, late: 0 }
               ]
-                  { name: 'Mon', present: 85, absent: 5, late: 10 },
-          {name: 'Tue', present: 90, absent: 2, late: 8 },
-          {name: 'Wed', present: 88, absent: 4, late: 8 },
-          {name: 'Thu', present: 92, absent: 1, late: 7 },
-          {name: 'Fri', present: 80, absent: 10, late: 10 },
-          {name: 'Sat', present: 40, absent: 50, late: 10 },
-          {name: 'Sun', present: 0, absent: 100, late: 0 }
-          ]
-          : charts.attendanceOverview;
+              : charts.attendanceOverview;
 
           return (
           <ResponsiveContainer width="100%" height="100%">
@@ -648,8 +638,6 @@ return (
               {pendingApprovals.map((approval) => (
                   <div
                     key={approval._id}
-                  <div
-                    key={approval._id}
                     onClick={() => setSelectedLeaveApproval(approval)}
                     className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50/50 dark:bg-[#1a1714] hover:bg-white dark:hover:bg-[#221e19] rounded-xl border border-gray-100 dark:border-[#2b2722] hover:border-gray-200 dark:hover:border-[#38332c] hover:shadow-md transition-all cursor-pointer group"
                   >
@@ -680,11 +668,9 @@ return (
                         {Math.floor((new Date() - new Date(approval.date)) / (1000 * 60 * 60 * 24)) || 1} days ago
                       </span>
                       <button
-                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleApproveLeave(approval._id);
-                        }}
                         }}
                         title="Approve Leave"
                         className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#00a76b] text-white hover:bg-[#00915c] transition-colors shadow-sm cursor-pointer"
@@ -692,11 +678,9 @@ return (
                         <Check size={16} strokeWidth={3} />
                       </button>
                       <button
-                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRejectLeave(approval._id);
-                        }}
                         }}
                         title="Reject Leave"
                         className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm cursor-pointer"
@@ -824,8 +808,6 @@ return (
             <h3 className="font-bold text-gray-900 dark:text-white text-base">Announcements</h3>
             <button
               onClick={() => navigate(`/${pathRole}/notifications`)}
-            <button
-              onClick={() => navigate(`/${pathRole}/notifications`)}
               className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1"
             >
               View All
@@ -833,8 +815,6 @@ return (
           </div>
           <div className="space-y-2.5 flex-1 flex flex-col justify-start">
             {announcements && announcements.length > 0 ? announcements.slice(0, 3).map((ann) => (
-              <div
-                key={ann._id}
               <div
                 key={ann._id}
                 onClick={() => navigate(`/${pathRole}/notifications`)}
@@ -916,9 +896,7 @@ return (
       </Card >
 
   {/* Leave Details Modal */ }
-{
-  selectedLeaveApproval && createPortal(
-        <div
+      {selectedLeaveApproval && createPortal(
         <div
           className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setSelectedLeaveApproval(null)}
@@ -940,7 +918,6 @@ return (
                   </span>
                 </div>
               </div>
-              <button
               <button
                 type="button"
                 onClick={() => setSelectedLeaveApproval(null)}
