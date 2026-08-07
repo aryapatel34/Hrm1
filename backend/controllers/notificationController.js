@@ -19,7 +19,7 @@ exports.getNotifications = async (req, res) => {
       if (!seenBatches.has(s.batchId)) {
         seenBatches.add(s.batchId);
         if (!received.find(r => r.batchId === s.batchId)) {
-          uniqueSent.push(s);
+          uniqueSent.push({ ...s, read: true, isSentByMe: true });
         }
       }
     }

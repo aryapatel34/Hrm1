@@ -1,5 +1,6 @@
 const Leave = require('../models/Leave');
 const User = require('../models/User');
+const { isLeaveDatePassed, autoRejectExpiredLeaves } = require('../utils/leaveUtils');
 
 // @desc    Apply for leave
 // @route   POST /api/leaves/apply
@@ -7,7 +8,12 @@ const User = require('../models/User');
 exports.applyLeave = async (req, res) => {
   try {
     const { leaveType, startDate, endDate, reason, totalDays } = req.body;
-    
+
+    // Prevent applying for dates that have already passed
+    if (isLeaveDatePassed(startDate, endDate)) {
+      return res.status(400).json({ message: 'Cannot apply for leave for dates that have already passed.' });
+    }
+
     // Find employee's manager
     const employee = await User.findById(req.user.id);
     if (!employee) return res.status(404).json({ message: 'User not found' });
@@ -38,9 +44,12 @@ exports.applyLeave = async (req, res) => {
 // @access  Private/Manager
 exports.getManagerLeaves = async (req, res) => {
   try {
-    const leaves = await Leave.find({ 
+    const io = req.app.get('io');
+    await autoRejectExpiredLeaves(io);
+
+    const leaves = await Leave.find({
       managerId: req.user.id,
-      status: 'pending' 
+      status: 'pending'
     }).populate('user', 'name email profile');
     res.json(leaves);
   } catch (error) {
@@ -55,14 +64,26 @@ exports.managerApprove = async (req, res) => {
   try {
     const leave = await Leave.findById(req.params.id);
     if (!leave) return res.status(404).json({ message: 'Leave request not found' });
-    
+
     if (leave.managerId && leave.managerId.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Not authorized to approve this leave' });
     }
 
+    const io = req.app.get('io');
+
+    // Auto-reject if the leave date has already passed
+    if (isLeaveDatePassed(leave.startDate, leave.endDate)) {
+      leave.status = 'rejected';
+      leave.rejectionReason = 'Auto-rejected: Leave period expired (date passed without approval)';
+      await leave.save();
+      if (io) {
+        io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
+      }
+      return res.status(400).json({ message: 'Cannot approve leave request. The requested leave date has already passed.' });
+    }
+
     leave.status = 'approved';
     await leave.save();
-    const io = req.app.get('io');
     if (io) {
       io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
     }
@@ -77,8 +98,11 @@ exports.managerApprove = async (req, res) => {
 // @access  Private/HR
 exports.getHRLeaves = async (req, res) => {
   try {
-    const leaves = await Leave.find({ 
-      status: 'approved' 
+    const io = req.app.get('io');
+    await autoRejectExpiredLeaves(io);
+
+    const leaves = await Leave.find({
+      status: 'approved'
     }).populate('user', 'name email profile')
       .populate('managerId', 'name email');
     res.json(leaves);
@@ -95,10 +119,22 @@ exports.hrApprove = async (req, res) => {
     const leave = await Leave.findById(req.params.id);
     if (!leave) return res.status(404).json({ message: 'Leave request not found' });
 
+    const io = req.app.get('io');
+
+    // Auto-reject if the leave date has already passed
+    if (isLeaveDatePassed(leave.startDate, leave.endDate)) {
+      leave.status = 'rejected';
+      leave.rejectionReason = 'Auto-rejected: Leave period expired (date passed without approval)';
+      await leave.save();
+      if (io) {
+        io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
+      }
+      return res.status(400).json({ message: 'Cannot approve leave request. The requested leave date has already passed.' });
+    }
+
     leave.status = 'approved';
     leave.hrId = req.user.id;
     await leave.save();
-    const io = req.app.get('io');
     if (io) {
       io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
     }
@@ -117,6 +153,9 @@ exports.rejectLeave = async (req, res) => {
     if (!leave) return res.status(404).json({ message: 'Leave request not found' });
 
     leave.status = 'rejected';
+    if (req.body.reason || req.body.rejectionReason) {
+      leave.rejectionReason = req.body.reason || req.body.rejectionReason;
+    }
     await leave.save();
     const io = req.app.get('io');
     if (io) {
@@ -162,6 +201,9 @@ exports.cancelLeave = async (req, res) => {
 // @access  Private/Employee
 exports.getMyLeaves = async (req, res) => {
   try {
+    const io = req.app.get('io');
+    await autoRejectExpiredLeaves(io);
+
     const leaves = await Leave.find({ user: req.user.id });
     res.json(leaves);
   } catch (error) {
@@ -174,6 +216,9 @@ exports.getMyLeaves = async (req, res) => {
 // @access  Private/Admin
 exports.getAllLeaves = async (req, res) => {
   try {
+    const io = req.app.get('io');
+    await autoRejectExpiredLeaves(io);
+
     const leaves = await Leave.find().populate('user', 'name email profile');
     res.json(leaves);
   } catch (error) {

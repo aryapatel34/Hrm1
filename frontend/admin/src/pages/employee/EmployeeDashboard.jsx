@@ -45,7 +45,7 @@ const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 // ─── STYLED COMPONENTS ───────────────────────────────────────
 const Card = ({ children, className = '', onClick, ...props }) => (
   <div
-    className={`bg-[#fffefb] dark:bg-[#0f0d0a] border border-[#c5c0b1] dark:border-[#38352e] rounded-[20px] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.02)] transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.04)] ${className}`}
+    className={`bg-white dark:bg-[#0f0d0a] border border-[#c5c0b1] dark:border-[#38352e] rounded-[20px] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.02)] transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.04)] ${className}`}
     onClick={onClick}
     {...props}
   >
@@ -241,7 +241,7 @@ const EmployeeDashboard = () => {
       try {
         await axios.post('/api/time/start', {}, { headers: { Authorization: `Bearer ${token()}` } });
       } catch (_) { }
-      
+
       setTimerStatus(s => ({ ...s, isRunning: true }));
       toast.success('Check-in successful & Desktop Tracker started!', {
         duration: 3500,
@@ -368,7 +368,7 @@ const EmployeeDashboard = () => {
   }
 
   return (
-    <div className="space-y-6 pb-12 font-['Inter',sans-serif]" style={{ color: 'var(--zap-charcoal)' }}>
+    <div className="space-y-6 pb-4 font-['Inter',sans-serif]" style={{ color: 'var(--zap-charcoal)' }}>
 
       {/* 1. WELCOME SECTION */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
@@ -400,7 +400,7 @@ const EmployeeDashboard = () => {
               </div>
               <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Today's Attendance</span>
             </div>
-            <p className="text-xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{isCheckedIn ? 'Present' : 'Not Checked-In'}</p>
+            <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{isCheckedIn ? 'Present' : 'Not Checked-In'}</p>
             <p className="text-xs text-[#939084] mt-1">{isCheckedIn ? (checkInTime ? `Checked in at ${checkInTime}` : 'Checked in successfully') : 'Please check in'}</p>
           </div>
           <div className="absolute inset-x-0 bottom-0 bg-[#00a76b] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
@@ -417,8 +417,8 @@ const EmployeeDashboard = () => {
               </div>
               <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Working Hours</span>
             </div>
-            <p className="text-xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{todayHours}</p>
-            <p className="text-xs text-[#939084] mt-1">Today's Working Time</p>
+            <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{todayHours}</p>
+            <p className="text-xs text-[#939084] mt-1">Today's working hours</p>
           </div>
           <div className="absolute inset-x-0 bottom-0 bg-[#3b82f6] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
             View Time Tracker <ArrowRight size={12} />
@@ -434,8 +434,8 @@ const EmployeeDashboard = () => {
               </div>
               <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Total Weekly Hours</span>
             </div>
-            <p className="text-xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{weeklyHours}</p>
-            <p className="text-xs text-[#939084] mt-1">This week's total</p>
+            <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{weeklyHours}</p>
+            <p className="text-xs text-[#939084] mt-1">This week's working hours</p>
           </div>
           <div className="absolute inset-x-0 bottom-0 bg-[#6366f1] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
             View Time Tracker <ArrowRight size={12} />
@@ -451,8 +451,8 @@ const EmployeeDashboard = () => {
               </div>
               <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Pending Tasks</span>
             </div>
-            <p className="text-xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingTasks}</p>
-            <p className="text-xs text-[#939084] mt-1">Tasks are pending</p>
+            <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingTasks}</p>
+            <p className="text-xs text-[#939084] mt-1">Today's pending tasks</p>
           </div>
           <div className="absolute inset-x-0 bottom-0 bg-[#a855f7] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
             View My Tasks <ArrowRight size={12} />
@@ -468,8 +468,8 @@ const EmployeeDashboard = () => {
               </div>
               <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Leave Balance</span>
             </div>
-            <p className="text-xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{Math.max(0, 18 - approvedLeaves)}</p>
-            <p className="text-xs text-[#939084] mt-1">Days available</p>
+            <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{Math.max(0, 18 - approvedLeaves)}</p>
+            <p className="text-xs text-[#939084] mt-1">Available leave days</p>
           </div>
           <div className="absolute inset-x-0 bottom-0 bg-[#f97316] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
             View Leave Balance <ArrowRight size={12} />
@@ -480,14 +480,14 @@ const EmployeeDashboard = () => {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
         {/* 3. ATTENDANCE SUMMARY */}
         <div className="flex flex-col h-full">
-            <SectionHeader
+          <SectionHeader
             title="Attendance Overview"
             action={
               <div className="relative" ref={timeRangeRef}>
                 <button
                   type="button"
                   onClick={() => setTimeRangeOpen(prev => !prev)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#d5d0c1] dark:border-[#38352e] bg-[#fffefb] dark:bg-[#1a1714] text-xs font-semibold text-[#36342e] dark:text-[#e5e2da] hover:border-[#00a76b] hover:bg-[#f7f6f2] dark:hover:bg-[#25211e] transition-all shadow-[0_1px_3px_rgba(0,0,0,0.04)] cursor-pointer select-none"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#d5d0c1] dark:border-[#38352e] bg-white dark:bg-[#1a1714] text-xs font-semibold text-[#36342e] dark:text-[#e5e2da] hover:border-[#00a76b] hover:bg-[#f7f6f2] dark:hover:bg-[#25211e] transition-all shadow-[0_1px_3px_rgba(0,0,0,0.04)] cursor-pointer select-none"
                 >
                   <Calendar size={13} className="text-[#00a76b]" />
                   <span>{timeRange === 'weekly' ? 'This Week' : 'This Month'}</span>
@@ -495,15 +495,14 @@ const EmployeeDashboard = () => {
                 </button>
 
                 {timeRangeOpen && (
-                  <div className="absolute right-0 mt-1.5 w-36 bg-[#fffefb] dark:bg-[#1a1714] border border-[#d5d0c1] dark:border-[#38352e] rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.08)] py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100 overflow-hidden">
+                  <div className="absolute right-0 mt-1.5 w-36 bg-white dark:bg-[#1a1714] border border-[#d5d0c1] dark:border-[#38352e] rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.08)] py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100 overflow-hidden">
                     <button
                       type="button"
                       onClick={() => { setTimeRange('weekly'); setTimeRangeOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${
-                        timeRange === 'weekly'
+                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${timeRange === 'weekly'
                           ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
                           : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
-                      }`}
+                        }`}
                     >
                       <span>This Week</span>
                       {timeRange === 'weekly' && <span className="w-1.5 h-1.5 rounded-full bg-[#00a76b]" />}
@@ -511,11 +510,10 @@ const EmployeeDashboard = () => {
                     <button
                       type="button"
                       onClick={() => { setTimeRange('monthly'); setTimeRangeOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${
-                        timeRange === 'monthly'
+                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${timeRange === 'monthly'
                           ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
                           : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
-                      }`}
+                        }`}
                     >
                       <span>This Month</span>
                       {timeRange === 'monthly' && <span className="w-1.5 h-1.5 rounded-full bg-[#00a76b]" />}
@@ -528,13 +526,29 @@ const EmployeeDashboard = () => {
           <Card className="flex-1 flex flex-col justify-center">
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={weeklyChart} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={true} stroke="#e5e7eb" />
-                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#939084' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#939084' }} tickFormatter={(val) => `${val}%`} domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} />
+                <LineChart data={weeklyChart} margin={{ top: 40, right: 25, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={true} stroke="#e5e7eb" className="stroke-gray-200 dark:stroke-[#28251e]" />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#939084' }} dy={5} />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: '#939084' }}
+                    tickFormatter={(val) => `${val}%`}
+                    domain={[0, 135]}
+                    ticks={[0, 25, 50, 75, 100]}
+                    width={45}
+                    tickMargin={6}
+                  />
                   <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
                   <Line type="monotone" dataKey="active" stroke="#00a76b" strokeWidth={3} dot={{ fill: '#00a76b', strokeWidth: 2, r: 5 }}>
-                    <LabelList dataKey="active" position="top" formatter={(val) => `${val}%`} style={{ fontSize: '11px', fontWeight: 'bold', fill: '#374151' }} />
+                    <LabelList
+                      dataKey="active"
+                      position="top"
+                      offset={12}
+                      formatter={(val) => `${val}%`}
+                      className="fill-gray-700 dark:fill-gray-200 text-[11px] font-bold"
+                      style={{ fontSize: '11px', fontWeight: 'bold' }}
+                    />
                   </Line>
                 </LineChart>
               </ResponsiveContainer>
@@ -561,65 +575,65 @@ const EmployeeDashboard = () => {
 
         {/* 4. MY TASKS OVERVIEW */}
         <div className="flex flex-col h-full">
-            <SectionHeader title="My Tasks Overview" />
-            <div className="rounded-2xl flex-1 flex flex-col">
-              <Card className="flex-1 flex flex-col justify-between">
-                <div className="h-64 relative flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={totalTasks === 0 ? [{ name: 'No Tasks', value: 1, color: '#e5e7eb' }] : [
-                        { name: 'Completed', value: completedTasks, color: '#8b5cf6' },
-                        { name: 'Ongoing', value: ongoingTasks, color: '#f59e0b' },
-                        { name: 'Upcoming', value: upcomingTasks, color: '#ef4444' },
-                        { name: 'Pending', value: pendingTasks, color: '#3b82f6' }
-                      ]} cx="50%" cy="50%" innerRadius={45} outerRadius={60} dataKey="value" stroke="none" paddingAngle={3}>
-                        {
-                          (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#8b5cf6' }, { color: '#f59e0b' }, { color: '#ef4444' }, { color: '#3b82f6' }]).map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))
-                        }
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-[18px] font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
-                    <span className="text-[10px] font-bold text-[#939084] tracking-wider uppercase mt-1">Total Tasks</span>
-                  </div>
+          <SectionHeader title="My Tasks Overview" />
+          <div className="rounded-2xl flex-1 flex flex-col">
+            <Card className="flex-1 flex flex-col justify-between">
+              <div className="h-64 relative flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={totalTasks === 0 ? [{ name: 'No Tasks', value: 1, color: '#e5e7eb' }] : [
+                      { name: 'Completed', value: completedTasks, color: '#8b5cf6' },
+                      { name: 'Ongoing', value: ongoingTasks, color: '#f59e0b' },
+                      { name: 'Upcoming', value: upcomingTasks, color: '#ef4444' },
+                      { name: 'Pending', value: pendingTasks, color: '#3b82f6' }
+                    ]} cx="50%" cy="50%" innerRadius={45} outerRadius={60} dataKey="value" stroke="none" paddingAngle={3}>
+                      {
+                        (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#8b5cf6' }, { color: '#f59e0b' }, { color: '#ef4444' }, { color: '#3b82f6' }]).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))
+                      }
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[18px] font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
+                  <span className="text-[10px] font-bold text-[#939084] tracking-wider uppercase mt-1">Total Tasks</span>
                 </div>
+              </div>
 
-                {/* 4 Stat Cards below Pie Chart */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3">
-                  <div className="bg-blue-50 dark:bg-blue-950/40 p-2.5 rounded-xl border border-blue-200/60 dark:border-blue-800/40 flex flex-col items-center justify-center text-center">
-                    <div className="flex items-center gap-1 mb-0.5">
-                      <span className="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
-                      <span className="text-[18px] font-bold text-blue-700 dark:text-blue-300 leading-none">{pendingTasks}</span>
-                    </div>
-                    <p className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold">Pending</p>
+              {/* 4 Stat Cards below Pie Chart */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3">
+                <div className="bg-blue-50 dark:bg-blue-950/40 p-2.5 rounded-xl border border-blue-200/60 dark:border-blue-800/40 flex flex-col items-center justify-center text-center">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span className="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
+                    <span className="text-[18px] font-bold text-blue-700 dark:text-blue-300 leading-none">{pendingTasks}</span>
                   </div>
-                  <div className="bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40 flex flex-col items-center justify-center text-center">
-                    <div className="flex items-center gap-1 mb-0.5">
-                      <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
-                      <span className="text-[18px] font-bold text-amber-700 dark:text-amber-300 leading-none">{ongoingTasks}</span>
-                    </div>
-                    <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">In Progress</p>
-                  </div>
-                  <div className="bg-purple-50 dark:bg-purple-950/40 p-2.5 rounded-xl border border-purple-200/60 dark:border-purple-800/40 flex flex-col items-center justify-center text-center">
-                    <div className="flex items-center gap-1 mb-0.5">
-                      <span className="w-2 h-2 rounded-full bg-[#8b5cf6]"></span>
-                      <span className="text-[18px] font-bold text-purple-700 dark:text-purple-300 leading-none">{completedTasks}</span>
-                    </div>
-                    <p className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold">Completed</p>
-                  </div>
-                  <div className="bg-red-50 dark:bg-red-950/40 p-2.5 rounded-xl border border-red-200/60 dark:border-red-800/40 flex flex-col items-center justify-center text-center">
-                    <div className="flex items-center gap-1 mb-0.5">
-                      <span className="w-2 h-2 rounded-full bg-[#ef4444]"></span>
-                      <span className="text-[18px] font-bold text-red-700 dark:text-red-300 leading-none">{upcomingTasks}</span>
-                    </div>
-                    <p className="text-[11px] text-red-600 dark:text-red-400 font-semibold">Overdue</p>
-                  </div>
+                  <p className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold">Pending</p>
                 </div>
-              </Card>
-            </div>
+                <div className="bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40 flex flex-col items-center justify-center text-center">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
+                    <span className="text-[18px] font-bold text-amber-700 dark:text-amber-300 leading-none">{ongoingTasks}</span>
+                  </div>
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">In Progress</p>
+                </div>
+                <div className="bg-purple-50 dark:bg-purple-950/40 p-2.5 rounded-xl border border-purple-200/60 dark:border-purple-800/40 flex flex-col items-center justify-center text-center">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span className="w-2 h-2 rounded-full bg-[#8b5cf6]"></span>
+                    <span className="text-[18px] font-bold text-purple-700 dark:text-purple-300 leading-none">{completedTasks}</span>
+                  </div>
+                  <p className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold">Completed</p>
+                </div>
+                <div className="bg-red-50 dark:bg-red-950/40 p-2.5 rounded-xl border border-red-200/60 dark:border-red-800/40 flex flex-col items-center justify-center text-center">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span className="w-2 h-2 rounded-full bg-[#ef4444]"></span>
+                    <span className="text-[18px] font-bold text-red-700 dark:text-red-300 leading-none">{upcomingTasks}</span>
+                  </div>
+                  <p className="text-[11px] text-red-600 dark:text-red-400 font-semibold">Overdue</p>
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
 
@@ -635,37 +649,43 @@ const EmployeeDashboard = () => {
                   <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>18.5</p>
                   <p className="text-[10px] text-[#939084] mt-1">Days</p>
                 </div>
-                <div className="bg-[#eff6ff] p-2 rounded-xl text-[#3b82f6]">
+                <div className="bg-[#eff6ff] group-hover:bg-[#dbeafe] p-2 rounded-xl text-[#3b82f6] transition-colors duration-300">
                   <Calendar size={20} />
                 </div>
               </div>
-              <div className="border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#f97316] transition-colors duration-300 rounded-xl p-4 flex justify-between items-center bg-[#fffefb] dark:bg-[#0f0d0a]">
+
+              {/* Used Leaves */}
+              <div className="group border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#f97316] dark:hover:border-[#f97316] transition-all duration-300 rounded-xl p-4 flex justify-between items-center bg-white dark:bg-[#0f0d0a] hover:bg-[#fff7ed] dark:hover:bg-[#2a1a0a] hover:shadow-md cursor-default">
                 <div>
                   <p className="text-xs text-[#939084] font-semibold uppercase tracking-wider mb-1">Used Leaves</p>
                   <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeaves}</p>
                   <p className="text-[10px] text-[#939084] mt-1">Days</p>
                 </div>
-                <div className="bg-[#fff7ed] p-2 rounded-xl text-[#f97316]">
+                <div className="bg-[#fff7ed] group-hover:bg-[#fed7aa] p-2 rounded-xl text-[#f97316] transition-colors duration-300">
                   <CalendarCheck size={20} />
                 </div>
               </div>
-              <div className="border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#a855f7] transition-colors duration-300 rounded-xl p-4 flex justify-between items-center bg-[#fffefb] dark:bg-[#0f0d0a]">
+
+              {/* Pending Leaves */}
+              <div className="group border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#a855f7] dark:hover:border-[#a855f7] transition-all duration-300 rounded-xl p-4 flex justify-between items-center bg-white dark:bg-[#0f0d0a] hover:bg-[#f5f3ff] dark:hover:bg-[#1e1a2a] hover:shadow-md cursor-default">
                 <div>
                   <p className="text-xs text-[#939084] font-semibold uppercase tracking-wider mb-1">Pending Leaves</p>
                   <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingLeaves}</p>
                   <p className="text-[10px] text-[#939084] mt-1">Requests</p>
                 </div>
-                <div className="bg-[#f5f3ff] p-2 rounded-xl text-[#a855f7]">
+                <div className="bg-[#f5f3ff] group-hover:bg-[#ede9fe] p-2 rounded-xl text-[#a855f7] transition-colors duration-300">
                   <CalendarX size={20} />
                 </div>
               </div>
-              <div className="border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#22c55e] transition-colors duration-300 rounded-xl p-4 flex justify-between items-center bg-[#fffefb] dark:bg-[#0f0d0a]">
+
+              {/* Approved Leaves */}
+              <div className="group border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#22c55e] dark:hover:border-[#22c55e] transition-all duration-300 rounded-xl p-4 flex justify-between items-center bg-white dark:bg-[#0f0d0a] hover:bg-[#f0fdf4] dark:hover:bg-[#0a1f12] hover:shadow-md cursor-default">
                 <div>
                   <p className="text-xs text-[#939084] font-semibold uppercase tracking-wider mb-1">Approved Leaves</p>
                   <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeaves}</p>
                   <p className="text-[10px] text-[#939084] mt-1">Days</p>
                 </div>
-                <div className="bg-[#f0fdf4] p-2 rounded-xl text-[#22c55e]">
+                <div className="bg-[#f0fdf4] group-hover:bg-[#bbf7d0] p-2 rounded-xl text-[#22c55e] transition-colors duration-300">
                   <CheckCircle size={20} />
                 </div>
               </div>
@@ -678,12 +698,26 @@ const EmployeeDashboard = () => {
       <SectionHeader title="Quick Actions" />
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         {isCheckedIn ? (
-          <button onClick={handleCheckOut} disabled={checkInLoading} className="flex flex-col items-center justify-center gap-2 bg-[#fffefb] dark:bg-[#0f0d0a] border border-[#fca5a5] text-[#ef4444] rounded-[20px] w-full h-28 hover:bg-[#fef2f2] transition-colors shadow-sm">
+          <button
+            onClick={handleCheckOut}
+            disabled={checkInLoading}
+            className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-[#0f0d0a] border rounded-[20px] w-full h-28 transition-colors shadow-sm"
+            style={{ borderColor: '#fca5a5', color: '#ef4444' }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fef2f2'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
+          >
             <LogOut size={28} />
             <span className="text-[13px] font-semibold mt-1">Check Out</span>
           </button>
         ) : (
-          <button onClick={handleCheckIn} disabled={checkInLoading} className="flex flex-col items-center justify-center gap-2 bg-[#fffefb] dark:bg-[#0f0d0a] border border-[#86efac] text-[#00a76b] rounded-[20px] w-full h-28 hover:bg-[#f0fdf4] transition-colors shadow-sm">
+          <button
+            onClick={handleCheckIn}
+            disabled={checkInLoading}
+            className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-[#0f0d0a] border rounded-[20px] w-full h-28 transition-colors shadow-sm"
+            style={{ borderColor: '#86efac', color: '#00a76b' }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0fdf4'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
+          >
             <LogIn size={28} />
             <span className="text-[13px] font-semibold mt-1">Check In</span>
           </button>
@@ -696,10 +730,10 @@ const EmployeeDashboard = () => {
           { icon: <FileText size={28} />, label: 'Payslip', color: '#ec4899', border: '#fbcfe8', bgHover: '#fdf2f8', to: '/employee/payslips' },
           { icon: <User size={28} />, label: 'View Profile', color: '#10b981', border: '#a7f3d0', bgHover: '#ecfdf5', to: '/employee/profile' },
         ].map((act, i) => (
-          <button key={i} onClick={() => navigate(act.to)} className="flex flex-col items-center justify-center gap-2 bg-[#fffefb] dark:bg-[#0f0d0a] border rounded-[20px] w-full h-28 transition-colors shadow-sm"
+          <button key={i} onClick={() => navigate(act.to)} className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-[#0f0d0a] border rounded-[20px] w-full h-28 transition-colors shadow-sm"
             style={{ borderColor: act.border, color: act.color }}
             onMouseEnter={e => e.currentTarget.style.backgroundColor = act.bgHover}
-            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
           >
             {act.icon}
             <span className="text-[13px] font-semibold mt-1">{act.label}</span>
@@ -786,7 +820,7 @@ const EmployeeDashboard = () => {
             <Card className="h-72 overflow-y-auto">
               <div className="space-y-3">
                 {recentPayslips.length > 0 ? recentPayslips.map((ps, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 border border-[#eceae3] dark:border-[#38352e] rounded-xl bg-[#fffefb] dark:bg-[#14120e] hover:border-[#00a76b] transition-colors">
+                  <div key={idx} className="flex items-center justify-between p-3 border border-[#eceae3] dark:border-[#38352e] rounded-xl bg-white dark:bg-[#14120e] hover:border-[#00a76b] transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-[#f0fdf4] dark:bg-[#064e3b] border border-[#bbf7d0] dark:border-[#047857] rounded-xl flex items-center justify-center shrink-0">
                         <FileText size={20} className="text-[#00a76b] dark:text-[#a7f3d0]" />
@@ -798,7 +832,7 @@ const EmployeeDashboard = () => {
                     </div>
                     <div className="text-right bg-[#f0fdf4] dark:bg-[#064e3b] px-3 py-1.5 rounded-lg border border-[#bbf7d0] dark:border-[#047857]">
                       <span className="font-bold text-[#00a76b] dark:text-[#a7f3d0] text-[13px]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                        {fmtCurrency(ps.netPay || ps.amount || 0)}
+                        ₹ ******
                       </span>
                     </div>
                   </div>
@@ -850,19 +884,17 @@ const EmployeeDashboard = () => {
                   <button
                     key={tab.id}
                     onClick={() => setEventFilter(tab.id)}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                      isActive
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${isActive
                         ? 'bg-[#00a76b] text-white shadow-sm'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
-                    }`}
+                      }`}
                   >
                     <Icon size={14} className={isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'} />
                     <span>{tab.label}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                      isActive
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${isActive
                         ? 'bg-white/20 text-white'
                         : 'bg-black/5 dark:bg-white/10 text-gray-500 dark:text-gray-400'
-                    }`}>
+                      }`}>
                       {tab.count}
                     </span>
                   </button>
@@ -886,11 +918,10 @@ const EmployeeDashboard = () => {
                     return (
                       <div
                         key={ann.id || i}
-                        className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 flex flex-col justify-between border ${
-                          isToday
+                        className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 flex flex-col justify-between border ${isToday
                             ? 'bg-white dark:bg-[#14120e] border-[#00a76b] dark:border-emerald-600 shadow-[0_4px_20px_rgba(0,167,107,0.08)] ring-1 ring-[#00a76b]/25'
                             : 'bg-white dark:bg-[#14120e] border-[#eceae3] dark:border-[#38352e] hover:border-[#00a76b]/50 hover:shadow-md'
-                        }`}
+                          }`}
                       >
                         {/* Top Row: Avatar + Info */}
                         <div className="flex items-start gap-3.5">
@@ -962,13 +993,12 @@ const EmployeeDashboard = () => {
                                 setWishedEvents(prev => [...prev, eventKey]);
                               }
                             }}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                              isWished
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 shrink-0 cursor-pointer ${isWished
                                 ? 'bg-emerald-50 dark:bg-emerald-950/40 text-[#00a76b] dark:text-emerald-400 border border-[#00a76b]/30 dark:border-emerald-800/40 shadow-xs'
                                 : isToday || isPast
                                   ? 'bg-[#00a76b] hover:bg-[#008f5b] text-white shadow-sm shadow-[#00a76b]/20 active:scale-95'
-                                  : 'bg-[#fffefb] hover:bg-gray-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 active:scale-95'
-                            }`}
+                                  : 'bg-white hover:bg-gray-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 active:scale-95'
+                              }`}
                           >
                             {isWished ? (
                               <>

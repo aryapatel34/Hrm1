@@ -108,9 +108,13 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
     fixTranslateOffset();
 
     const savedLang = localStorage.getItem('appLanguage');
-    if (savedLang && savedLang !== 'English') {
-      const langMap = { 'English': 'en', 'Gujarati': 'gu', 'Hindi': 'hi' };
-      const translateTo = langMap[savedLang];
+    if (savedLang && savedLang !== 'English' && savedLang !== 'en') {
+      const langMap = {
+        'English': 'en', 'en': 'en',
+        'Gujarati': 'gu', 'ગુજરાતી': 'gu', 'gu': 'gu',
+        'Hindi': 'hi', 'हिंदी': 'hi', 'hi': 'hi'
+      };
+      const translateTo = langMap[savedLang] || 'en';
 
       const triggerTranslation = (langCode) => {
         const select = document.querySelector('.goog-te-combo');
@@ -196,14 +200,16 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
             : Array.isArray(res.data?.data)
               ? res.data.data
               : [];
-        const alerts = items.map(n => ({
-          id: n._id,
-          type: n.type || 'task',
-          text: n.message,
-          read: n.read || false,
-          time: n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
-          path: `/${activeRole}/notifications`
-        }));
+        const alerts = items
+          .filter(n => !n.read)
+          .map(n => ({
+            id: n._id,
+            type: n.type || 'task',
+            text: n.message,
+            read: n.read || false,
+            time: n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
+            path: `/${activeRole}/notifications`
+          }));
         setLiveNotifications(alerts.slice(0, 50));
       } catch (err) { console.error('Notification fetch failed:', err); }
     };
@@ -699,13 +705,13 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
   return (
     <div className="flex flex-col min-h-screen bg-[#f8fafc] dark:bg-[#08100e] text-[#201515] dark:text-[#e2e8f0] transition-colors duration-300 ease-in-out">
       {/* 1. FULL WIDTH TOP BAR (Fixed at top) */}
-      <header 
-        className="sticky top-0 w-full z-[200] border-b bg-white dark:bg-[#08100e] flex items-center transition-colors duration-300 ease-in-out" 
+      <header
+        className="sticky top-0 w-full z-[200] border-b bg-white dark:bg-[#08100e] flex items-center transition-colors duration-300 ease-in-out"
         style={{ height: '70px', borderColor: isDarkMode ? '#1a2d29' : '#e2eae7' }}
       >
         {/* Brand Block / Logo (Fixed width matching expanded sidebar) */}
-        <Link 
-          to={`/${activeRole}/dashboard`} 
+        <Link
+          to={`/${activeRole}/dashboard`}
           className="px-6 flex items-center no-underline hover:opacity-90 transition-opacity gap-3 shrink-0 h-full"
           style={{ width: '250px', boxSizing: 'border-box' }}
         >
@@ -734,7 +740,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
 
             {/* Role-based Search bar in the center-left (hidden on mobile) */}
             <RoleSearchBar activeRole={activeRole} />
-            
+
             {/* Quick Action button */}
             <div className="relative" ref={quickActionRef}>
               <button
@@ -1221,7 +1227,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
         </button>
 
         {/* SIDEBAR PLACEHOLDER (desktop spacing) */}
-        <div 
+        <div
           className="hidden md:block shrink-0 transition-all duration-300 ease-in-out"
           style={{ width: isSidebarOpen ? '250px' : '72px' }}
         />

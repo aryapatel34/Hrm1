@@ -152,7 +152,7 @@ const EmployeeLayout = () => {
         const items = Array.isArray(r.data)
           ? r.data
           : (r.data?.notifications || r.data?.data || []);
-        setNotifications(items.slice(0, 50));
+        setNotifications(items.filter(n => !n.read).slice(0, 50));
       }).catch(() => { });
     fetch();
     const id = setInterval(fetch, 60000);
@@ -494,6 +494,8 @@ const EmployeeLayout = () => {
                             onClick={() => {
                               navigate(n.path || '/employee/dashboard');
                               setNotifOpen(false);
+                              setNotifications(prev => prev.filter(notif => notif._id !== n._id));
+                              if (n._id) axios.put(`/api/notifications/${n._id}/read`, {}, { headers: { Authorization: `Bearer ${token}` } }).catch(()=> {});
                             }}
                             className="p-4 border-b border-[#eceae3] dark:border-[#1a2d29] hover:bg-[#fffdf9] dark:hover:bg-[#162722]/50 transition-all cursor-pointer group"
                           >

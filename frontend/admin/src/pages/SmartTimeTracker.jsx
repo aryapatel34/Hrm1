@@ -336,9 +336,9 @@ const SmartTimeTracker = () => {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-6" style={{ colorScheme: 'light' }}>
-      <RefreshCw size={32} className="text-[#10B981] animate-spin" />
-      <p className="text-gray-500 font-medium uppercase tracking-widest text-sm">Initializing Time Protocol...</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0f0d0a] flex flex-col items-center justify-center gap-6">
+      <Clock size={36} className="text-[#10B981] animate-spin" />
+      <p className="text-gray-500 dark:text-[#a3a094] font-medium uppercase tracking-widest text-sm">Loading Time Tracker...</p>
     </div>
   );
 
