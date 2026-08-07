@@ -726,7 +726,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           <div className="flex items-center">
             <button
               onClick={toggleSidebar}
-              className="flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-full text-[#374151] dark:text-[#cbd5e1] transition-all cursor-pointer border-none bg-transparent mr-2 sm:mr-3 shrink-0"
+              className="md:hidden flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-full text-[#374151] dark:text-[#cbd5e1] transition-all cursor-pointer border-none bg-transparent mr-2 sm:mr-3 shrink-0"
               title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             >
               <Menu size={20} />
@@ -1207,6 +1207,19 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           />
         )}
 
+        {/* Floating Expand/Collapse Arrow Button (Desktop only) */}
+        <button
+          onClick={toggleSidebar}
+          className="hidden md:flex fixed top-[90px] z-[160] items-center justify-center w-7 h-7 bg-[#00a76b] text-white hover:bg-[#00915c] rounded-full shadow-md border border-[#00a76b] cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95"
+          style={{
+            left: showExpandedSidebar ? '236px' : '58px',
+            transition: 'left 0.3s ease-in-out'
+          }}
+          title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+        >
+          {isSidebarOpen ? <ChevronLeft size={16} strokeWidth={2.8} /> : <ChevronRight size={16} strokeWidth={2.8} />}
+        </button>
+
         {/* SIDEBAR PLACEHOLDER (desktop spacing) */}
         <div 
           className="hidden md:block shrink-0 transition-all duration-300 ease-in-out"
@@ -1217,7 +1230,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
         <aside
           onMouseEnter={() => { if (!isSidebarOpen) setIsSidebarHovered(true); }}
           onMouseLeave={() => setIsSidebarHovered(false)}
-          className={`flex flex-col shrink-0 border-r transition-all duration-300 ease-in-out overflow-hidden z-[150] fixed top-[70px] ${showExpandedSidebar
+          className={`flex flex-col shrink-0 border-r transition-all duration-300 ease-in-out z-[150] fixed top-[70px] ${showExpandedSidebar
             ? 'left-0 w-[250px] translate-x-0 shadow-[10px_0_30px_rgba(0,0,0,0.15)]'
             : '-left-[250px] md:left-0 md:translate-x-0 md:w-[72px]'
             }`}
