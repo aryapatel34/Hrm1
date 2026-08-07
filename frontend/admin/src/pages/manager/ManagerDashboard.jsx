@@ -347,7 +347,7 @@ const ManagerDashboard = () => {
               <p className="text-xs font-bold text-gray-600 leading-tight w-full break-words">{stat.label}</p>
             </div>
             <div className="mt-auto">
-              <h3 className="text-3xl font-extrabold text-[#0f172a] tracking-tight">{stat.value}</h3>
+              <h3 className="text-[18px] font-extrabold text-[#0f172a] tracking-tight">{stat.value}</h3>
               <p className={`text-[11px] font-bold mt-1 ${stat.subColor}`}>{stat.sub}</p>
             </div>
           </Card>
@@ -355,15 +355,15 @@ const ManagerDashboard = () => {
       </div>
 
       {/* 3. SECOND ROW (Attendance Trend & Task Status) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="h-80 flex flex-col">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="h-60 flex flex-col">
           <SectionHeader 
             title="Team Attendance Trend" 
             action={<Dropdown value={attFilter} onChange={setAttFilter} options={[{value:'weekly', label:'This Week'}, {value:'monthly', label:'This Month'}]} />} 
           />
           <div className="flex-1 -mx-4 -mb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={MOCK_WEEKLY_TREND.map(d => ({ ...d, att: d.worked + Math.floor(Math.random()*20) }))} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
+              <AreaChart data={MOCK_WEEKLY_TREND.map(d => ({ ...d, att: d.worked + Math.floor(Math.random()*20) }))} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorAtt" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
@@ -380,19 +380,19 @@ const ManagerDashboard = () => {
           </div>
         </Card>
 
-        <Card className="h-80 flex flex-col">
+        <Card className="h-60 flex flex-col">
           <SectionHeader 
             title="Task Status Overview" 
             action={<Dropdown value={taskFilter} onChange={setTaskFilter} options={[{value:'monthly', label:'This Month'}, {value:'weekly', label:'This Week'}]} />} 
           />
-          <div className="flex-1 flex items-center justify-between px-4 sm:px-10">
-            <div className="w-[200px] h-[200px] relative">
+          <div className="flex-1 flex items-center justify-between px-4 sm:px-6">
+            <div className="w-[150px] h-[150px] relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={donutData}
-                    innerRadius={70}
-                    outerRadius={95}
+                    innerRadius={50}
+                    outerRadius={70}
                     paddingAngle={4}
                     dataKey="value"
                     stroke="none"
@@ -404,18 +404,18 @@ const ManagerDashboard = () => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-3xl font-extrabold text-[#0f172a]">{totalTasksSum}</span>
-                <span className="text-xs font-semibold text-gray-500">Total Tasks</span>
+                <span className="text-[18px] font-extrabold text-[#0f172a]">{totalTasksSum}</span>
+                <span className="text-[10px] font-semibold text-gray-500">Total Tasks</span>
               </div>
             </div>
             
-            <div className="flex flex-col gap-4 justify-center">
+            <div className="flex flex-col gap-2 justify-center">
               {donutData.map((d, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+                <div key={i} className="flex items-center gap-2.5">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
                   <div>
-                    <p className="text-sm font-bold text-[#0f172a] leading-none">{d.value}</p>
-                    <p className="text-[11px] font-semibold text-gray-500 mt-0.5">{d.name}</p>
+                    <p className="text-xs font-bold text-[#0f172a] leading-none">{d.value}</p>
+                    <p className="text-[10px] font-semibold text-gray-500 mt-0.5">{d.name}</p>
                   </div>
                 </div>
               ))}
@@ -425,20 +425,20 @@ const ManagerDashboard = () => {
       </div>
 
       {/* 4. THIRD ROW (Performance Overview & Goal Completion) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="h-[340px] flex flex-col">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="h-[260px] flex flex-col">
           <SectionHeader 
             title="Team Performance Overview" 
             action={<Dropdown value={perfFilter} onChange={setPerfFilter} options={[{value:'monthly', label:'This Month'}]} />} 
           />
           <div className="flex-1 -mx-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={teamPerfData} margin={{ top: 20, right: 0, left: -20, bottom: 20 }}>
+              <BarChart data={teamPerfData} margin={{ top: 10, right: 0, left: -20, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} tickFormatter={v => `${v}%`} domain={[0, 100]} />
                 <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
-                <Bar dataKey="performance" radius={[6, 6, 6, 6]} barSize={28}>
+                <Bar dataKey="performance" radius={[6, 6, 6, 6]} barSize={24}>
                   {teamPerfData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
@@ -446,32 +446,32 @@ const ManagerDashboard = () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex justify-between items-center px-2 pt-2 border-t border-gray-100">
-            <span className="text-sm font-bold text-[#0f172a]">Team Average</span>
-            <span className="text-sm font-extrabold text-[#10b981]">{teamAvgPerf}%</span>
+          <div className="flex justify-between items-center px-2 pt-1 border-t border-gray-100">
+            <span className="text-xs font-bold text-[#0f172a]">Team Average</span>
+            <span className="text-xs font-extrabold text-[#10b981]">{teamAvgPerf}%</span>
           </div>
         </Card>
 
-        <Card className="h-[340px] flex flex-col">
+        <Card className="h-[260px] flex flex-col">
           <SectionHeader 
             title="Goal Completion" 
             action={<Dropdown value={goalFilter} onChange={setGoalFilter} options={[{value:'quarterly', label:'This Quarter'}]} />} 
           />
-          <div className="flex-1 flex flex-col sm:flex-row items-center justify-between px-2 sm:px-6">
+          <div className="flex-1 flex flex-col sm:flex-row items-center justify-between px-2 sm:px-4">
             
             {/* Circular Progress (Overall) */}
-            <div className="w-[180px] h-[180px] relative mb-6 sm:mb-0 shrink-0">
+            <div className="w-[130px] h-[130px] relative mb-3 sm:mb-0 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={[{value: 68}, {value: 32}]} innerRadius={70} outerRadius={85} dataKey="value" stroke="none" startAngle={90} endAngle={-270}>
+                  <Pie data={[{value: 68}, {value: 32}]} innerRadius={48} outerRadius={60} dataKey="value" stroke="none" startAngle={90} endAngle={-270}>
                     <Cell fill="#00a76b" />
                     <Cell fill="#f1f5f9" />
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-extrabold text-[#0f172a]">68%</span>
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mt-1">Overall Progress</span>
+                <span className="text-[18px] font-extrabold text-[#0f172a]">68%</span>
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wide mt-0.5">Overall</span>
               </div>
             </div>
 

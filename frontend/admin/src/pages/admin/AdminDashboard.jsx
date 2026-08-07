@@ -65,9 +65,8 @@ const CustomDropdown = ({ value, onChange, options, className = '' }) => {
                   onChange(opt);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors flex items-center justify-between cursor-pointer ${
-                  isSelected ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold' : 'text-gray-700 hover:bg-gray-50'
-                }`}
+                className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors flex items-center justify-between cursor-pointer ${isSelected ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold' : 'text-gray-700 hover:bg-gray-50'
+                  }`}
               >
                 <span>{optLabel}</span>
                 {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-[#00a76b]"></span>}
@@ -122,7 +121,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     try {
       localStorage.removeItem('hrm_wished_events');
-    } catch {}
+    } catch { }
   }, []);
 
   const checkIsToday = (celebDate, diffDays) => {
@@ -254,7 +253,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6 pb-12 font-['Inter',sans-serif] text-gray-800">
-      
+
       {/* 1. Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -289,7 +288,7 @@ const AdminDashboard = () => {
               <p className="text-[10px] sm:text-[11px] font-bold text-gray-500 uppercase tracking-wider leading-tight">{stat.label}</p>
             </div>
             <div className="flex items-baseline gap-2.5 mt-0.5">
-              <h3 className="text-2xl font-black text-gray-900 leading-none">{stat.val}</h3>
+              <h3 className="text-[18px] font-black text-gray-900 leading-none">{stat.val}</h3>
               <p className={`text-[10px] font-bold ${stat.subtext.includes('+') ? 'text-green-600' : 'text-gray-400'}`}>
                 {stat.subtext}
               </p>
@@ -299,10 +298,10 @@ const AdminDashboard = () => {
       </div>
 
       {/* 3. Second Row (Charts) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Attendance */}
-        <Card className="lg:col-span-1 p-6">
-          <div className="flex justify-between items-center mb-6">
+        <Card className="lg:col-span-1 p-4 sm:p-5">
+          <div className="flex justify-between items-center mb-3">
             <h3 className="font-bold text-gray-900">Attendance Overview</h3>
             <CustomDropdown
               value={attPeriod}
@@ -310,19 +309,19 @@ const AdminDashboard = () => {
               options={['This Week', 'Last Week']}
             />
           </div>
-          <div className="h-64 w-full">
+          <div className="h-48 w-full">
             {(() => {
               const isMock = !charts.attendanceOverview || charts.attendanceOverview.length === 0 || charts.attendanceOverview.every(d => d.present === 0 && d.absent === 0 && d.late === 0);
-              const displayData = isMock 
+              const displayData = isMock
                 ? [
-                    { name: 'Mon', present: 85, absent: 5, late: 10 },
-                    { name: 'Tue', present: 90, absent: 2, late: 8 },
-                    { name: 'Wed', present: 88, absent: 4, late: 8 },
-                    { name: 'Thu', present: 92, absent: 1, late: 7 },
-                    { name: 'Fri', present: 80, absent: 10, late: 10 },
-                    { name: 'Sat', present: 40, absent: 50, late: 10 },
-                    { name: 'Sun', present: 0, absent: 100, late: 0 }
-                  ]
+                  { name: 'Mon', present: 85, absent: 5, late: 10 },
+                  { name: 'Tue', present: 90, absent: 2, late: 8 },
+                  { name: 'Wed', present: 88, absent: 4, late: 8 },
+                  { name: 'Thu', present: 92, absent: 1, late: 7 },
+                  { name: 'Fri', present: 80, absent: 10, late: 10 },
+                  { name: 'Sat', present: 40, absent: 50, late: 10 },
+                  { name: 'Sun', present: 0, absent: 100, late: 0 }
+                ]
                 : charts.attendanceOverview;
 
               return (
@@ -343,61 +342,61 @@ const AdminDashboard = () => {
         </Card>
 
         {/* Role Distribution */}
-        <Card className="p-6">
-          <h3 className="font-bold text-gray-900 mb-6">Role-wise Employees</h3>
+        <Card className="p-4 sm:p-5">
+          <h3 className="font-bold text-gray-900 mb-3">Role-wise Employees</h3>
           <div className="flex flex-col items-center justify-center">
             {charts.departmentDistribution.length > 0 ? (
               <>
-                <div className="h-48 w-full relative">
+                <div className="h-40 w-full relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={charts.departmentDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
+                      <Pie data={charts.departmentDistribution} cx="50%" cy="50%" innerRadius={42} outerRadius={60} paddingAngle={2} dataKey="value">
                         {charts.departmentDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                       </Pie>
                       <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-2xl font-black text-gray-900">{stats.totalEmployees}</span>
+                    <span className="text-[18px] font-black text-gray-900">{stats.totalEmployees}</span>
                     <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total</span>
                   </div>
                 </div>
-                <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 w-full">
+                <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 w-full">
                   {charts.departmentDistribution.map((entry, index) => (
                     <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
                       {entry.name}: <span className="text-gray-900 font-bold">{entry.value}</span>
                     </div>
                   ))}
                 </div>
               </>
             ) : (
-              <div className="text-gray-400 text-sm font-medium h-48 flex items-center">No department data</div>
+              <div className="text-gray-400 text-sm font-medium h-40 flex items-center">No department data</div>
             )}
           </div>
         </Card>
 
         {/* Gender Distribution */}
-        <Card className="p-6">
-          <h3 className="font-bold text-gray-900 mb-6">Gender Distribution</h3>
+        <Card className="p-4 sm:p-5">
+          <h3 className="font-bold text-gray-900 mb-3">Gender Distribution</h3>
           <div className="flex flex-col items-center justify-center">
             {charts.genderDistribution.length > 0 ? (
               <>
-                <div className="h-48 w-full relative">
+                <div className="h-40 w-full relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={charts.genderDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
+                      <Pie data={charts.genderDistribution} cx="50%" cy="50%" innerRadius={42} outerRadius={60} paddingAngle={2} dataKey="value">
                         {charts.genderDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={['#3b82f6', '#f43f5e', '#f59e0b'][index % 3]} />)}
                       </Pie>
                       <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-2xl font-black text-gray-900">{stats.totalEmployees}</span>
+                    <span className="text-[18px] font-black text-gray-900">{stats.totalEmployees}</span>
                     <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total</span>
                   </div>
                 </div>
-                <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 w-full">
+                <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 w-full">
                   {charts.genderDistribution.map((entry, index) => (
                     <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ['#3b82f6', '#f43f5e', '#f59e0b'][index % 3] }}></span>
@@ -407,55 +406,66 @@ const AdminDashboard = () => {
                 </div>
               </>
             ) : (
-              <div className="text-gray-400 text-sm font-medium h-48 flex items-center">No gender data</div>
+              <div className="text-gray-400 text-sm font-medium h-40 flex items-center">No gender data</div>
             )}
           </div>
         </Card>
       </div>
 
       {/* 4. Third Row (Leave, Payroll, Recruitment) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900">Leave Overview</h3>
-            <CustomDropdown
-              value={leavePeriod}
-              onChange={setLeavePeriod}
-              options={['This Month', 'This Week', 'This Year', 'All Time', 'Today']}
-            />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="p-4 sm:p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-gray-900">Leave Overview</h3>
+              <CustomDropdown
+                value={leavePeriod}
+                onChange={setLeavePeriod}
+                options={['This Month', 'This Week', 'This Year', 'All Time', 'Today']}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2.5 mb-3">
+              <div className="p-2.5 bg-gray-50 rounded-xl">
+                <p className="text-[11px] font-bold text-gray-500 mb-0.5">Total Leaves</p>
+                <p className="text-[18px] font-black text-gray-900">{currentLeaveOverview.total || 0}</p>
+              </div>
+              <div className="p-2.5 bg-green-50 rounded-xl">
+                <p className="text-[11px] font-bold text-green-700 mb-0.5">Approved</p>
+                <p className="text-[18px] font-black text-green-800">{currentLeaveOverview.approved || 0}</p>
+                <p className="text-[10px] font-semibold text-green-600">
+                  {currentLeaveOverview.total ? Math.round((currentLeaveOverview.approved / currentLeaveOverview.total) * 100) : 0}%
+                </p>
+              </div>
+              <div className="p-2.5 bg-red-50 rounded-xl">
+                <p className="text-[11px] font-bold text-red-700 mb-0.5">Rejected</p>
+                <p className="text-[18px] font-black text-red-800">{currentLeaveOverview.rejected || 0}</p>
+                <p className="text-[10px] font-semibold text-red-600">
+                  {currentLeaveOverview.total ? Math.round((currentLeaveOverview.rejected / currentLeaveOverview.total) * 100) : 0}%
+                </p>
+              </div>
+              <div className="p-2.5 bg-orange-50 rounded-xl">
+                <p className="text-[11px] font-bold text-orange-700 mb-0.5">Cancelled</p>
+                <p className="text-[18px] font-black text-orange-800">{currentLeaveOverview.cancelled || 0}</p>
+                <p className="text-[10px] font-semibold text-orange-600">
+                  {currentLeaveOverview.total ? Math.round((currentLeaveOverview.cancelled / currentLeaveOverview.total) * 100) : 0}%
+                </p>
+              </div>
+            </div>
+            {/* Segmented Approval Progress Bar */}
+            <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden flex">
+              <div className="bg-[#00a76b] h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.approved / currentLeaveOverview.total) * 100 : 0}%` }}></div>
+              <div className="bg-red-500 h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.rejected / currentLeaveOverview.total) * 100 : 0}%` }}></div>
+              <div className="bg-orange-500 h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.cancelled / currentLeaveOverview.total) * 100 : 0}%` }}></div>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-gray-50 rounded-xl">
-              <p className="text-xs font-bold text-gray-500 mb-1">Total Leaves</p>
-              <p className="text-2xl font-black text-gray-900">{currentLeaveOverview.total || 0}</p>
-            </div>
-            <div className="p-4 bg-green-50 rounded-xl">
-              <p className="text-xs font-bold text-green-700 mb-1">Approved</p>
-              <p className="text-2xl font-black text-green-800">{currentLeaveOverview.approved || 0}</p>
-              <p className="text-[10px] font-semibold text-green-600">
-                {currentLeaveOverview.total ? Math.round((currentLeaveOverview.approved / currentLeaveOverview.total) * 100) : 0}%
-              </p>
-            </div>
-            <div className="p-4 bg-red-50 rounded-xl">
-              <p className="text-xs font-bold text-red-700 mb-1">Rejected</p>
-              <p className="text-2xl font-black text-red-800">{currentLeaveOverview.rejected || 0}</p>
-              <p className="text-[10px] font-semibold text-red-600">
-                {currentLeaveOverview.total ? Math.round((currentLeaveOverview.rejected / currentLeaveOverview.total) * 100) : 0}%
-              </p>
-            </div>
-            <div className="p-4 bg-orange-50 rounded-xl">
-              <p className="text-xs font-bold text-orange-700 mb-1">Cancelled</p>
-              <p className="text-2xl font-black text-orange-800">{currentLeaveOverview.cancelled || 0}</p>
-              <p className="text-[10px] font-semibold text-orange-600">
-                {currentLeaveOverview.total ? Math.round((currentLeaveOverview.cancelled / currentLeaveOverview.total) * 100) : 0}%
-              </p>
-            </div>
-          </div>
+          <button onClick={() => navigate(`/${pathRole}/leave`)} className="w-full mt-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5">
+            View Leave Details <ChevronRight size={14} />
+          </button>
         </Card>
 
-        <Card className="p-6 flex flex-col justify-between">
+        <Card className="p-4 sm:p-5 flex flex-col justify-between">
           <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-gray-900">Payroll Summary</h3>
               <CustomDropdown
                 value={payrollPeriod}
@@ -463,54 +473,56 @@ const AdminDashboard = () => {
                 options={[payrollPeriod]}
               />
             </div>
-            <h2 className="text-3xl font-black text-gray-900 mb-1">{formatCurrency(payrollSummary.total)}</h2>
-            <p className="text-sm font-semibold text-gray-500 mb-6">Total Payroll Cost</p>
+            <h2 className="text-[18px] font-black text-gray-900 mb-0.5">{formatCurrency(payrollSummary.total)}</h2>
+            <p className="text-xs font-semibold text-gray-500 mb-3">Total Payroll Cost</p>
 
-            <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mb-4">
-              <div className="h-full bg-[#00a76b] rounded-full transition-all duration-500" style={{ width: `${payrollSummary.total ? (payrollSummary.processed/payrollSummary.total)*100 : 0}%` }}></div>
+            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+              <div className="h-full bg-[#00a76b] rounded-full transition-all duration-500" style={{ width: `${payrollSummary.total ? (payrollSummary.processed / payrollSummary.total) * 100 : 0}%` }}></div>
             </div>
-            
+
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-xs font-bold text-gray-500">Processed</p>
-                <p className="text-lg font-bold text-gray-900">{formatCurrency(payrollSummary.processed)}</p>
+                <p className="text-[11px] font-bold text-gray-500">Processed</p>
+                <p className="text-sm font-bold text-gray-900">{formatCurrency(payrollSummary.processed)}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs font-bold text-gray-500">Pending</p>
-                <p className="text-lg font-bold text-gray-900">{formatCurrency(payrollSummary.pending)}</p>
+                <p className="text-[11px] font-bold text-gray-500">Pending</p>
+                <p className="text-sm font-bold text-gray-900">{formatCurrency(payrollSummary.pending)}</p>
               </div>
             </div>
           </div>
-          <button onClick={() => navigate(`/${pathRole}/payroll`)} className="w-full mt-6 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-            View Payroll Details <ChevronRight size={16} />
+          <button onClick={() => navigate(`/${pathRole}/payroll`)} className="w-full mt-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5">
+            View Payroll Details <ChevronRight size={14} />
           </button>
         </Card>
 
-        <Card className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900">Recruitment Overview</h3>
-            <select className="text-xs bg-gray-50 rounded-lg font-bold text-gray-600 outline-none p-1.5">
-              <option>This Month</option>
-            </select>
-          </div>
-          <div className="space-y-4">
-            {[
-              { label: 'New Applications', val: '0', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' },
-              { label: 'Shortlisted', val: '0', icon: CheckCircle, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-              { label: 'Interviews Scheduled', val: '0', icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50' },
-              { label: 'Offers Issued', val: '0', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50' },
-              { label: 'Hires This Month', val: '0', icon: UserPlus, color: 'text-[#00a76b]', bg: 'bg-green-50' }
-            ].map((r, i) => (
-              <div key={i} className="flex justify-between items-center p-3 rounded-xl border border-gray-50 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${r.bg} ${r.color}`}>
-                    <r.icon size={16} />
+        <Card className="p-4 sm:p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-gray-900">Recruitment Overview</h3>
+              <select className="text-xs bg-gray-50 rounded-lg font-bold text-gray-600 outline-none p-1.5">
+                <option>This Month</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              {[
+                { label: 'New Applications', val: '0', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' },
+                { label: 'Shortlisted', val: '0', icon: CheckCircle, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+                { label: 'Interviews Scheduled', val: '0', icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50' },
+                { label: 'Offers Issued', val: '0', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50' },
+                { label: 'Hires This Month', val: '0', icon: UserPlus, color: 'text-[#00a76b]', bg: 'bg-green-50' }
+              ].map((r, i) => (
+                <div key={i} className="flex justify-between items-center py-1.5 px-2.5 rounded-lg border border-gray-50 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-md ${r.bg} ${r.color}`}>
+                      <r.icon size={14} />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-700">{r.label}</span>
                   </div>
-                  <span className="text-sm font-semibold text-gray-700">{r.label}</span>
+                  <span className="text-xs font-black text-gray-900">{r.val}</span>
                 </div>
-                <span className="font-black text-gray-900">{r.val}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </Card>
       </div>
@@ -547,8 +559,8 @@ const AdminDashboard = () => {
             {pendingApprovals.length > 0 ? (
               <div className="space-y-3">
                 {pendingApprovals.map((approval) => (
-                  <div 
-                    key={approval._id} 
+                  <div
+                    key={approval._id}
                     onClick={() => setSelectedLeaveApproval(approval)}
                     className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50/50 hover:bg-white rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all cursor-pointer group"
                   >
@@ -578,21 +590,21 @@ const AdminDashboard = () => {
                       <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-md uppercase">
                         {Math.floor((new Date() - new Date(approval.date)) / (1000 * 60 * 60 * 24)) || 1} days ago
                       </span>
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleApproveLeave(approval._id);
-                        }} 
+                        }}
                         title="Approve Leave"
                         className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#00a76b] text-white hover:bg-[#00915c] transition-colors shadow-sm"
                       >
                         <Check size={16} strokeWidth={3} />
                       </button>
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRejectLeave(approval._id);
-                        }} 
+                        }}
                         title="Reject Leave"
                         className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm"
                       >
@@ -628,7 +640,7 @@ const AdminDashboard = () => {
                     <p className="text-xs font-medium text-gray-500">{rj.role}</p>
                   </div>
                 </div>
-                <span className="text-[11px] font-bold text-gray-400">{new Date(rj.joinDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric'})}</span>
+                <span className="text-[11px] font-bold text-gray-400">{new Date(rj.joinDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
               </div>
             )) : <p className="text-sm text-gray-400 text-center py-4">No recent joiners</p>}
           </div>
@@ -651,19 +663,18 @@ const AdminDashboard = () => {
               const isWished = Boolean(celeb.isWished || wishedEvents.includes(celeb._id));
 
               return (
-                <div 
-                  key={celeb._id} 
-                  className={`flex items-center justify-between gap-2.5 p-2.5 rounded-xl transition-all ${
-                    isToday ? 'bg-emerald-50/70 border border-emerald-200/70 shadow-2xs' : 'hover:bg-gray-50'
-                  }`}
+                <div
+                  key={celeb._id}
+                  className={`flex items-center justify-between gap-2.5 p-2.5 rounded-xl transition-all ${isToday ? 'bg-emerald-50/70 border border-emerald-200/70 shadow-2xs' : 'hover:bg-gray-50'
+                    }`}
                 >
                   {/* Left: Avatar + Info */}
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <div className="relative shrink-0">
-                      <img 
-                        src={celeb.profileImage ? `http://localhost:5000${celeb.profileImage}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(celeb.name)}&background=random`} 
-                        alt={celeb.name} 
-                        className="w-9 h-9 rounded-full border-2 border-white shadow-xs object-cover" 
+                      <img
+                        src={celeb.profileImage ? `http://localhost:5000${celeb.profileImage}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(celeb.name)}&background=random`}
+                        alt={celeb.name}
+                        className="w-9 h-9 rounded-full border-2 border-white shadow-xs object-cover"
                       />
                       {isToday && (
                         <span className="absolute -bottom-1 -right-1 text-xs select-none">
@@ -718,8 +729,8 @@ const AdminDashboard = () => {
         <Card className="p-6 h-[380px] flex flex-col">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-gray-900 dark:text-white text-base">Announcements</h3>
-            <button 
-              onClick={() => navigate(`/${pathRole}/notifications`)} 
+            <button
+              onClick={() => navigate(`/${pathRole}/notifications`)}
               className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1"
             >
               View All
@@ -727,8 +738,8 @@ const AdminDashboard = () => {
           </div>
           <div className="space-y-2.5 flex-1 flex flex-col justify-start">
             {announcements && announcements.length > 0 ? announcements.slice(0, 3).map((ann) => (
-              <div 
-                key={ann._id} 
+              <div
+                key={ann._id}
                 onClick={() => navigate(`/${pathRole}/notifications`)}
                 className="p-3 bg-[#f0f6ff] dark:bg-blue-950/25 hover:bg-[#e6f0fd] dark:hover:bg-blue-950/40 rounded-2xl border border-[#dbeafe] dark:border-blue-900/40 flex flex-col gap-1.5 transition-all cursor-pointer shadow-xs"
               >
@@ -775,15 +786,15 @@ const AdminDashboard = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
           {[
-            { id: 'turnover', label: 'Employee Turnover Rate', val: '8.4%', trend: 'down', trendVal: '1.2%', color: '#10b981', trendColor: 'text-[#10b981]', data: [{v:12},{v:14},{v:10},{v:15},{v:14},{v:16},{v:12},{v:17}] },
-            { id: 'hire', label: 'Average Time to Hire', val: '18 Days', trend: 'down', trendVal: '2 days', color: '#3b82f6', trendColor: 'text-[#3b82f6]', data: [{v:20},{v:22},{v:20},{v:18},{v:21},{v:19},{v:18},{v:25}] },
-            { id: 'satisfaction', label: 'Employee Satisfaction', val: '4.2 / 5', trend: 'up', trendVal: '0.3', color: '#8b5cf6', trendColor: 'text-[#8b5cf6]', data: [{v:3.8},{v:3.7},{v:3.9},{v:3.8},{v:4.1},{v:3.9},{v:4.0},{v:4.2}] },
-            { id: 'absenteeism', label: 'Absenteeism Rate', val: '2.6%', trend: 'down', trendVal: '0.8%', color: '#f59e0b', trendColor: 'text-[#f59e0b]', data: [{v:3.2},{v:3.0},{v:3.1},{v:2.8},{v:2.9},{v:2.5},{v:2.7},{v:2.9}] },
-            { id: 'training', label: 'Training Completion Rate', val: '76%', trend: 'up', trendVal: '6%', color: '#14b8a6', trendColor: 'text-[#14b8a6]', data: [{v:65},{v:68},{v:66},{v:70},{v:70},{v:74},{v:73},{v:76}] },
+            { id: 'turnover', label: 'Employee Turnover Rate', val: '8.4%', trend: 'down', trendVal: '1.2%', color: '#10b981', trendColor: 'text-[#10b981]', data: [{ v: 12 }, { v: 14 }, { v: 10 }, { v: 15 }, { v: 14 }, { v: 16 }, { v: 12 }, { v: 17 }] },
+            { id: 'hire', label: 'Average Time to Hire', val: '18 Days', trend: 'down', trendVal: '2 days', color: '#3b82f6', trendColor: 'text-[#3b82f6]', data: [{ v: 20 }, { v: 22 }, { v: 20 }, { v: 18 }, { v: 21 }, { v: 19 }, { v: 18 }, { v: 25 }] },
+            { id: 'satisfaction', label: 'Employee Satisfaction', val: '4.2 / 5', trend: 'up', trendVal: '0.3', color: '#8b5cf6', trendColor: 'text-[#8b5cf6]', data: [{ v: 3.8 }, { v: 3.7 }, { v: 3.9 }, { v: 3.8 }, { v: 4.1 }, { v: 3.9 }, { v: 4.0 }, { v: 4.2 }] },
+            { id: 'absenteeism', label: 'Absenteeism Rate', val: '2.6%', trend: 'down', trendVal: '0.8%', color: '#f59e0b', trendColor: 'text-[#f59e0b]', data: [{ v: 3.2 }, { v: 3.0 }, { v: 3.1 }, { v: 2.8 }, { v: 2.9 }, { v: 2.5 }, { v: 2.7 }, { v: 2.9 }] },
+            { id: 'training', label: 'Training Completion Rate', val: '76%', trend: 'up', trendVal: '6%', color: '#14b8a6', trendColor: 'text-[#14b8a6]', data: [{ v: 65 }, { v: 68 }, { v: 66 }, { v: 70 }, { v: 70 }, { v: 74 }, { v: 73 }, { v: 76 }] },
           ].map((metric, i) => (
             <div key={i} className="p-4 border border-gray-100 rounded-xl bg-white shadow-sm relative overflow-hidden flex flex-col h-36">
               <p className="text-[11px] font-bold text-gray-700 tracking-tight mb-2 truncate">{metric.label}</p>
-              <h4 className="text-2xl font-black text-gray-900">{metric.val}</h4>
+              <h4 className="text-[18px] font-black text-gray-900">{metric.val}</h4>
               <p className={`text-[10px] font-bold mt-1 flex items-center gap-1 ${metric.trendColor}`}>
                 {metric.trend === 'up' ? '↑' : '↓'} {metric.trendVal} vs last quarter
               </p>
@@ -792,8 +803,8 @@ const AdminDashboard = () => {
                   <AreaChart data={metric.data} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id={`color-${metric.id}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={metric.color} stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor={metric.color} stopOpacity={0}/>
+                        <stop offset="5%" stopColor={metric.color} stopOpacity={0.2} />
+                        <stop offset="95%" stopColor={metric.color} stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <Area type="monotone" dataKey="v" stroke={metric.color} strokeWidth={2} fillOpacity={1} fill={`url(#color-${metric.id})`} />
@@ -807,11 +818,11 @@ const AdminDashboard = () => {
 
       {/* Leave Details Modal */}
       {selectedLeaveApproval && createPortal(
-        <div 
+        <div
           className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setSelectedLeaveApproval(null)}
         >
-          <div 
+          <div
             className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-gray-100 relative my-auto flex flex-col max-h-[90vh] overflow-hidden transform animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
@@ -828,7 +839,7 @@ const AdminDashboard = () => {
                   </span>
                 </div>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => setSelectedLeaveApproval(null)}
                 className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
@@ -1005,11 +1016,10 @@ const AdminDashboard = () => {
                       key={idx}
                       type="button"
                       onClick={() => setCustomWishMessage(template)}
-                      className={`text-left p-2.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
-                        customWishMessage === template
-                          ? 'bg-emerald-50 border-[#00a76b] text-[#00a76b] font-bold shadow-xs'
-                          : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
-                      }`}
+                      className={`text-left p-2.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${customWishMessage === template
+                        ? 'bg-emerald-50 border-[#00a76b] text-[#00a76b] font-bold shadow-xs'
+                        : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+                        }`}
                     >
                       {template}
                     </button>

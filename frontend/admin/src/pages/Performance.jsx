@@ -3,12 +3,12 @@ import { TrendingUp, Award, Target, Brain, PieChart, CheckCircle, AlertCircle, A
 
 const Performance = () => {
    return (
-      <div className="space-y-12 animate-in fade-in duration-500 pb-20">
+      <div className="space-y-6 animate-in fade-in duration-500 pb-8">
 
          {/* HEADER */}
-         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
-               <h1 className="text-4xl font-black text-[#1E2026] tracking-tight leading-none mb-3">
+               <h1 className="text-2xl font-black text-[#1E2026] tracking-tight leading-none mb-2">
                   Performance <span className="text-[#F0B90B]">Matrix</span>
                </h1>
                <p className="text-[#848E9C] font-bold text-[11px] uppercase tracking-[0.2em] flex items-center gap-3">
@@ -16,16 +16,16 @@ const Performance = () => {
                   Talent Optimization Protocols
                </p>
             </div>
-            <button className="bg-[#F0B90B] text-[#1E2026] px-10 py-4 rounded-full font-black text-[13px] uppercase tracking-wider shadow-lg hover:bg-[#FFD000] transition-all flex items-center gap-3">
-               <Award size={18} />
+            <button className="bg-[#F0B90B] text-[#1E2026] px-6 py-2.5 rounded-full font-black text-[13px] uppercase tracking-wider shadow-md hover:bg-[#FFD000] transition-all flex items-center gap-2">
+               <Award size={16} />
                Initialize Review
             </button>
          </div>
 
          {/* BENTO HUB GRID */}
-         <div className="grid grid-cols-12 gap-8">
-            <div className="col-span-12 lg:col-span-8 bg-white border border-[#E6E8EA] rounded-3xl p-10 relative overflow-hidden group">
-               <div className="flex justify-between items-start mb-12">
+         <div className="grid grid-cols-12 gap-5">
+            <div className="col-span-12 lg:col-span-8 bg-white border border-[#E6E8EA] rounded-2xl p-6 relative overflow-hidden group">
+               <div className="flex justify-between items-start mb-6">
                   <div>
                      <h3 className="text-[12px] font-black text-[#1E2026] uppercase tracking-[0.2em] mb-1">Quarterly Efficiency Trend</h3>
                      <p className="text-[10px] font-bold text-[#848E9C] uppercase tracking-widest">Aggregate scoring across organizational nodes</p>
@@ -36,7 +36,7 @@ const Performance = () => {
                   </div>
                </div>
 
-               <div className="h-56 flex items-end justify-between gap-4 px-4 overflow-hidden">
+               <div className="h-44 flex items-end justify-between gap-4 px-4 overflow-hidden">
                   {[30, 45, 60, 40, 75, 85].map((h, i) => (
                      <div key={i} className="flex-1 flex flex-col items-center gap-3 group">
                         <div className={`w-full rounded-t-xl transition-all duration-700 shadow-sm ${i === 5 ? 'bg-[#F0B90B]' : 'bg-[#1E2026]/5 group-hover:bg-[#1E2026]/10'}`} style={{ height: `${h}%` }}></div>
@@ -45,7 +45,7 @@ const Performance = () => {
                   ))}
                </div>
 
-               <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-[#E6E8EA]">
+               <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-5 pt-4 border-t border-[#E6E8EA]">
                   {[
                      { label: 'Avg Pulse', val: '4.2', sub: '+12% Global', color: 'text-[#0ECB81]' },
                      { label: 'Completion Rate', val: '88%', sub: 'Target Range', color: 'text-[#848E9C]' },
@@ -54,7 +54,7 @@ const Performance = () => {
                      <div key={i}>
                         <p className="text-[10px] font-black text-[#848E9C] uppercase tracking-[0.2em] mb-2">{node.label}</p>
                         <div className="flex items-baseline gap-2">
-                           <span className="text-3xl font-black text-[#1E2026] tabular-nums leading-none tracking-tighter">{node.val}</span>
+                           <span className="text-[18px] font-black text-[#1E2026] tabular-nums leading-none tracking-tighter">{node.val}</span>
                            <span className={`text-[10px] font-black ${node.color} uppercase`}>{node.sub}</span>
                         </div>
                      </div>

@@ -543,15 +543,15 @@ const EmployeeDashboard = () => {
             {/* 3 Stat Cards inside Attendance */}
             <div className="grid grid-cols-3 gap-3 mt-4">
               <div className="bg-[#f0fdf4] dark:bg-[#064e3b] p-4 rounded-xl border border-[#bbf7d0] dark:border-[#047857] flex flex-col items-center justify-center">
-                <p className="text-2xl font-bold text-[#166534] dark:text-[#a7f3d0]">{attMetrics?.percentage || 0}%</p>
+                <p className="text-[18px] font-bold text-[#166534] dark:text-[#a7f3d0]">{attMetrics?.percentage || 0}%</p>
                 <p className="text-xs text-[#15803d] dark:text-[#6ee7b7] font-semibold mt-1">Avg. Attendance</p>
               </div>
               <div className="bg-[#fff7ed] dark:bg-[#78350f] p-4 rounded-xl border border-[#fed7aa] dark:border-[#92400e] flex flex-col items-center justify-center">
-                <p className="text-2xl font-bold text-[#ea580c] dark:text-[#fdba74]">{attMetrics?.lateCount || 0}</p>
+                <p className="text-[18px] font-bold text-[#ea580c] dark:text-[#fdba74]">{attMetrics?.lateCount || 0}</p>
                 <p className="text-xs text-[#c2410c] dark:text-[#fb923c] font-semibold mt-1">Late Arrivals</p>
               </div>
               <div className="bg-[#fef2f2] dark:bg-[#7f1d1d] p-4 rounded-xl border border-[#fecaca] dark:border-[#991b1b] flex flex-col items-center justify-center">
-                <p className="text-2xl font-bold text-[#dc2626] dark:text-[#fca5a5]">{leavesTakenThisMonth}</p>
+                <p className="text-[18px] font-bold text-[#dc2626] dark:text-[#fca5a5]">{leavesTakenThisMonth}</p>
                 <p className="text-xs text-[#b91c1c] dark:text-[#f87171] font-semibold mt-1">Absences</p>
               </div>
             </div>
@@ -572,7 +572,7 @@ const EmployeeDashboard = () => {
                         { name: 'Ongoing', value: ongoingTasks, color: '#f59e0b' },
                         { name: 'Upcoming', value: upcomingTasks, color: '#ef4444' },
                         { name: 'Pending', value: pendingTasks, color: '#3b82f6' }
-                      ]} cx="50%" cy="50%" innerRadius={65} outerRadius={90} dataKey="value" stroke="none" paddingAngle={3}>
+                      ]} cx="50%" cy="50%" innerRadius={45} outerRadius={60} dataKey="value" stroke="none" paddingAngle={3}>
                         {
                           (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#8b5cf6' }, { color: '#f59e0b' }, { color: '#ef4444' }, { color: '#3b82f6' }]).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
@@ -582,40 +582,40 @@ const EmployeeDashboard = () => {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-3xl font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
+                    <span className="text-[18px] font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
                     <span className="text-[10px] font-bold text-[#939084] tracking-wider uppercase mt-1">Total Tasks</span>
                   </div>
                 </div>
 
                 {/* 4 Stat Cards below Pie Chart */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                  <div className="bg-blue-50 dark:bg-blue-950/40 p-3 rounded-xl border border-blue-200/60 dark:border-blue-800/40 flex flex-col items-center justify-center text-center">
-                    <div className="flex items-center gap-1.5 mb-0.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3">
+                  <div className="bg-blue-50 dark:bg-blue-950/40 p-2.5 rounded-xl border border-blue-200/60 dark:border-blue-800/40 flex flex-col items-center justify-center text-center">
+                    <div className="flex items-center gap-1 mb-0.5">
                       <span className="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
-                      <span className="text-xl font-bold text-blue-700 dark:text-blue-300 leading-none">{pendingTasks}</span>
+                      <span className="text-[18px] font-bold text-blue-700 dark:text-blue-300 leading-none">{pendingTasks}</span>
                     </div>
-                    <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">Pending</p>
+                    <p className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold">Pending</p>
                   </div>
-                  <div className="bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200/60 dark:border-amber-800/40 flex flex-col items-center justify-center text-center">
-                    <div className="flex items-center gap-1.5 mb-0.5">
+                  <div className="bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40 flex flex-col items-center justify-center text-center">
+                    <div className="flex items-center gap-1 mb-0.5">
                       <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
-                      <span className="text-xl font-bold text-amber-700 dark:text-amber-300 leading-none">{ongoingTasks}</span>
+                      <span className="text-[18px] font-bold text-amber-700 dark:text-amber-300 leading-none">{ongoingTasks}</span>
                     </div>
-                    <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">In Progress</p>
+                    <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">In Progress</p>
                   </div>
-                  <div className="bg-purple-50 dark:bg-purple-950/40 p-3 rounded-xl border border-purple-200/60 dark:border-purple-800/40 flex flex-col items-center justify-center text-center">
-                    <div className="flex items-center gap-1.5 mb-0.5">
+                  <div className="bg-purple-50 dark:bg-purple-950/40 p-2.5 rounded-xl border border-purple-200/60 dark:border-purple-800/40 flex flex-col items-center justify-center text-center">
+                    <div className="flex items-center gap-1 mb-0.5">
                       <span className="w-2 h-2 rounded-full bg-[#8b5cf6]"></span>
-                      <span className="text-xl font-bold text-purple-700 dark:text-purple-300 leading-none">{completedTasks}</span>
+                      <span className="text-[18px] font-bold text-purple-700 dark:text-purple-300 leading-none">{completedTasks}</span>
                     </div>
-                    <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold">Completed</p>
+                    <p className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold">Completed</p>
                   </div>
-                  <div className="bg-red-50 dark:bg-red-950/40 p-3 rounded-xl border border-red-200/60 dark:border-red-800/40 flex flex-col items-center justify-center text-center">
-                    <div className="flex items-center gap-1.5 mb-0.5">
+                  <div className="bg-red-50 dark:bg-red-950/40 p-2.5 rounded-xl border border-red-200/60 dark:border-red-800/40 flex flex-col items-center justify-center text-center">
+                    <div className="flex items-center gap-1 mb-0.5">
                       <span className="w-2 h-2 rounded-full bg-[#ef4444]"></span>
-                      <span className="text-xl font-bold text-red-700 dark:text-red-300 leading-none">{upcomingTasks}</span>
+                      <span className="text-[18px] font-bold text-red-700 dark:text-red-300 leading-none">{upcomingTasks}</span>
                     </div>
-                    <p className="text-xs text-red-600 dark:text-red-400 font-semibold">Overdue</p>
+                    <p className="text-[11px] text-red-600 dark:text-red-400 font-semibold">Overdue</p>
                   </div>
                 </div>
               </Card>
@@ -628,11 +628,11 @@ const EmployeeDashboard = () => {
         <SectionHeader title="Leave Summary" />
         <div className="rounded-2xl">
           <Card>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#3b82f6] transition-colors duration-300 rounded-xl p-4 flex justify-between items-center bg-[#fffefb] dark:bg-[#0f0d0a]">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#3b82f6] transition-colors duration-300 rounded-xl p-3 flex justify-between items-center bg-[#fffefb] dark:bg-[#0f0d0a]">
                 <div>
                   <p className="text-xs text-[#939084] font-semibold uppercase tracking-wider mb-1">Total Leaves</p>
-                  <p className="text-2xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>18.5</p>
+                  <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>18.5</p>
                   <p className="text-[10px] text-[#939084] mt-1">Days</p>
                 </div>
                 <div className="bg-[#eff6ff] p-2 rounded-xl text-[#3b82f6]">
@@ -642,7 +642,7 @@ const EmployeeDashboard = () => {
               <div className="border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#f97316] transition-colors duration-300 rounded-xl p-4 flex justify-between items-center bg-[#fffefb] dark:bg-[#0f0d0a]">
                 <div>
                   <p className="text-xs text-[#939084] font-semibold uppercase tracking-wider mb-1">Used Leaves</p>
-                  <p className="text-2xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeaves}</p>
+                  <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeaves}</p>
                   <p className="text-[10px] text-[#939084] mt-1">Days</p>
                 </div>
                 <div className="bg-[#fff7ed] p-2 rounded-xl text-[#f97316]">
@@ -652,7 +652,7 @@ const EmployeeDashboard = () => {
               <div className="border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#a855f7] transition-colors duration-300 rounded-xl p-4 flex justify-between items-center bg-[#fffefb] dark:bg-[#0f0d0a]">
                 <div>
                   <p className="text-xs text-[#939084] font-semibold uppercase tracking-wider mb-1">Pending Leaves</p>
-                  <p className="text-2xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingLeaves}</p>
+                  <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingLeaves}</p>
                   <p className="text-[10px] text-[#939084] mt-1">Requests</p>
                 </div>
                 <div className="bg-[#f5f3ff] p-2 rounded-xl text-[#a855f7]">
@@ -662,7 +662,7 @@ const EmployeeDashboard = () => {
               <div className="border border-[#c5c0b1] dark:border-[#38352e] hover:border-[#22c55e] transition-colors duration-300 rounded-xl p-4 flex justify-between items-center bg-[#fffefb] dark:bg-[#0f0d0a]">
                 <div>
                   <p className="text-xs text-[#939084] font-semibold uppercase tracking-wider mb-1">Approved Leaves</p>
-                  <p className="text-2xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeaves}</p>
+                  <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeaves}</p>
                   <p className="text-[10px] text-[#939084] mt-1">Days</p>
                 </div>
                 <div className="bg-[#f0fdf4] p-2 rounded-xl text-[#22c55e]">

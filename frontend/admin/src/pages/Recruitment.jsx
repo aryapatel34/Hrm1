@@ -491,7 +491,7 @@ const Recruitment = () => {
             >
               <div>
                 <p className="text-[12px] font-semibold text-slate-400 dark:text-[#a3b3af] uppercase tracking-wider mb-2">{stage.label}</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white leading-none">{stage.count}</p>
+                <p className="text-[18px] font-bold text-slate-900 dark:text-white leading-none">{stage.count}</p>
               </div>
               <div className="w-full bg-[#eceae3] dark:bg-[#1a2d29] h-1.5 rounded-full overflow-hidden mt-3">
                 <div

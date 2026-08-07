@@ -250,34 +250,34 @@ const AuditLogs = () => {
       </div>
 
       {/* 2. Key Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] p-5 rounded-2xl flex flex-col justify-between">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] py-3 px-3.5 rounded-xl flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#829e92]">Total Activities</span>
-          <span className="text-2xl font-black text-slate-900 dark:text-white mt-2 tabular-nums">
+          <span className="text-[18px] font-black text-slate-900 dark:text-white mt-1 tabular-nums">
             {stats.totalActivities.toLocaleString()}
           </span>
         </div>
-        <div className="bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] p-5 rounded-2xl flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] py-3 px-3.5 rounded-xl flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#829e92]">Success Actions</span>
-          <span className="text-2xl font-black text-emerald-500 mt-2 tabular-nums">
+          <span className="text-[18px] font-black text-emerald-500 mt-1 tabular-nums">
             {stats.successfulActions.toLocaleString()}
           </span>
         </div>
-        <div className="bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] p-5 rounded-2xl flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] py-3 px-3.5 rounded-xl flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#829e92]">Failed Events</span>
-          <span className="text-2xl font-black text-red-500 mt-2 tabular-nums">
+          <span className="text-[18px] font-black text-red-500 mt-1 tabular-nums">
             {stats.failedActions.toLocaleString()}
           </span>
         </div>
-        <div className="bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] p-5 rounded-2xl flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] py-3 px-3.5 rounded-xl flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#829e92]">Active Users (24h)</span>
-          <span className="text-2xl font-black text-slate-900 dark:text-white mt-2 tabular-nums">
+          <span className="text-[18px] font-black text-slate-900 dark:text-white mt-1 tabular-nums">
             {stats.activeUsers.toLocaleString()}
           </span>
         </div>
-        <div className="bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] p-5 rounded-2xl col-span-2 md:col-span-1 flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] py-3 px-3.5 rounded-xl col-span-2 md:col-span-1 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#829e92]">Logged Today</span>
-          <span className="text-2xl font-black text-[#00a76b] mt-2 tabular-nums">
+          <span className="text-[18px] font-black text-[#00a76b] mt-1 tabular-nums">
             {stats.todaysCount.toLocaleString()}
           </span>
         </div>
