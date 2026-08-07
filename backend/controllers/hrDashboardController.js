@@ -6,9 +6,13 @@ const Notification = require('../models/Notification');
 const Payroll = require('../models/Payroll');
 const User = require('../models/User');
 const mongoose = require('mongoose');
+const { autoRejectExpiredLeaves } = require('../utils/leaveUtils');
 
 exports.getDashboardStats = async (req, res) => {
   try {
+    const io = req.app.get('io');
+    await autoRejectExpiredLeaves(io);
+
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -114,7 +118,7 @@ exports.getDashboardStats = async (req, res) => {
       d.setDate(d.getDate() + i);
       const dStr = d.toISOString().split('T')[0];
       const match = attRecords.find(r => r._id === dStr);
-      
+
       let present = match ? match.present : 0;
       let absent = match ? match.absent : 0;
       let late = match ? match.late : 0;
@@ -133,12 +137,12 @@ exports.getDashboardStats = async (req, res) => {
     const employees = await Employee.find().populate('userId');
     const departmentDistribution = {};
     const genderDistribution = {};
-    
+
     employees.forEach(emp => {
       const role = emp.userId?.role || 'employee';
       const formattedRole = role.charAt(0).toUpperCase() + role.slice(1);
       departmentDistribution[formattedRole] = (departmentDistribution[formattedRole] || 0) + 1;
-      
+
       const gen = emp.gender || 'Unknown';
       genderDistribution[gen] = (genderDistribution[gen] || 0) + 1;
     });

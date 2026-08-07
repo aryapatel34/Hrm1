@@ -82,9 +82,13 @@ const Chat = () => {
   // Re-trigger translation when chat changes or messages load
   useEffect(() => {
     const savedLang = localStorage.getItem('appLanguage');
-    if (savedLang && savedLang !== 'English') {
-      const langMap = { 'English': 'en', 'Gujarati': 'gu', 'Hindi': 'hi' };
-      const translateTo = langMap[savedLang];
+    if (savedLang && savedLang !== 'English' && savedLang !== 'en') {
+      const langMap = { 
+        'English': 'en', 'en': 'en', 
+        'Gujarati': 'gu', 'ગુજરાતી': 'gu', 'gu': 'gu', 
+        'Hindi': 'hi', 'हिंदी': 'hi', 'hi': 'hi' 
+      };
+      const translateTo = langMap[savedLang] || 'en';
       const select = document.querySelector('.goog-te-combo');
       if (select) {
         setTimeout(() => {

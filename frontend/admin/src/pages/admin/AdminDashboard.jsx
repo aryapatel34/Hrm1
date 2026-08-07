@@ -17,8 +17,12 @@ import {
 const COLORS = ['#00a76b', '#3b82f6', '#f43f5e', '#f59e0b', '#8b5cf6', '#64748b'];
 
 // Small generic card wrapper
-const Card = ({ children, className = '' }) => (
-  <div className={`bg-white dark:bg-[#161311] rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-[#eceae3] dark:border-[#28251e] ${className}`}>
+const Card = ({ children, className = '', style = {}, ...props }) => (
+  <div
+    style={style}
+    className={`bg-white dark:bg-[#161311] rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-[#eceae3] dark:border-[#28251e] transition-all duration-300 ${className}`}
+    {...props}
+  >
     {children}
   </div>
 );
@@ -65,9 +69,8 @@ const CustomDropdown = ({ value, onChange, options, className = '' }) => {
                   onChange(opt);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors flex items-center justify-between cursor-pointer ${
-                  isSelected ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#1f1b17]'
-                }`}
+                className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors flex items-center justify-between cursor-pointer ${isSelected ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#1f1b17]'
+                  }`}
               >
                 <span>{optLabel}</span>
                 {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-[#00a76b]"></span>}
@@ -104,6 +107,7 @@ const AdminDashboard = () => {
   const [leavePeriod, setLeavePeriod] = useState('This Month');
   const [payrollPeriod, setPayrollPeriod] = useState(new Date().toLocaleString('default', { month: 'long', year: 'numeric' }));
   const [selectedLeaveApproval, setSelectedLeaveApproval] = useState(null);
+  const [hoveredStatCard, setHoveredStatCard] = useState(null);
 
   // Wishes states
   const [wishedEvents, setWishedEvents] = useState([]);
@@ -115,7 +119,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     try {
       localStorage.removeItem('hrm_wished_events');
-    } catch {}
+    } catch { }
   }, []);
 
   const checkIsToday = (celebDate, diffDays) => {
@@ -172,7 +176,7 @@ const AdminDashboard = () => {
 
       // Fetch Profile
       const profRes = await axios.get('/api/auth/me', { headers });
-      setProfile(profRes.data.data);
+      setProfile(profRes.data?.data || profRes.data);
 
       // Fetch Aggregated Dashboard Data
       const dashRes = await axios.get('/api/hr-dashboard/summary', { headers });
@@ -197,9 +201,12 @@ const AdminDashboard = () => {
     try {
       const token = sessionStorage.getItem('token');
       await axios.put(`/api/leaves/hr-approve/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Leave approved successfully');
       fetchData(); // refresh data
     } catch (err) {
       console.error('Error approving leave:', err);
+      toast.error(err.response?.data?.message || 'Failed to approve leave');
+      fetchData();
     }
   };
 
@@ -207,9 +214,12 @@ const AdminDashboard = () => {
     try {
       const token = sessionStorage.getItem('token');
       await axios.put(`/api/leaves/reject/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Leave request rejected');
       fetchData(); // refresh data
     } catch (err) {
       console.error('Error rejecting leave:', err);
+      toast.error(err.response?.data?.message || 'Failed to reject leave');
+      fetchData();
     }
   };
 
@@ -235,7 +245,14 @@ const AdminDashboard = () => {
   }
 
   const { stats, charts, leaveOverview, payrollSummary, recentJoiners, pendingApprovals, announcements, upcomingCelebrations = [] } = dashboardData;
-  const firstName = profile?.name ? profile.name.split(' ')[0] : 'Admin';
+  const getGreeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good Morning';
+    if (h < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+  const displayName = profile?.name || (profile?.profile ? `${profile.profile.firstName || ''} ${profile.profile.lastName || ''}`.trim() : '') || localStorage.getItem('userName') || 'Admin';
+  const firstName = displayName.split(' ')[0] || 'Admin';
 
   const currentLeaveOverview = leaveOverview?.byPeriod?.[leavePeriod] || leaveOverview || {
     total: 0,
@@ -247,11 +264,11 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6 pb-12 font-['Inter',sans-serif] text-gray-800 dark:text-white">
-      
+
       {/* 1. Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">Good Morning, {firstName}! 👋</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">{getGreeting()}, {firstName}! 👋</h1>
         </div>
         <div className="flex flex-wrap md:flex-nowrap items-center gap-4 mt-4 md:mt-0">
           <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-[#161311] px-4 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-[#28251e] font-medium">
@@ -264,27 +281,84 @@ const AdminDashboard = () => {
       {/* 2. Stats Cards Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
         {[
-          { label: 'Total Employees', val: stats.totalEmployees, subtext: '+12 this month', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/40', hoverBorder: 'hover:border-blue-400 hover:shadow-blue-500/10' },
-          { label: 'Active Employees', val: stats.activeEmployees, subtext: `${stats.activeEmployeesPercent}% of total`, icon: CheckCircle, color: 'text-[#00a76b]', bg: 'bg-green-50 dark:bg-green-950/40', hoverBorder: 'hover:border-[#00a76b] hover:shadow-green-500/10' },
-          { label: 'New Joiners', val: stats.newJoiners, subtext: '+3 this month', icon: UserPlus, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950/40', hoverBorder: 'hover:border-indigo-400 hover:shadow-indigo-500/10' },
-          { label: 'Employees on Leave', val: stats.employeesOnLeave, subtext: `${stats.employeesOnLeavePercent}% of total`, icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/40', hoverBorder: 'hover:border-orange-400 hover:shadow-orange-500/10' },
-          { label: 'Pending Leave', val: stats.pendingLeaveApprovals, subtext: 'Requires your action', icon: Clock, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-950/40', hoverBorder: 'hover:border-red-400 hover:shadow-red-500/10' },
-        ].map((stat, i) => (
-          <Card key={i} className={`p-4 flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md ${stat.hoverBorder}`}>
-            <div className="mb-3">
-              <div className={`inline-flex p-2 rounded-lg ${stat.bg} ${stat.color}`}>
-                <stat.icon size={18} strokeWidth={2.5} />
+          {
+            label: 'Total Employees',
+            val: stats.totalEmployees,
+            subtext: '+12 this month',
+            icon: Users,
+            color: 'text-blue-500',
+            bg: 'bg-blue-50 dark:bg-blue-950/40',
+            borderColor: '#3b82f6',
+            glowColor: 'rgba(59, 130, 246, 0.22)'
+          },
+          {
+            label: 'Active Employees',
+            val: stats.activeEmployees,
+            subtext: `${stats.activeEmployeesPercent}% of total`,
+            icon: CheckCircle,
+            color: 'text-[#00a76b]',
+            bg: 'bg-green-50 dark:bg-green-950/40',
+            borderColor: '#00a76b',
+            glowColor: 'rgba(0, 167, 107, 0.22)'
+          },
+          {
+            label: 'New Joiners',
+            val: stats.newJoiners,
+            subtext: '+3 this month',
+            icon: UserPlus,
+            color: 'text-indigo-500',
+            bg: 'bg-indigo-50 dark:bg-indigo-950/40',
+            borderColor: '#6366f1',
+            glowColor: 'rgba(99, 102, 241, 0.22)'
+          },
+          {
+            label: 'Employees on Leave',
+            val: stats.employeesOnLeave,
+            subtext: `${stats.employeesOnLeavePercent}% of total`,
+            icon: Calendar,
+            color: 'text-emerald-500',
+            bg: 'bg-emerald-50 dark:bg-emerald-950/40',
+            borderColor: '#10b981',
+            glowColor: 'rgba(16, 185, 129, 0.22)'
+          },
+          {
+            label: 'Pending Leave',
+            val: stats.pendingLeaveApprovals,
+            subtext: 'Requires your action',
+            icon: Clock,
+            color: 'text-red-500',
+            bg: 'bg-red-50 dark:bg-red-950/40',
+            borderColor: '#ef4444',
+            glowColor: 'rgba(239, 68, 68, 0.22)'
+          },
+        ].map((stat, i) => {
+          const isHovered = hoveredStatCard === i;
+          return (
+            <Card
+              key={i}
+              onMouseEnter={() => setHoveredStatCard(i)}
+              onMouseLeave={() => setHoveredStatCard(null)}
+              style={isHovered ? {
+                borderColor: stat.borderColor,
+                boxShadow: `0 8px 20px -2px ${stat.glowColor}`
+              } : undefined}
+              className="p-4 flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm"
+            >
+              <div className="mb-3">
+                <div className={`inline-flex p-2 rounded-lg ${stat.bg} ${stat.color}`}>
+                  <stat.icon size={18} strokeWidth={2.5} />
+                </div>
               </div>
-            </div>
-            <div className="flex-1 flex flex-col justify-end">
-              <p className="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 leading-tight">{stat.label}</p>
-              <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none">{stat.val}</h3>
-              <p className={`text-[10px] mt-1.5 font-medium ${stat.subtext.includes('+') ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                {stat.subtext}
-              </p>
-            </div>
-          </Card>
-        ))}
+              <div className="flex-1 flex flex-col justify-end">
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 leading-tight">{stat.label}</p>
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none">{stat.val}</h3>
+                <p className={`text-[10px] mt-1.5 font-medium ${stat.subtext.includes('+') ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                  {stat.subtext}
+                </p>
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
       {/* 3. Second Row (Charts) */}
@@ -302,24 +376,24 @@ const AdminDashboard = () => {
           <div className="h-64 w-full">
             {(() => {
               const isMock = !charts.attendanceOverview || charts.attendanceOverview.length === 0 || charts.attendanceOverview.every(d => d.present === 0 && d.absent === 0 && d.late === 0);
-              const displayData = isMock 
+              const displayData = isMock
                 ? [
-                    { name: 'Mon', present: 85, absent: 5, late: 10 },
-                    { name: 'Tue', present: 90, absent: 2, late: 8 },
-                    { name: 'Wed', present: 88, absent: 4, late: 8 },
-                    { name: 'Thu', present: 92, absent: 1, late: 7 },
-                    { name: 'Fri', present: 80, absent: 10, late: 10 },
-                    { name: 'Sat', present: 40, absent: 50, late: 10 },
-                    { name: 'Sun', present: 0, absent: 100, late: 0 }
-                  ]
+                  { name: 'Mon', present: 85, absent: 5, late: 10 },
+                  { name: 'Tue', present: 90, absent: 2, late: 8 },
+                  { name: 'Wed', present: 88, absent: 4, late: 8 },
+                  { name: 'Thu', present: 92, absent: 1, late: 7 },
+                  { name: 'Fri', present: 80, absent: 10, late: 10 },
+                  { name: 'Sat', present: 40, absent: 50, late: 10 },
+                  { name: 'Sun', present: 0, absent: 100, late: 0 }
+                ]
                 : charts.attendanceOverview;
 
               return (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={displayData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <LineChart data={displayData} margin={{ top: 25, right: 20, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} domain={[0, 120]} ticks={[0, 25, 50, 75, 100]} tickMargin={6} />
                     <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.5)' }} />
                     <Line type="monotone" dataKey="present" stroke="#00a76b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
                     <Line type="monotone" dataKey="absent" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />
@@ -456,9 +530,9 @@ const AdminDashboard = () => {
             <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-6">Total Payroll Cost</p>
 
             <div className="w-full h-3 bg-gray-100 dark:bg-[#2b2722] rounded-full overflow-hidden mb-4">
-              <div className="h-full bg-[#00a76b] rounded-full transition-all duration-500" style={{ width: `${payrollSummary.total ? (payrollSummary.processed/payrollSummary.total)*100 : 0}%` }}></div>
+              <div className="h-full bg-[#00a76b] rounded-full transition-all duration-500" style={{ width: `${payrollSummary.total ? (payrollSummary.processed / payrollSummary.total) * 100 : 0}%` }}></div>
             </div>
-            
+
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-xs font-bold text-gray-500 dark:text-gray-400">Processed</p>
@@ -511,70 +585,70 @@ const AdminDashboard = () => {
           <h3 className="font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
           <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
             {[
-              { 
-                label: 'Add Employee', 
-                icon: UserPlus, 
-                color: 'text-blue-500', 
-                bg: 'bg-blue-50 dark:bg-blue-950/40', 
+              {
+                label: 'Add Employee',
+                icon: UserPlus,
+                color: 'text-blue-500',
+                bg: 'bg-blue-50 dark:bg-blue-950/40',
                 hoverBorder: 'hover:border-blue-400 dark:hover:border-blue-500',
                 hoverBg: 'hover:bg-blue-50/40 dark:hover:bg-blue-950/20',
                 hoverText: 'group-hover:text-blue-600 dark:group-hover:text-blue-400',
-                path: `/${pathRole}/create-user` 
+                path: `/${pathRole}/create-user`
               },
-              { 
-                label: 'Add Department', 
-                icon: Layers, 
-                color: 'text-indigo-500', 
-                bg: 'bg-indigo-50 dark:bg-indigo-950/40', 
+              {
+                label: 'Add Department',
+                icon: Layers,
+                color: 'text-indigo-500',
+                bg: 'bg-indigo-50 dark:bg-indigo-950/40',
                 hoverBorder: 'hover:border-indigo-400 dark:hover:border-indigo-500',
                 hoverBg: 'hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20',
                 hoverText: 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400',
-                path: `/${pathRole}/departments` 
+                path: `/${pathRole}/departments`
               },
-              { 
-                label: 'Create Job', 
-                icon: Briefcase, 
-                color: 'text-purple-500', 
-                bg: 'bg-purple-50 dark:bg-purple-950/40', 
+              {
+                label: 'Create Job',
+                icon: Briefcase,
+                color: 'text-purple-500',
+                bg: 'bg-purple-50 dark:bg-purple-950/40',
                 hoverBorder: 'hover:border-purple-400 dark:hover:border-purple-500',
                 hoverBg: 'hover:bg-purple-50/40 dark:hover:bg-purple-950/20',
                 hoverText: 'group-hover:text-purple-600 dark:group-hover:text-purple-400',
-                path: `/${pathRole}/jobs` 
+                path: `/${pathRole}/jobs`
               },
-              { 
-                label: 'Approve Leave', 
-                icon: CheckCircle, 
-                color: 'text-[#00a76b]', 
-                bg: 'bg-green-50 dark:bg-green-950/40', 
+              {
+                label: 'Approve Leave',
+                icon: CheckCircle,
+                color: 'text-[#00a76b]',
+                bg: 'bg-green-50 dark:bg-green-950/40',
                 hoverBorder: 'hover:border-[#00a76b] dark:hover:border-[#00a76b]',
                 hoverBg: 'hover:bg-green-50/40 dark:hover:bg-green-950/20',
                 hoverText: 'group-hover:text-[#00a76b] dark:group-hover:text-[#00a76b]',
-                path: `/${pathRole}/leave` 
+                path: `/${pathRole}/leave`
               },
-              { 
-                label: 'Run Payroll', 
-                icon: Activity, 
-                color: 'text-orange-500', 
-                bg: 'bg-orange-50 dark:bg-orange-950/40', 
+              {
+                label: 'Run Payroll',
+                icon: Activity,
+                color: 'text-orange-500',
+                bg: 'bg-orange-50 dark:bg-orange-950/40',
                 hoverBorder: 'hover:border-orange-400 dark:hover:border-orange-500',
                 hoverBg: 'hover:bg-orange-50/40 dark:hover:bg-orange-950/20',
                 hoverText: 'group-hover:text-orange-600 dark:group-hover:text-orange-400',
-                path: `/${pathRole}/payroll` 
+                path: `/${pathRole}/payroll`
               },
-              { 
-                label: 'Announcement', 
-                icon: Bell, 
-                color: 'text-red-500', 
-                bg: 'bg-red-50 dark:bg-red-950/40', 
+              {
+                label: 'Announcement',
+                icon: Bell,
+                color: 'text-red-500',
+                bg: 'bg-red-50 dark:bg-red-950/40',
                 hoverBorder: 'hover:border-red-400 dark:hover:border-red-500',
                 hoverBg: 'hover:bg-red-50/40 dark:hover:bg-red-950/20',
                 hoverText: 'group-hover:text-red-600 dark:group-hover:text-red-400',
-                path: `/${pathRole}/notifications` 
+                path: `/${pathRole}/notifications`
               },
             ].map((action, i) => (
-              <button 
-                key={i} 
-                onClick={() => navigate(action.path)} 
+              <button
+                key={i}
+                onClick={() => navigate(action.path)}
                 className={`flex flex-col items-center justify-center p-4 border border-gray-100 dark:border-[#2b2722] bg-white dark:bg-[#1a1714] rounded-xl ${action.hoverBorder} ${action.hoverBg} transition-all group cursor-pointer shadow-xs hover:shadow-md`}
               >
                 <div className={`p-3 rounded-xl mb-3 ${action.bg} ${action.color} group-hover:scale-110 transition-transform`}>
@@ -595,8 +669,8 @@ const AdminDashboard = () => {
             {pendingApprovals.length > 0 ? (
               <div className="space-y-3">
                 {pendingApprovals.map((approval) => (
-                  <div 
-                    key={approval._id} 
+                  <div
+                    key={approval._id}
                     onClick={() => setSelectedLeaveApproval(approval)}
                     className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50/50 dark:bg-[#1a1714] hover:bg-white dark:hover:bg-[#221e19] rounded-xl border border-gray-100 dark:border-[#2b2722] hover:border-gray-200 dark:hover:border-[#38332c] hover:shadow-md transition-all cursor-pointer group"
                   >
@@ -626,21 +700,21 @@ const AdminDashboard = () => {
                       <span className="text-[10px] font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/50 px-2 py-1 rounded-md uppercase">
                         {Math.floor((new Date() - new Date(approval.date)) / (1000 * 60 * 60 * 24)) || 1} days ago
                       </span>
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleApproveLeave(approval._id);
-                        }} 
+                        }}
                         title="Approve Leave"
                         className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#00a76b] text-white hover:bg-[#00915c] transition-colors shadow-sm cursor-pointer"
                       >
                         <Check size={16} strokeWidth={3} />
                       </button>
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRejectLeave(approval._id);
-                        }} 
+                        }}
                         title="Reject Leave"
                         className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm cursor-pointer"
                       >
@@ -676,7 +750,7 @@ const AdminDashboard = () => {
                     <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{rj.role}</p>
                   </div>
                 </div>
-                <span className="text-[11px] font-bold text-gray-400 dark:text-gray-400">{new Date(rj.joinDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric'})}</span>
+                <span className="text-[11px] font-bold text-gray-400 dark:text-gray-400">{new Date(rj.joinDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
               </div>
             )) : <p className="text-sm text-gray-400 text-center py-4">No recent joiners</p>}
           </div>
@@ -699,19 +773,18 @@ const AdminDashboard = () => {
               const isWished = Boolean(celeb.isWished || wishedEvents.includes(celeb._id));
 
               return (
-                <div 
-                  key={celeb._id} 
-                  className={`flex items-center justify-between gap-2.5 p-2.5 rounded-xl transition-all ${
-                    isToday ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-800/40 shadow-2xs' : 'hover:bg-gray-50 dark:hover:bg-[#1a1714]'
-                  }`}
+                <div
+                  key={celeb._id}
+                  className={`flex items-center justify-between gap-2.5 p-2.5 rounded-xl transition-all ${isToday ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-800/40 shadow-2xs' : 'hover:bg-gray-50 dark:hover:bg-[#1a1714]'
+                    }`}
                 >
                   {/* Left: Avatar + Info */}
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <div className="relative shrink-0">
-                      <img 
-                        src={celeb.profileImage ? `http://localhost:5000${celeb.profileImage}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(celeb.name)}&background=random`} 
-                        alt={celeb.name} 
-                        className="w-9 h-9 rounded-full border-2 border-white dark:border-[#2b2722] shadow-xs object-cover" 
+                      <img
+                        src={celeb.profileImage ? `http://localhost:5000${celeb.profileImage}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(celeb.name)}&background=random`}
+                        alt={celeb.name}
+                        className="w-9 h-9 rounded-full border-2 border-white dark:border-[#2b2722] shadow-xs object-cover"
                       />
                       {isToday && (
                         <span className="absolute -bottom-1 -right-1 text-xs select-none">
@@ -766,8 +839,8 @@ const AdminDashboard = () => {
         <Card className="p-6 h-[380px] flex flex-col">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-gray-900 dark:text-white text-base">Announcements</h3>
-            <button 
-              onClick={() => navigate(`/${pathRole}/notifications`)} 
+            <button
+              onClick={() => navigate(`/${pathRole}/notifications`)}
               className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1"
             >
               View All
@@ -775,8 +848,8 @@ const AdminDashboard = () => {
           </div>
           <div className="space-y-2.5 flex-1 flex flex-col justify-start">
             {announcements && announcements.length > 0 ? announcements.slice(0, 3).map((ann) => (
-              <div 
-                key={ann._id} 
+              <div
+                key={ann._id}
                 onClick={() => navigate(`/${pathRole}/notifications`)}
                 className="p-3 bg-[#f0f6ff] dark:bg-blue-950/25 hover:bg-[#e6f0fd] dark:hover:bg-blue-950/40 rounded-2xl border border-[#dbeafe] dark:border-blue-900/40 flex flex-col gap-1.5 transition-all cursor-pointer shadow-xs"
               >
@@ -823,13 +896,13 @@ const AdminDashboard = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
           {[
-            { id: 'turnover', label: 'Employee Turnover Rate', val: '8.4%', trend: 'down', trendVal: '1.2%', color: '#10b981', trendColor: 'text-[#10b981]', data: [{v:12},{v:14},{v:10},{v:15},{v:14},{v:16},{v:12},{v:17}] },
-            { id: 'hire', label: 'Average Time to Hire', val: '18 Days', trend: 'down', trendVal: '2 days', color: '#3b82f6', trendColor: 'text-[#3b82f6]', data: [{v:20},{v:22},{v:20},{v:18},{v:21},{v:19},{v:18},{v:25}] },
-            { id: 'satisfaction', label: 'Employee Satisfaction', val: '4.2 / 5', trend: 'up', trendVal: '0.3', color: '#8b5cf6', trendColor: 'text-[#8b5cf6]', data: [{v:3.8},{v:3.7},{v:3.9},{v:3.8},{v:4.1},{v:3.9},{v:4.0},{v:4.2}] },
-            { id: 'absenteeism', label: 'Absenteeism Rate', val: '2.6%', trend: 'down', trendVal: '0.8%', color: '#f59e0b', trendColor: 'text-[#f59e0b]', data: [{v:3.2},{v:3.0},{v:3.1},{v:2.8},{v:2.9},{v:2.5},{v:2.7},{v:2.9}] },
-            { id: 'training', label: 'Training Completion Rate', val: '76%', trend: 'up', trendVal: '6%', color: '#14b8a6', trendColor: 'text-[#14b8a6]', data: [{v:65},{v:68},{v:66},{v:70},{v:70},{v:74},{v:73},{v:76}] },
+            { id: 'turnover', label: 'Employee Turnover Rate', val: '8.4%', trend: 'down', trendVal: '1.2%', color: '#10b981', trendColor: 'text-[#10b981]', hoverBorder: 'hover:border-emerald-500 dark:hover:border-emerald-500', data: [{ v: 12 }, { v: 14 }, { v: 10 }, { v: 15 }, { v: 14 }, { v: 16 }, { v: 12 }, { v: 17 }] },
+            { id: 'hire', label: 'Average Time to Hire', val: '18 Days', trend: 'down', trendVal: '2 days', color: '#3b82f6', trendColor: 'text-[#3b82f6]', hoverBorder: 'hover:border-blue-500 dark:hover:border-blue-500', data: [{ v: 20 }, { v: 22 }, { v: 20 }, { v: 18 }, { v: 21 }, { v: 19 }, { v: 18 }, { v: 25 }] },
+            { id: 'satisfaction', label: 'Employee Satisfaction', val: '4.2 / 5', trend: 'up', trendVal: '0.3', color: '#8b5cf6', trendColor: 'text-[#8b5cf6]', hoverBorder: 'hover:border-purple-500 dark:hover:border-purple-500', data: [{ v: 3.8 }, { v: 3.7 }, { v: 3.9 }, { v: 3.8 }, { v: 4.1 }, { v: 3.9 }, { v: 4.0 }, { v: 4.2 }] },
+            { id: 'absenteeism', label: 'Absenteeism Rate', val: '2.6%', trend: 'down', trendVal: '0.8%', color: '#f59e0b', trendColor: 'text-[#f59e0b]', hoverBorder: 'hover:border-amber-500 dark:hover:border-amber-500', data: [{ v: 3.2 }, { v: 3.0 }, { v: 3.1 }, { v: 2.8 }, { v: 2.9 }, { v: 2.5 }, { v: 2.7 }, { v: 2.9 }] },
+            { id: 'training', label: 'Training Completion Rate', val: '76%', trend: 'up', trendVal: '6%', color: '#14b8a6', trendColor: 'text-[#14b8a6]', hoverBorder: 'hover:border-teal-500 dark:hover:border-teal-500', data: [{ v: 65 }, { v: 68 }, { v: 66 }, { v: 70 }, { v: 70 }, { v: 74 }, { v: 73 }, { v: 76 }] },
           ].map((metric, i) => (
-            <div key={i} className="p-4 border border-gray-100 dark:border-[#2b2722] rounded-xl bg-white dark:bg-[#1a1714] shadow-sm relative overflow-hidden flex flex-col h-36">
+            <div key={i} className={`p-4 border border-gray-100 dark:border-[#2b2722] rounded-xl bg-white dark:bg-[#1a1714] shadow-sm relative overflow-hidden flex flex-col h-36 transition-all duration-300 ${metric.hoverBorder}`}>
               <p className="text-[11px] font-bold text-gray-700 dark:text-gray-300 tracking-tight mb-2 truncate">{metric.label}</p>
               <h4 className="text-2xl font-black text-gray-900 dark:text-white">{metric.val}</h4>
               <p className={`text-[10px] font-bold mt-1 flex items-center gap-1 ${metric.trendColor}`}>
@@ -840,8 +913,8 @@ const AdminDashboard = () => {
                   <AreaChart data={metric.data} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id={`color-${metric.id}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={metric.color} stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor={metric.color} stopOpacity={0}/>
+                        <stop offset="5%" stopColor={metric.color} stopOpacity={0.2} />
+                        <stop offset="95%" stopColor={metric.color} stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <Area type="monotone" dataKey="v" stroke={metric.color} strokeWidth={2} fillOpacity={1} fill={`url(#color-${metric.id})`} />
@@ -855,11 +928,11 @@ const AdminDashboard = () => {
 
       {/* Leave Details Modal */}
       {selectedLeaveApproval && createPortal(
-        <div 
+        <div
           className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setSelectedLeaveApproval(null)}
         >
-          <div 
+          <div
             className="bg-white dark:bg-[#161311] rounded-3xl max-w-lg w-full shadow-2xl border border-gray-100 dark:border-[#28251e] relative my-auto flex flex-col max-h-[90vh] overflow-hidden transform animate-in zoom-in-95 duration-200 text-gray-800 dark:text-gray-200"
             onClick={(e) => e.stopPropagation()}
           >
@@ -876,7 +949,7 @@ const AdminDashboard = () => {
                   </span>
                 </div>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => setSelectedLeaveApproval(null)}
                 className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#25201b] rounded-full transition-colors cursor-pointer"
@@ -1008,7 +1081,7 @@ const AdminDashboard = () => {
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => setSelectedWishCeleb(null)}
                 className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#25201b] rounded-full transition-colors cursor-pointer"
@@ -1053,11 +1126,10 @@ const AdminDashboard = () => {
                       key={idx}
                       type="button"
                       onClick={() => setCustomWishMessage(template)}
-                      className={`text-left p-2.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
-                        customWishMessage === template
+                      className={`text-left p-2.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${customWishMessage === template
                           ? 'bg-emerald-50 dark:bg-emerald-950/40 border-[#00a76b] text-[#00a76b] font-bold shadow-xs'
                           : 'bg-white dark:bg-[#1a1714] border-gray-200 dark:border-[#2b2722] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#25201b] hover:border-gray-300 dark:hover:border-[#38332c]'
-                      }`}
+                        }`}
                     >
                       {template}
                     </button>

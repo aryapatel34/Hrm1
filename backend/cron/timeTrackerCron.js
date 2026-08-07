@@ -1,32 +1,43 @@
 const cron = require('node-cron');
 const TimeTrack = require('../models/TimeTrack');
+const { autoRejectExpiredLeaves } = require('../utils/leaveUtils');
 
 function initCronJobs() {
+  // Run on server startup to auto-reject any pending leaves whose dates have passed
+  autoRejectExpiredLeaves();
+
+  // Run every hour
+  cron.schedule('0 * * * *', async () => {
+    console.log('[CRON] Running hourly check to auto-reject expired leaves...');
+    await autoRejectExpiredLeaves();
+  });
+
   // Run every night at midnight (0 0 * * *)
   cron.schedule('0 0 * * *', async () => {
-    console.log('[CRON] Running midnight auto-stop for active time tracker sessions...');
+    console.log('[CRON] Running midnight auto-stop for active time tracker sessions & expired leaves...');
+    await autoRejectExpiredLeaves();
     try {
       const now = new Date();
       // Find all sessions that are not completed
       const sessions = await TimeTrack.find({ status: { $in: ['active', 'paused', 'idle'] } });
-      
+
       for (const session of sessions) {
         // Close segment if active
         if (session.status === 'active' && session.segmentStart) {
-           const elapsed = (now - new Date(session.segmentStart)) / 1000;
-           session.activeTime += Math.max(0, Math.floor(elapsed));
+          const elapsed = (now - new Date(session.segmentStart)) / 1000;
+          session.activeTime += Math.max(0, Math.floor(elapsed));
         }
-        
+
         session.segmentStart = null;
         session.endTime = now;
         session.status = 'completed';
         session.isRunning = false;
         session.isAutoStop = true;
         session.totalWorkedDuration = Math.round((session.activeTime || 0) / 60);
-        
+
         const lastIdx = session.sessions.length - 1;
         if (lastIdx >= 0) session.sessions[lastIdx].end = now;
-        
+
         // Auto resume any pending pause
         const lastPauseIdx = session.pauseEvents.length - 1;
         if (lastPauseIdx >= 0 && !session.pauseEvents[lastPauseIdx].resumeTime) {
@@ -35,7 +46,7 @@ function initCronJobs() {
           session.pauseEvents[lastPauseIdx].durationMinutes = dur;
           session.totalPauseDuration += dur;
         }
-        
+
         await session.save();
         console.log(`[CRON] Auto-stopped session for employee: ${session.employeeId}`);
       }

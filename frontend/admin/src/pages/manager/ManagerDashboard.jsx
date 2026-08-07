@@ -25,9 +25,10 @@ const fmtDate = () =>
   new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
 // ─── STYLED COMPONENTS ────────────────────────────────────────────────
-const Card = ({ children, className = '', ...props }) => (
+const Card = ({ children, className = '', style = {}, ...props }) => (
   <div
-    className={`bg-white border border-gray-100 rounded-2xl p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all hover:shadow-[0_4px_20px_rgba(0,0,0,0.04)] ${className}`}
+    style={style}
+    className={`bg-white dark:bg-[#161311] border border-[#eceae3] dark:border-[#28251e] rounded-2xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] ${className}`}
     {...props}
   >
     {children}
@@ -36,8 +37,8 @@ const Card = ({ children, className = '', ...props }) => (
 
 const SectionHeader = ({ title, action }) => (
   <div className="flex justify-between items-center mb-5">
-    <h2 className="font-bold text-[#1e293b]" style={{ fontFamily: 'Manrope, sans-serif', fontSize: '16px' }}>{title}</h2>
-    {action && (typeof action === 'string' ? <span className="text-sm font-semibold text-gray-500 cursor-pointer hover:text-gray-700">{action}</span> : action)}
+    <h2 className="font-bold text-[#1e293b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif', fontSize: '16px' }}>{title}</h2>
+    {action && (typeof action === 'string' ? <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">{action}</span> : action)}
   </div>
 );
 
@@ -45,25 +46,17 @@ const Dropdown = ({ value, onChange, options }) => (
   <select
     value={value}
     onChange={(e) => onChange(e.target.value)}
-    className="text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 outline-none cursor-pointer"
+    className="text-xs font-semibold text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-[#1f1b17] border border-gray-200 dark:border-[#28251e] rounded-lg px-2.5 py-1 outline-none cursor-pointer focus:border-[#00a76b]"
   >
-    {options.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+    {options.map((opt) => <option key={opt.value} value={opt.value} className="bg-white dark:bg-[#1f1b17] text-gray-800 dark:text-gray-200">{opt.label}</option>)}
   </select>
 );
 
 // ─── MOCK DATA FALLBACKS ─────────────────────────────────────────────
-// (Used when real API data is missing or shaped differently)
-
 const MOCK_GOALS = [
   { name: 'Project Delivery', progress: 75, color: '#22c55e' },
   { name: 'Quality & Excellence', progress: 60, color: '#3b82f6' },
   { name: 'Team Learning', progress: 70, color: '#a855f7' }
-];
-
-const MOCK_SCHEDULE = [
-  { time: '10:00 AM', title: 'Project Review Meeting', desc: 'HRMS Redesign', tag: 'Today', color: '#8b5cf6' },
-  { time: '02:00 PM', title: '1:1 with Neha Verma', desc: 'Performance Discussion', tag: 'Today', color: '#3b82f6' },
-  { time: '04:30 PM', title: 'Sprint Planning', desc: 'Mobile App Development', tag: 'Tomorrow', color: '#22c55e' }
 ];
 
 const MOCK_PROJECTS = [
@@ -83,7 +76,6 @@ const MOCK_WEEKLY_TREND = [
   { day: 'Sun', worked: 30, tasks: 15 }
 ];
 
-
 // ─── DASHBOARD ────────────────────────────────────────────────────────
 const ManagerDashboard = () => {
   const navigate = useNavigate();
@@ -97,6 +89,7 @@ const ManagerDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hoveredStatCard, setHoveredStatCard] = useState(null);
 
   // ─ Filters ─
   const [attFilter, setAttFilter] = useState('weekly');
@@ -135,7 +128,6 @@ const ManagerDashboard = () => {
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
-
 
   // ─── COMPUTED DATA ────────────────────────────────────────────────────
   const managerName = profile?.name?.split(' ')[0] || profile?.profile?.firstName || 'Manager';
@@ -199,43 +191,37 @@ const ManagerDashboard = () => {
 
   if (totalTasksSum === 0) {
     donutData = [
-      { name: 'To Do', value: 16, color: '#22c55e' },
-      { name: 'In Progress', value: 28, color: '#3b82f6' },
-      { name: 'In Review', value: 18, color: '#f59e0b' },
-      { name: 'Completed', value: 6, color: '#a855f7' },
-      { name: 'Blocked', value: 4, color: '#ef4444' }
+      { name: 'To Do', value: 8, color: '#22c55e' },
+      { name: 'In Progress', value: 14, color: '#3b82f6' },
+      { name: 'In Review', value: 6, color: '#f59e0b' },
+      { name: 'Completed', value: 20, color: '#a855f7' },
+      { name: 'Blocked', value: 3, color: '#ef4444' }
     ];
-    totalTasksSum = donutData.reduce((acc, curr) => acc + curr.value, 0);
+    totalTasksSum = 51;
   }
 
   // ─ Kanban Data ─
   const kanbanColumns = [
-    { id: 'todo', title: 'To Do', count: donutData[0].value, color: '#22c55e', bg: '#f0fdf4' },
-    { id: 'inprogress', title: 'In Progress', count: donutData[1].value, color: '#3b82f6', bg: '#eff6ff' },
-    { id: 'inreview', title: 'In Review', count: donutData[2].value, color: '#f59e0b', bg: '#fffbeb' },
-    { id: 'completed', title: 'Completed', count: donutData[3].value, color: '#10b981', bg: '#ecfdf5' }
+    { id: 'todo', title: 'To Do', color: '#22c55e', bg: '#dcfce7', count: taskStatusGroups.todo || 2 },
+    { id: 'inprogress', title: 'In Progress', color: '#3b82f6', bg: '#dbeafe', count: taskStatusGroups.inprogress || 2 },
+    { id: 'inreview', title: 'In Review', color: '#f59e0b', bg: '#fef3c7', count: taskStatusGroups.inreview || 1 },
+    { id: 'completed', title: 'Completed', color: '#10b981', bg: '#d1fae5', count: taskStatusGroups.completed || 1 }
   ];
 
   const realKanbanTasks = { todo: [], inprogress: [], inreview: [], completed: [] };
   tasks.forEach(t => {
-    let s = (t.status || '').toLowerCase().replace(/[^a-z]/g, '');
+    const s = (t.status || '').toLowerCase().replace(/[^a-z]/g, '');
     let category = 'todo';
     if (s.includes('progress') || s.includes('pending')) category = 'inprogress';
     else if (s.includes('review')) category = 'inreview';
     else if (s.includes('complet') || s.includes('done')) category = 'completed';
 
-    const assignees = Array.isArray(t.assignees) ? t.assignees : (t.assignees ? [t.assignees] : (t.assignedTo ? [t.assignedTo] : []));
-    let assigneeName = 'Unassigned';
-    let avatarChar = 'U';
-    if (assignees.length > 0 && assignees[0]) {
-      const a = assignees[0];
-      assigneeName = a.name || (a.profile ? `${a.profile.firstName || ''} ${a.profile.lastName || ''}`.trim() : '') || 'User';
-      avatarChar = assigneeName.charAt(0).toUpperCase();
-    }
-    
+    const assigneeName = t.assignedTo?.name || t.assignedTo?.fullName || (typeof t.assignedTo === 'string' ? t.assignedTo : 'Unassigned');
+    const avatarChar = assigneeName.charAt(0).toUpperCase() || 'U';
+
     realKanbanTasks[category].push({
       id: t._id || Math.random().toString(),
-      title: t.title || 'Untitled Task',
+      title: t.title || t.taskName || 'Untitled Task',
       assignee: assigneeName,
       avatar: avatarChar,
       progress: category === 'completed' ? 100 : (t.progress || (category === 'inprogress' ? 50 : null))
@@ -305,53 +291,129 @@ const ManagerDashboard = () => {
     };
   });
 
-
   if (loading) {
-    return <div className="p-12 text-center text-gray-400 font-semibold text-lg">Loading Dashboard...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[500px] text-gray-500 dark:text-gray-400 bg-[#F8F9FB] dark:bg-[#110e0c]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#00a76b] mb-4"></div>
+        <p className="font-semibold text-lg">Loading Manager Dashboard...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="bg-[#F8F9FB] min-h-screen text-[#1e293b] font-['Inter',sans-serif] px-4 py-8 max-w-[1600px] mx-auto space-y-6">
+    <div className="bg-[#F8F9FB] dark:bg-[#110e0c] min-h-screen text-[#1e293b] dark:text-gray-200 font-['Inter',sans-serif] px-4 py-8 max-w-[1600px] mx-auto space-y-6">
       
       {/* 1. HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#0f172a]">
-            Good Morning, {managerName}! 👋
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#0f172a] dark:text-white">
+            {getGreeting()}, {managerName}! 👋
           </h1>
-          <p className="text-gray-500 mt-1 font-medium">
+          <p className="text-gray-500 dark:text-[#a3a094] mt-1 font-medium">
             Here's what's happening with your team today.
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-xl shadow-sm">
-          <CalendarIcon size={18} className="text-gray-500" />
-          <span className="font-semibold text-sm text-gray-700">{fmtDate()}</span>
+        <div className="flex items-center gap-2 bg-white dark:bg-[#161311] border border-gray-200 dark:border-[#28251e] px-4 py-2 rounded-xl shadow-xs">
+          <CalendarIcon size={18} className="text-gray-500 dark:text-gray-400" />
+          <span className="font-semibold text-sm text-gray-700 dark:text-gray-200">{fmtDate()}</span>
         </div>
       </div>
 
       {/* 2. STATS CARDS ROW (6 Cards) */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         {[
-          { icon: <Users size={18} color="#22c55e" />, bg: '#dcfce7', label: 'Team Members', value: totalTeam, sub: '↑ 2 this month', subColor: 'text-green-600', hoverBorder: 'hover:border-green-400 hover:shadow-green-500/10' },
-          { icon: <UserCheck size={18} color="#3b82f6" />, bg: '#e0f2fe', label: 'Present Today', value: presentToday, sub: `${presentPercent}% of team`, subColor: 'text-gray-500', hoverBorder: 'hover:border-blue-400 hover:shadow-blue-500/10' },
-          { icon: <ClipboardList size={18} color="#8b5cf6" />, bg: '#f3e8ff', label: 'Pending Tasks', value: pendingTasksCount, sub: 'Needs attention', subColor: 'text-gray-500', hoverBorder: 'hover:border-purple-400 hover:shadow-purple-500/10' },
-          { icon: <TrendingUp size={18} color="#f59e0b" />, bg: '#fef3c7', label: 'Productivity', value: '87%', sub: '↑ 8% vs last week', subColor: 'text-green-600', hoverBorder: 'hover:border-amber-400 hover:shadow-amber-500/10' },
-          { icon: <AlertCircle size={18} color="#ef4444" />, bg: '#fee2e2', label: 'Overdue Tasks', value: overdueTasksCount, sub: 'Requires action', subColor: 'text-red-500', hoverBorder: 'hover:border-red-400 hover:shadow-red-500/10' },
-          { icon: <Briefcase size={18} color="#14b8a6" />, bg: '#ccfbf1', label: 'Active Projects', value: activeProjectsCount, sub: 'Running smoothly', subColor: 'text-gray-500', hoverBorder: 'hover:border-teal-400 hover:shadow-teal-500/10' },
-        ].map((stat, i) => (
-          <Card key={i} className={`flex flex-col aspect-square justify-between hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md ${stat.hoverBorder}`}>
-            <div className="flex flex-col items-start gap-3 mb-2">
-              <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center" style={{ backgroundColor: stat.bg }}>
-                {stat.icon}
+          {
+            icon: Users,
+            iconColor: 'text-[#22c55e]',
+            bg: 'bg-green-50 dark:bg-green-950/40',
+            label: 'Team Members',
+            value: totalTeam,
+            sub: '↑ 2 this month',
+            subColor: 'text-green-600 dark:text-green-400',
+            borderColor: '#22c55e',
+            glowColor: 'rgba(34, 197, 94, 0.22)'
+          },
+          {
+            icon: UserCheck,
+            iconColor: 'text-[#3b82f6]',
+            bg: 'bg-blue-50 dark:bg-blue-950/40',
+            label: 'Present Today',
+            value: presentToday,
+            sub: `${presentPercent}% of team`,
+            subColor: 'text-gray-500 dark:text-gray-400',
+            borderColor: '#3b82f6',
+            glowColor: 'rgba(59, 130, 246, 0.22)'
+          },
+          {
+            icon: ClipboardList,
+            iconColor: 'text-[#8b5cf6]',
+            bg: 'bg-purple-50 dark:bg-purple-950/40',
+            label: 'Pending Tasks',
+            value: pendingTasksCount,
+            sub: 'Needs attention',
+            subColor: 'text-amber-600 dark:text-amber-400',
+            borderColor: '#8b5cf6',
+            glowColor: 'rgba(139, 92, 246, 0.22)'
+          },
+          {
+            icon: TrendingUp,
+            iconColor: 'text-[#f59e0b]',
+            bg: 'bg-amber-50 dark:bg-amber-950/40',
+            label: 'Productivity',
+            value: '87%',
+            sub: '↑ 8% vs last week',
+            subColor: 'text-green-600 dark:text-green-400',
+            borderColor: '#f59e0b',
+            glowColor: 'rgba(245, 158, 11, 0.22)'
+          },
+          {
+            icon: AlertCircle,
+            iconColor: 'text-[#ef4444]',
+            bg: 'bg-red-50 dark:bg-red-950/40',
+            label: 'Overdue Tasks',
+            value: overdueTasksCount,
+            sub: 'Requires action',
+            subColor: 'text-red-500 dark:text-red-400',
+            borderColor: '#ef4444',
+            glowColor: 'rgba(239, 68, 68, 0.22)'
+          },
+          {
+            icon: Briefcase,
+            iconColor: 'text-[#14b8a6]',
+            bg: 'bg-teal-50 dark:bg-teal-950/40',
+            label: 'Active Projects',
+            value: activeProjectsCount,
+            sub: 'Running smoothly',
+            subColor: 'text-teal-600 dark:text-teal-400',
+            borderColor: '#14b8a6',
+            glowColor: 'rgba(20, 184, 166, 0.22)'
+          },
+        ].map((stat, i) => {
+          const isHovered = hoveredStatCard === i;
+          return (
+            <Card
+              key={i}
+              onMouseEnter={() => setHoveredStatCard(i)}
+              onMouseLeave={() => setHoveredStatCard(null)}
+              style={isHovered ? {
+                borderColor: stat.borderColor,
+                boxShadow: `0 8px 20px -2px ${stat.glowColor}`
+              } : undefined}
+              className="flex flex-col aspect-square justify-between hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-xs"
+            >
+              <div className="flex flex-col items-start gap-2.5 mb-2">
+                <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center ${stat.bg} ${stat.iconColor}`}>
+                  <stat.icon size={18} strokeWidth={2.5} />
+                </div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide leading-tight w-full break-words">{stat.label}</p>
               </div>
-              <p className="text-xs font-bold text-gray-600 leading-tight w-full break-words">{stat.label}</p>
-            </div>
-            <div className="mt-auto">
-              <h3 className="text-3xl font-extrabold text-[#0f172a] tracking-tight">{stat.value}</h3>
-              <p className={`text-[11px] font-bold mt-1 ${stat.subColor}`}>{stat.sub}</p>
-            </div>
-          </Card>
-        ))}
+              <div className="mt-auto">
+                <h3 className="text-2xl sm:text-3xl font-black text-[#0f172a] dark:text-white tracking-tight">{stat.value}</h3>
+                <p className={`text-[11px] font-bold mt-1 ${stat.subColor}`}>{stat.sub}</p>
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
       {/* 3. SECOND ROW (Attendance Trend & Task Status) */}
@@ -370,10 +432,10 @@ const ManagerDashboard = () => {
                     <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} tickFormatter={v => `${v}%`} />
-                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} tickFormatter={v => `${v}%`} />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 10px 25px rgba(0,0,0,0.4)' }} />
                 <Area type="monotone" dataKey="att" stroke="#22c55e" strokeWidth={3} fill="url(#colorAtt)" dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#22c55e' }} activeDot={{ r: 6 }} />
               </AreaChart>
             </ResponsiveContainer>
@@ -400,22 +462,22 @@ const ManagerDashboard = () => {
                   >
                     {donutData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-3xl font-extrabold text-[#0f172a]">{totalTasksSum}</span>
-                <span className="text-xs font-semibold text-gray-500">Total Tasks</span>
+                <span className="text-3xl font-extrabold text-[#0f172a] dark:text-white">{totalTasksSum}</span>
+                <span className="text-xs font-semibold text-gray-500 dark:text-[#a3a094]">Total Tasks</span>
               </div>
             </div>
             
-            <div className="flex flex-col gap-4 justify-center">
+            <div className="flex flex-col gap-3 justify-center">
               {donutData.map((d, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
                   <div>
-                    <p className="text-sm font-bold text-[#0f172a] leading-none">{d.value}</p>
-                    <p className="text-[11px] font-semibold text-gray-500 mt-0.5">{d.name}</p>
+                    <p className="text-sm font-bold text-[#0f172a] dark:text-white leading-none">{d.value}</p>
+                    <p className="text-[11px] font-semibold text-gray-500 dark:text-[#a3a094] mt-0.5">{d.name}</p>
                   </div>
                 </div>
               ))}
@@ -434,10 +496,10 @@ const ManagerDashboard = () => {
           <div className="flex-1 -mx-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={teamPerfData} margin={{ top: 20, right: 0, left: -20, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} tickFormatter={v => `${v}%`} domain={[0, 100]} />
-                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 600 }} tickFormatter={v => `${v}%`} domain={[0, 100]} />
+                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }} />
                 <Bar dataKey="performance" radius={[6, 6, 6, 6]} barSize={28}>
                   {teamPerfData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -446,8 +508,8 @@ const ManagerDashboard = () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex justify-between items-center px-2 pt-2 border-t border-gray-100">
-            <span className="text-sm font-bold text-[#0f172a]">Team Average</span>
+          <div className="flex justify-between items-center px-2 pt-2 border-t border-gray-100 dark:border-[#28251e]">
+            <span className="text-sm font-bold text-[#0f172a] dark:text-white">Team Average</span>
             <span className="text-sm font-extrabold text-[#10b981]">{teamAvgPerf}%</span>
           </div>
         </Card>
@@ -465,13 +527,13 @@ const ManagerDashboard = () => {
                 <PieChart>
                   <Pie data={[{value: 68}, {value: 32}]} innerRadius={70} outerRadius={85} dataKey="value" stroke="none" startAngle={90} endAngle={-270}>
                     <Cell fill="#00a76b" />
-                    <Cell fill="#f1f5f9" />
+                    <Cell fill="#28251e" />
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-extrabold text-[#0f172a]">68%</span>
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mt-1">Overall Progress</span>
+                <span className="text-3xl font-extrabold text-[#0f172a] dark:text-white">68%</span>
+                <span className="text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wide mt-1">Overall Progress</span>
               </div>
             </div>
 
@@ -479,11 +541,11 @@ const ManagerDashboard = () => {
             <div className="flex-1 w-full sm:pl-10 flex flex-col gap-6 justify-center">
               {MOCK_GOALS.map((goal, i) => (
                 <div key={i}>
-                  <div className="flex justify-between text-xs font-bold text-[#0f172a] mb-2">
+                  <div className="flex justify-between text-xs font-bold text-[#0f172a] dark:text-white mb-2">
                     <span>{goal.name}</span>
                     <span>{goal.progress}%</span>
                   </div>
-                  <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-2 w-full bg-gray-100 dark:bg-[#28251e] rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${goal.progress}%`, backgroundColor: goal.color }} />
                   </div>
                 </div>
@@ -499,30 +561,30 @@ const ManagerDashboard = () => {
         <SectionHeader title="Team Task Board" />
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {kanbanColumns.map((col, idx) => (
-            <div key={idx} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex flex-col h-80">
+            <div key={idx} className="bg-white dark:bg-[#161311] border border-gray-100 dark:border-[#28251e] rounded-2xl p-4 shadow-xs flex flex-col h-80">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-sm" style={{ color: col.color }}>{col.title}</h3>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: col.bg, color: col.color }}>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full dark:bg-opacity-20" style={{ backgroundColor: col.bg, color: col.color }}>
                   {col.count}
                 </span>
               </div>
               
               <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
                 {(realKanbanTasks[col.id] || []).map(task => (
-                  <div key={task.id} className="p-3 border border-gray-100 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-md transition-shadow cursor-grab bg-white group">
-                    <h4 className="text-xs font-bold text-[#1e293b] mb-3 line-clamp-2">{task.title}</h4>
+                  <div key={task.id} className="p-3 border border-gray-100 dark:border-[#28251e] rounded-xl shadow-xs hover:shadow-md transition-shadow cursor-grab bg-gray-50/50 dark:bg-[#1f1b17] hover:bg-white dark:hover:bg-[#25201b] group">
+                    <h4 className="text-xs font-bold text-[#1e293b] dark:text-white mb-3 line-clamp-2">{task.title}</h4>
                     <div className="flex justify-between items-end">
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-600">
+                        <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-[#28251e] flex items-center justify-center text-[9px] font-bold text-gray-600 dark:text-gray-300">
                           {task.avatar}
                         </div>
-                        <span className="text-[10px] font-semibold text-gray-500">{task.assignee}</span>
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094]">{task.assignee}</span>
                       </div>
                       {task.progress !== null ? (
                         task.progress === 100 ? (
                           <div className="text-[#10b981]"><Check size={14} strokeWidth={3} /></div>
                         ) : (
-                          <div className="text-[10px] font-bold px-1.5 py-0.5 rounded border" style={{ color: col.color, borderColor: col.color }}>
+                          <div className="text-[10px] font-bold px-1.5 py-0.5 rounded border dark:bg-opacity-10" style={{ color: col.color, borderColor: col.color }}>
                             {task.progress}%
                           </div>
                         )
@@ -532,7 +594,10 @@ const ManagerDashboard = () => {
                 ))}
               </div>
 
-              <button className="mt-3 w-full py-2 border border-dashed border-gray-300 rounded-xl text-xs font-bold text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors flex items-center justify-center gap-1">
+              <button
+                onClick={() => navigate('/manager/task-management/create')}
+                className="mt-3 w-full py-2 border border-dashed border-gray-300 dark:border-[#28251e] rounded-xl text-xs font-bold text-gray-500 dark:text-[#a3a094] hover:border-gray-400 dark:hover:border-[#38332c] hover:text-gray-700 dark:hover:text-white transition-colors flex items-center justify-center gap-1 cursor-pointer"
+              >
                 <Plus size={14} /> Add Task
               </button>
             </div>
@@ -547,27 +612,26 @@ const ManagerDashboard = () => {
           <SectionHeader title="Team Calendar" />
           <div className="flex-1 flex flex-col">
             <div className="flex justify-between items-center mb-4 px-2">
-              <button className="text-gray-400 hover:text-gray-700"><ChevronLeft size={18} /></button>
-              <h3 className="text-sm font-bold text-[#0f172a]">July 2026</h3>
+              <button className="text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white cursor-pointer"><ChevronLeft size={18} /></button>
+              <h3 className="text-sm font-bold text-[#0f172a] dark:text-white">July 2026</h3>
               <div className="flex items-center gap-2">
-                <button className="text-[10px] font-bold border rounded px-2 py-0.5 text-gray-600 hover:bg-gray-50">Today</button>
-                <button className="text-gray-400 hover:text-gray-700"><ChevronRight size={18} /></button>
+                <button className="text-[10px] font-bold border border-gray-200 dark:border-[#28251e] rounded px-2 py-0.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1f1b17] hover:bg-gray-50 dark:hover:bg-[#28251e] cursor-pointer">Today</button>
+                <button className="text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white cursor-pointer"><ChevronRight size={18} /></button>
               </div>
             </div>
             <div className="grid grid-cols-7 text-center mb-2 px-2">
               {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
-                <span key={d} className="text-[10px] font-bold text-gray-400 uppercase">{d}</span>
+                <span key={d} className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">{d}</span>
               ))}
             </div>
             <div className="grid grid-cols-7 text-center gap-y-1 flex-1 px-2">
-              {/* Very basic static mock calendar grid for visual fidelity */}
               {[...Array(35)].map((_, i) => {
-                const day = i - 1; // start from 1ish
+                const day = i - 1;
                 if(day < 1 || day > 31) return <div key={i} className="p-0.5"></div>;
                 const isToday = day === 29;
                 return (
-                  <div key={i} className="flex flex-col items-center justify-center p-0.5 relative cursor-pointer hover:bg-gray-50 rounded-lg">
-                    <span className={`text-[11px] font-semibold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[#00a76b] text-white shadow-sm' : 'text-gray-700'}`}>
+                  <div key={i} className="flex flex-col items-center justify-center p-0.5 relative cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1f1b17] rounded-lg">
+                    <span className={`text-[11px] font-semibold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[#00a76b] text-white shadow-sm font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
                       {day}
                     </span>
                     {day === 15 && <div className="absolute bottom-0 w-1 h-1 rounded-full bg-blue-500" />}
@@ -576,11 +640,11 @@ const ManagerDashboard = () => {
                 );
               })}
             </div>
-            <div className="flex items-center justify-center gap-4 mt-1 pt-2 border-t border-gray-100">
-              <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"/><span className="text-[9px] font-bold text-gray-500">Meeting</span></div>
-              <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-[#3b82f6]"/><span className="text-[9px] font-bold text-gray-500">Deadline</span></div>
-              <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"/><span className="text-[9px] font-bold text-gray-500">Leave</span></div>
-              <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-[#a855f7]"/><span className="text-[9px] font-bold text-gray-500">Event</span></div>
+            <div className="flex items-center justify-center gap-4 mt-1 pt-2 border-t border-gray-100 dark:border-[#28251e]">
+              <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"/><span className="text-[9px] font-bold text-gray-500 dark:text-[#a3a094]">Meeting</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-[#3b82f6]"/><span className="text-[9px] font-bold text-gray-500 dark:text-[#a3a094]">Deadline</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"/><span className="text-[9px] font-bold text-gray-500 dark:text-[#a3a094]">Leave</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-[#a855f7]"/><span className="text-[9px] font-bold text-gray-500 dark:text-[#a3a094]">Event</span></div>
             </div>
           </div>
         </Card>
@@ -592,15 +656,15 @@ const ManagerDashboard = () => {
             {teamAvailability.map((member, i) => (
               <div key={i} className="flex items-center justify-between group">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-white shadow-sm flex items-center justify-center text-sm font-bold text-gray-500">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#25201b] dark:to-[#1a1714] border-2 border-white dark:border-[#28251e] shadow-xs flex items-center justify-center text-sm font-bold text-gray-600 dark:text-gray-300">
                     {member.name.charAt(0)}
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-[#0f172a] group-hover:text-[#00a76b] transition-colors">{member.name}</h4>
-                    <p className="text-[10px] font-semibold text-gray-500 mt-0.5">{member.role}</p>
+                    <h4 className="text-sm font-bold text-[#0f172a] dark:text-white group-hover:text-[#00a76b] transition-colors">{member.name}</h4>
+                    <p className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094] mt-0.5">{member.role}</p>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 bg-transparent" style={{ color: member.color, borderColor: member.color }}>
+                <span className="text-[10px] font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 bg-transparent dark:bg-opacity-10" style={{ color: member.color, borderColor: member.color }}>
                   {member.hasDot && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: member.color }} />}
                   {member.status}
                 </span>
@@ -611,21 +675,31 @@ const ManagerDashboard = () => {
 
         {/* Active Projects */}
         <Card className="h-80 flex flex-col">
-          <SectionHeader title="Active Projects" action="View All" />
+          <SectionHeader
+            title="Active Projects"
+            action={
+              <span
+                onClick={() => navigate('/manager/projects')}
+                className="text-xs font-semibold text-[#00a76b] cursor-pointer hover:underline"
+              >
+                View All
+              </span>
+            }
+          />
           <div className="flex-1 overflow-y-auto pr-2 space-y-5 custom-scrollbar">
             {MOCK_PROJECTS.map((proj, i) => (
               <div key={i} className="group">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <h4 className="text-sm font-bold text-[#0f172a] group-hover:text-[#00a76b] transition-colors">{proj.name}</h4>
-                    <p className="text-[10px] font-semibold text-gray-500 mt-0.5">Due: {proj.due}</p>
+                    <h4 className="text-sm font-bold text-[#0f172a] dark:text-white group-hover:text-[#00a76b] transition-colors">{proj.name}</h4>
+                    <p className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094] mt-0.5">Due: {proj.due}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-bold text-[#0f172a] mb-1">{proj.progress}%</p>
+                    <p className="text-xs font-bold text-[#0f172a] dark:text-white mb-1">{proj.progress}%</p>
                     <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: proj.color }}>{proj.status}</span>
                   </div>
                 </div>
-                <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-1.5 w-full bg-gray-100 dark:bg-[#28251e] rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${proj.progress}%`, backgroundColor: proj.color }} />
                 </div>
               </div>
@@ -646,7 +720,7 @@ const ManagerDashboard = () => {
                   <Pie data={workloadData} innerRadius={45} outerRadius={75} paddingAngle={2} dataKey="value" stroke="none">
                     {workloadData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 15px rgba(0,0,0,0.4)' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -655,9 +729,9 @@ const ManagerDashboard = () => {
                 <div key={i} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
-                    <span className="text-[11px] font-bold text-[#0f172a]">{d.name}</span>
+                    <span className="text-[11px] font-bold text-[#0f172a] dark:text-white">{d.name}</span>
                   </div>
-                  <span className="text-[11px] font-bold text-gray-500">{d.value}%</span>
+                  <span className="text-[11px] font-bold text-gray-500 dark:text-[#a3a094]">{d.value}%</span>
                 </div>
               ))}
             </div>
@@ -671,16 +745,16 @@ const ManagerDashboard = () => {
             action={<Dropdown value={'weekly'} onChange={()=>{}} options={[{value:'weekly', label:'This Week'}]} />} 
           />
           <div className="flex items-center justify-center gap-6 mb-4">
-            <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#22c55e]"/><span className="text-[10px] font-bold text-gray-500">Hours Worked</span></div>
-            <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#3b82f6]"/><span className="text-[10px] font-bold text-gray-500">Tasks Completed</span></div>
+            <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#22c55e]"/><span className="text-[10px] font-bold text-gray-500 dark:text-[#a3a094]">Hours Worked</span></div>
+            <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#3b82f6]"/><span className="text-[10px] font-bold text-gray-500 dark:text-[#a3a094]">Tasks Completed</span></div>
           </div>
           <div className="flex-1 -mx-4">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={MOCK_WEEKLY_TREND} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} />
-                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 600 }} />
+                <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 15px rgba(0,0,0,0.4)' }} />
                 <Line type="monotone" dataKey="worked" stroke="#22c55e" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#22c55e' }} activeDot={{ r: 6 }} />
                 <Line type="monotone" dataKey="tasks" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#3b82f6' }} activeDot={{ r: 6 }} />
               </LineChart>
@@ -696,25 +770,28 @@ const ManagerDashboard = () => {
           />
           <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
             {teamPerfData.sort((a,b) => b.performance - a.performance).slice(0,3).map((member, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors">
+              <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1f1b17] transition-colors">
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-gray-400 w-3">{i+1}</span>
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500">
+                  <span className="text-xs font-bold text-gray-400 dark:text-gray-500 w-3">{i+1}</span>
+                  <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-[#28251e] flex items-center justify-center text-sm font-bold text-gray-600 dark:text-gray-300">
                     {member.name.charAt(0)}
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-[#0f172a]">{member.name}</h4>
-                    <p className="text-[10px] font-semibold text-gray-500">{i===0?'UI/UX Designer':i===1?'Backend Developer':'QA Engineer'}</p>
+                    <h4 className="text-sm font-bold text-[#0f172a] dark:text-white">{member.name}</h4>
+                    <p className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094]">{i===0?'UI/UX Designer':i===1?'Backend Developer':'QA Engineer'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-extrabold text-[#0f172a]">{member.performance}%</span>
+                  <span className="text-sm font-extrabold text-[#0f172a] dark:text-white">{member.performance}%</span>
                   <Star size={16} fill={i===0?'#f59e0b':i===1?'#94a3b8':'#d97706'} stroke="none" />
                 </div>
               </div>
             ))}
           </div>
-          <button className="mt-2 w-full py-2 text-xs font-bold text-[#00a76b] hover:bg-green-50 rounded-xl transition-colors">
+          <button
+            onClick={() => navigate('/manager/performance')}
+            className="mt-2 w-full py-2 text-xs font-bold text-[#00a76b] hover:bg-green-50 dark:hover:bg-[#16291e] rounded-xl transition-colors cursor-pointer"
+          >
             View All
           </button>
         </Card>
@@ -724,42 +801,52 @@ const ManagerDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* Alerts & Notifications */}
         <Card className="h-72 flex flex-col">
-          <SectionHeader title="Alerts & Notifications" action="View All" />
+          <SectionHeader
+            title="Alerts & Notifications"
+            action={
+              <span
+                onClick={() => navigate('/manager/notifications')}
+                className="text-xs font-semibold text-[#00a76b] cursor-pointer hover:underline"
+              >
+                View All
+              </span>
+            }
+          />
           <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
             <div className="flex gap-4 items-start">
-              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
-                <Bell size={16} className="text-red-500" />
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center shrink-0">
+                <Bell size={16} className="text-red-500 dark:text-red-400" />
               </div>
               <div className="flex-1">
                 <div className="flex justify-between items-start">
-                  <h4 className="text-xs font-bold text-[#0f172a]">Overdue Task</h4>
-                  <span className="text-[9px] font-bold text-gray-400">2h ago</span>
+                  <h4 className="text-xs font-bold text-[#0f172a] dark:text-white">Overdue Task</h4>
+                  <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500">2h ago</span>
                 </div>
-                <p className="text-[10px] font-semibold text-gray-500 mt-1 line-clamp-2">5 tasks are overdue. Please review and update.</p>
+                <p className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094] mt-1 line-clamp-2">5 tasks are overdue. Please review and update.</p>
               </div>
             </div>
             <div className="flex gap-4 items-start">
-              <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
-                <CalendarIcon size={16} className="text-orange-500" />
+              <div className="w-10 h-10 rounded-full bg-orange-50 dark:bg-amber-950/40 flex items-center justify-center shrink-0">
+                <CalendarIcon size={16} className="text-orange-500 dark:text-amber-400" />
               </div>
               <div className="flex-1">
                 <div className="flex justify-between items-start">
-                  <h4 className="text-xs font-bold text-[#0f172a]">Leave Request</h4>
-                  <span className="text-[9px] font-bold text-gray-400">4h ago</span>
+                  <h4 className="text-xs font-bold text-[#0f172a] dark:text-white">Leave Request</h4>
+                  <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500">4h ago</span>
                 </div>
-                <p className="text-[10px] font-semibold text-gray-500 mt-1 line-clamp-2">Karan Mehta has requested sick leave for 29 Jul.</p>
+                <p className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094] mt-1 line-clamp-2">Karan Mehta has requested sick leave for 29 Jul.</p>
               </div>
             </div>
             <div className="flex gap-4 items-start">
-              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                <ClipboardList size={16} className="text-blue-500" />
+              <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
+                <ClipboardList size={16} className="text-blue-500 dark:text-blue-400" />
               </div>
               <div className="flex-1">
                 <div className="flex justify-between items-start">
-                  <h4 className="text-xs font-bold text-[#0f172a]">Project Deadline</h4>
-                  <span className="text-[9px] font-bold text-gray-400">1d ago</span>
+                  <h4 className="text-xs font-bold text-[#0f172a] dark:text-white">Project Deadline</h4>
+                  <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500">1d ago</span>
                 </div>
-                <p className="text-[10px] font-semibold text-gray-500 mt-1 line-clamp-2">HRMS Redesign deadline is approaching in 7 days.</p>
+                <p className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094] mt-1 line-clamp-2">HRMS Redesign deadline is approaching in 7 days.</p>
               </div>
             </div>
           </div>
@@ -771,21 +858,24 @@ const ManagerDashboard = () => {
           <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
             {upcomingEvents.length > 0 ? upcomingEvents.map((item, i) => (
               <div key={item.id || i} className="flex gap-4 items-start">
-                <span className="text-[11px] font-bold text-[#0f172a] w-16 shrink-0">{item.time}</span>
+                <span className="text-[11px] font-bold text-[#0f172a] dark:text-white w-16 shrink-0">{item.time}</span>
                 <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: item.color }} />
-                <div className="flex-1 border-b border-gray-100 pb-4">
+                <div className="flex-1 border-b border-gray-100 dark:border-[#28251e] pb-4">
                   <div className="flex justify-between items-start">
-                    <h4 className="text-xs font-bold text-[#0f172a] truncate pr-2">{item.title}</h4>
+                    <h4 className="text-xs font-bold text-[#0f172a] dark:text-white truncate pr-2">{item.title}</h4>
                     <span className="text-[9px] font-bold text-white px-2 py-0.5 rounded whitespace-nowrap" style={{ backgroundColor: item.color }}>{item.tag}</span>
                   </div>
-                  <p className="text-[10px] font-semibold text-gray-500 mt-1 line-clamp-1">{item.desc}</p>
+                  <p className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094] mt-1 line-clamp-1">{item.desc}</p>
                 </div>
               </div>
             )) : (
-              <div className="text-center text-xs text-gray-400 py-4">No upcoming events found.</div>
+              <div className="text-center text-xs text-gray-400 dark:text-gray-500 py-4">No upcoming events found.</div>
             )}
           </div>
-          <button className="mt-2 w-full py-2 text-xs font-bold text-[#00a76b] hover:bg-green-50 rounded-xl transition-colors">
+          <button
+            onClick={() => navigate('/manager/events')}
+            className="mt-2 w-full py-2 text-xs font-bold text-[#00a76b] hover:bg-green-50 dark:hover:bg-[#16291e] rounded-xl transition-colors cursor-pointer"
+          >
             View Full Schedule
           </button>
         </Card>
@@ -795,18 +885,22 @@ const ManagerDashboard = () => {
           <SectionHeader title="Quick Actions" />
           <div className="flex-1 grid grid-cols-3 gap-3">
             {[
-              { icon: <ClipboardList size={20}/>, label: 'Assign Task', color: '#22c55e', bg: '#f0fdf4', path: '/manager/task-management/create' },
-              { icon: <Briefcase size={20}/>, label: 'Create Project', color: '#3b82f6', bg: '#eff6ff', path: '/manager/dashboard' },
-              { icon: <UserCheck size={20}/>, label: 'Approve Leave', color: '#f59e0b', bg: '#fffbeb', path: '/manager/dashboard' },
-              { icon: <TrendingUp size={20}/>, label: 'Team Report', color: '#a855f7', bg: '#f3e8ff', path: '/manager/dashboard' },
-              { icon: <CalendarIcon size={20}/>, label: 'Schedule Meeting', color: '#ef4444', bg: '#fee2e2', path: '/manager/events' },
-              { icon: <Star size={20}/>, label: 'Performance Review', color: '#14b8a6', bg: '#ccfbf1', path: '/manager/dashboard' },
+              { icon: <ClipboardList size={20}/>, label: 'Assign Task', color: '#22c55e', bg: 'bg-[#f0fdf4] dark:bg-green-950/40 text-[#22c55e] dark:text-[#34d399]', path: '/manager/task-management/create' },
+              { icon: <Briefcase size={20}/>, label: 'Create Project', color: '#3b82f6', bg: 'bg-[#eff6ff] dark:bg-blue-950/40 text-[#3b82f6] dark:text-[#60a5fa]', path: '/manager/projects' },
+              { icon: <UserCheck size={20}/>, label: 'Approve Leave', color: '#f59e0b', bg: 'bg-[#fffbeb] dark:bg-amber-950/40 text-[#f59e0b] dark:text-[#fbbf24]', path: '/manager/leave' },
+              { icon: <TrendingUp size={20}/>, label: 'Team Report', color: '#a855f7', bg: 'bg-[#f3e8ff] dark:bg-purple-950/40 text-[#a855f7] dark:text-[#c084fc]', path: '/manager/reports' },
+              { icon: <CalendarIcon size={20}/>, label: 'Schedule Meeting', color: '#ef4444', bg: 'bg-[#fee2e2] dark:bg-red-950/40 text-[#ef4444] dark:text-[#f87171]', path: '/manager/events' },
+              { icon: <Star size={20}/>, label: 'Performance Review', color: '#14b8a6', bg: 'bg-[#ccfbf1] dark:bg-teal-950/40 text-[#14b8a6] dark:text-[#2dd4bf]', path: '/manager/performance' },
             ].map((action, i) => (
-              <button key={i} className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white hover:border-gray-300 hover:shadow-md transition-all h-full" onClick={() => navigate(action.path)}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: action.bg, color: action.color }}>
+              <button
+                key={i}
+                className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-gray-200 dark:border-[#28251e] bg-white dark:bg-[#161311] hover:border-gray-300 dark:hover:border-[#38332c] hover:bg-gray-50 dark:hover:bg-[#1f1b17] hover:shadow-md transition-all h-full cursor-pointer group"
+                onClick={() => navigate(action.path)}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${action.bg}`}>
                   {action.icon}
                 </div>
-                <span className="text-[10px] font-bold text-gray-700 text-center leading-tight px-1">{action.label}</span>
+                <span className="text-[10px] font-bold text-gray-700 dark:text-gray-200 text-center leading-tight px-1">{action.label}</span>
               </button>
             ))}
           </div>

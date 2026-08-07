@@ -106,9 +106,13 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
     fixTranslateOffset();
 
     const savedLang = localStorage.getItem('appLanguage');
-    if (savedLang && savedLang !== 'English') {
-      const langMap = { 'English': 'en', 'Gujarati': 'gu', 'Hindi': 'hi' };
-      const translateTo = langMap[savedLang];
+    if (savedLang && savedLang !== 'English' && savedLang !== 'en') {
+      const langMap = { 
+        'English': 'en', 'en': 'en', 
+        'Gujarati': 'gu', 'ગુજરાતી': 'gu', 'gu': 'gu', 
+        'Hindi': 'hi', 'हिंदी': 'hi', 'hi': 'hi' 
+      };
+      const translateTo = langMap[savedLang] || 'en';
 
       const triggerTranslation = (langCode) => {
         const select = document.querySelector('.goog-te-combo');
@@ -194,14 +198,16 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
             : Array.isArray(res.data?.data)
               ? res.data.data
               : [];
-        const alerts = items.map(n => ({
-          id: n._id,
-          type: n.type || 'task',
-          text: n.message,
-          read: n.read || false,
-          time: n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
-          path: `/${activeRole}/notifications`
-        }));
+        const alerts = items
+          .filter(n => !n.read)
+          .map(n => ({
+            id: n._id,
+            type: n.type || 'task',
+            text: n.message,
+            read: n.read || false,
+            time: n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
+            path: `/${activeRole}/notifications`
+          }));
         setLiveNotifications(alerts.slice(0, 50));
       } catch (err) { console.error('Notification fetch failed:', err); }
     };
@@ -734,13 +740,13 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
         </Link>
 
         {/* Sidebar Navigation */}
-        <div className="flex-1 flex flex-col pb-12 w-full pt-6 px-4 space-y-6 overflow-y-auto scrollbar-hide">
+        <div className="flex-1 flex flex-col pb-12 w-full pt-4 px-4 space-y-6 overflow-y-auto scrollbar-hide">
           {(() => {
             const categorized = getCategorizedMenuItems(activeRole);
             return Object.entries(categorized).map(([category, items]) => (
-              <div key={category} className="space-y-1.5">
+              <div key={category} className="space-y-1">
                 {isSidebarOpen && (
-                  <p className="px-4 text-[11px] font-bold text-[#829e92] dark:text-[#527068] uppercase tracking-[0.15em] mb-2.5 mt-1">
+                  <p className="px-4 text-[11px] font-bold text-[#829e92] dark:text-[#527068] uppercase tracking-[0.15em] mb-1.5 mt-0.5">
                     {category}
                   </p>
                 )}
@@ -766,11 +772,11 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
                             setIsSidebarOpen(false);
                           }
                         }}
-                        className={`flex items-center h-12 text-[15px] font-semibold no-underline rounded-full transition-all group ${isSidebarOpen ? 'px-4 gap-3.5 w-full' : 'px-0 justify-center w-full'} ${isActive ? 'text-white bg-[#00a76b] shadow-sm' : 'text-[#475569] dark:text-[#a3b3af] hover:bg-[#eceae3]/40 dark:hover:bg-[#111c18]/50 hover:text-[#00a76b]'}`}
+                        className={`flex items-center h-12 text-[15px] font-semibold no-underline rounded-full transition-all group ${isSidebarOpen ? 'px-4 gap-3 w-full' : 'px-0 justify-center w-full'} ${isActive ? 'text-white bg-[#00a76b] shadow-sm' : 'text-[#475569] dark:text-[#a3b3af] hover:bg-[#eceae3]/40 dark:hover:bg-[#111c18]/50 hover:text-[#00a76b]'}`}
                         title={!isSidebarOpen ? item.name : ""}
                       >
                         <div className={`shrink-0 flex items-center justify-center transition-all ${isSidebarOpen ? 'w-5' : 'w-12'}`}>
-                          <Icon size={18} className={isActive ? 'text-white' : 'text-slate-500 dark:text-[#829e92] group-hover:text-[#00a76b] transition-colors'} />
+                          <Icon size={20} className={isActive ? 'text-white' : 'text-slate-500 dark:text-[#829e92] group-hover:text-[#00a76b] transition-colors'} />
                         </div>
                         {isSidebarOpen && <span className="truncate whitespace-nowrap overflow-hidden transition-opacity duration-200">{item.name}</span>}
                       </Link>
@@ -786,10 +792,10 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
       {/* 2. RIGHT CONTENT AREA (Header + main page content) */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 w-full z-[150] border-b bg-white/80 dark:bg-[#08100e]/80 backdrop-blur-md transition-colors duration-300 ease-in-out" style={{ height: '70px', borderColor: isDarkMode ? '#1a2d29' : '#e2eae7' }}>
-          <div className="flex items-center h-full w-full px-6">
+          <div className="flex items-center h-full w-full pl-0 md:pl-1 pr-4 md:pr-5">
             <button
               onClick={toggleSidebar}
-              className="md:hidden flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-full text-[#374151] dark:text-[#cbd5e1] transition-all cursor-pointer border-none bg-transparent mr-4"
+              className="flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-full text-[#374151] dark:text-[#cbd5e1] transition-all cursor-pointer border-none bg-transparent mr-2 md:mr-3 shrink-0"
             >
               <Menu size={22} />
             </button>
@@ -893,74 +899,93 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
               <div id="google_translate_element" style={{ display: 'none' }}></div>
 
               {/* Language Selector */}
-              <div className="relative" ref={languageRef}>
+              <div className="relative notranslate" ref={languageRef} translate="no">
                 <button
                   onClick={() => setIsLanguageOpen(!isLanguageOpen)}
                   className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-800 dark:text-slate-400 dark:hover:text-white transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer"
+                  title="Select Language"
+                  translate="no"
                 >
                   <Globe size={18} />
                 </button>
                 {isLanguageOpen && (
-                  <div className="absolute top-[45px] right-0 w-36 bg-white dark:bg-[#0c1512] border border-[#eceae3] dark:border-[#1a2d29] rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden z-[110] p-1 flex flex-col">
-                    {['English', 'Gujarati', 'Hindi'].map(lang => (
-                      <button
-                        key={lang}
-                        onClick={() => {
-                          setCurrentLang(lang);
-                          localStorage.setItem('appLanguage', lang);
-                          setIsLanguageOpen(false);
+                  <div 
+                    className="notranslate absolute top-[45px] right-0 w-36 bg-white dark:bg-[#0c1512] border border-[#eceae3] dark:border-[#1a2d29] rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden z-[110] p-1 flex flex-col"
+                    translate="no"
+                  >
+                    {[
+                      { code: 'en', key: 'English', nativeName: 'English' },
+                      { code: 'gu', key: 'Gujarati', nativeName: 'ગુજરાતી' },
+                      { code: 'hi', key: 'Hindi', nativeName: 'हिंदी' },
+                    ].map(lang => {
+                      const isSelected = currentLang === lang.key || currentLang === lang.nativeName || currentLang === lang.code;
+                      return (
+                        <button
+                          key={lang.key}
+                          translate="no"
+                          onClick={() => {
+                            setCurrentLang(lang.key);
+                            localStorage.setItem('appLanguage', lang.key);
+                            setIsLanguageOpen(false);
 
-                          const langMap = { 'English': 'en', 'Gujarati': 'gu', 'Hindi': 'hi' };
-                          const translateTo = langMap[lang];
+                            const langMap = { 
+                              'English': 'en', 'en': 'en',
+                              'Gujarati': 'gu', 'ગુજરાતી': 'gu', 'gu': 'gu',
+                              'Hindi': 'hi', 'हिंदी': 'hi', 'hi': 'hi' 
+                            };
+                            const translateTo = langMap[lang.key] || lang.code;
 
-                          const triggerTranslation = (langCode) => {
-                            const select = document.querySelector('.goog-te-combo');
-                            if (select) {
-                              select.value = langCode;
-                              select.dispatchEvent(new Event('change'));
-                              toast.success(`Language set to ${lang}`);
-                            } else {
-                              setTimeout(() => triggerTranslation(langCode), 500);
-                            }
-                          };
-
-                          if (!document.getElementById('google-translate-script')) {
-                            const script = document.createElement('script');
-                            script.id = 'google-translate-script';
-                            script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-                            document.body.appendChild(script);
-
-                            window.googleTranslateElementInit = () => {
-                              new window.google.translate.TranslateElement({ pageLanguage: 'en', autoDisplay: false }, 'google_translate_element');
+                            const triggerTranslation = (langCode) => {
+                              const select = document.querySelector('.goog-te-combo');
+                              if (select) {
+                                select.value = langCode;
+                                select.dispatchEvent(new Event('change'));
+                                toast.success(`Language set to ${lang.nativeName}`);
+                              } else {
+                                setTimeout(() => triggerTranslation(langCode), 500);
+                              }
                             };
 
-                            const style = document.createElement('style');
-                            style.innerHTML = `
-                              .goog-te-banner-frame, .goog-te-banner-frame.skiptranslate, iframe.goog-te-banner-frame,
-                              .VIpgJd-ZVi9od-OR94Gd, .VIpgJd-ZVi9od-OR94Gd-header, .VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
-                              .skiptranslate, #google_translate_element, #goog-gt-tt {
-                                display: none !important;
-                                visibility: hidden !important;
-                                height: 0 !important;
-                                position: absolute !important;
-                                top: -9999px !important;
-                                left: -9999px !important;
-                              }
-                              html, body { top: 0px !important; margin-top: 0px !important; padding-top: 0px !important; }
-                            `;
-                            document.head.appendChild(style);
+                            if (!document.getElementById('google-translate-script')) {
+                              const script = document.createElement('script');
+                              script.id = 'google-translate-script';
+                              script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+                              document.body.appendChild(script);
 
-                            setTimeout(() => triggerTranslation(translateTo), 1000);
-                          } else {
-                            triggerTranslation(translateTo);
-                          }
-                        }}
-                        className={`w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold rounded-xl transition-colors border-none bg-transparent cursor-pointer ${currentLang === lang ? 'text-[#00a76b]' : 'text-gray-700 dark:text-slate-300'
+                              window.googleTranslateElementInit = () => {
+                                new window.google.translate.TranslateElement({ pageLanguage: 'en', autoDisplay: false }, 'google_translate_element');
+                              };
+
+                              const style = document.createElement('style');
+                              style.innerHTML = `
+                                .goog-te-banner-frame, .goog-te-banner-frame.skiptranslate, iframe.goog-te-banner-frame,
+                                .VIpgJd-ZVi9od-OR94Gd, .VIpgJd-ZVi9od-OR94Gd-header, .VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+                                .skiptranslate, #google_translate_element, #goog-gt-tt {
+                                  display: none !important;
+                                  visibility: hidden !important;
+                                  height: 0 !important;
+                                  position: absolute !important;
+                                  top: -9999px !important;
+                                  left: -9999px !important;
+                                }
+                                html, body { top: 0px !important; margin-top: 0px !important; padding-top: 0px !important; }
+                              `;
+                              document.head.appendChild(style);
+
+                              setTimeout(() => triggerTranslation(translateTo), 1000);
+                            } else {
+                              triggerTranslation(translateTo);
+                            }
+                          }}
+                          className={`notranslate w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold rounded-xl transition-colors border-none bg-transparent cursor-pointer flex items-center justify-between ${
+                            isSelected ? 'text-[#00a76b]' : 'text-gray-700 dark:text-slate-300'
                           }`}
-                      >
-                        {lang}
-                      </button>
-                    ))}
+                        >
+                          <span className="notranslate" translate="no">{lang.nativeName}</span>
+                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-[#00a76b]"></span>}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1094,6 +1119,8 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
                             onClick={() => {
                               navigate(n.path);
                               setIsNotificationsOpen(false);
+                              setLiveNotifications(prev => prev.filter(notif => notif.id !== n.id));
+                              if (n.id) axios.put(`/api/notifications/${n.id}/read`, {}, { headers: { Authorization: `Bearer ${token}` } }).catch(()=> {});
                             }}
                             className="p-4 border-b border-[#eceae3] dark:border-[#1a2d29] hover:bg-[#fffdf9] dark:hover:bg-[#162722]/50 transition-all cursor-pointer group"
                           >
@@ -1139,12 +1166,6 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
                       e.preventDefault();
                       e.stopPropagation();
                       setIsProfileDropdownOpen(prev => !prev);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setIsProfileDropdownOpen(prev => !prev);
-                      }
                     }}
                     className={`flex items-center gap-3 px-1 md:px-3 h-11 rounded-full cursor-pointer transition-all select-none border-none bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-[#00a76b]/50 ${isProfileDropdownOpen ? 'bg-gray-100 dark:bg-[#111c18]' : 'hover:bg-gray-100 dark:hover:bg-[#111c18]'}`}
                     aria-expanded={isProfileDropdownOpen}
