@@ -28,6 +28,22 @@ const leaveBalanceSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  sickLeave: {
+    type: Number,
+    default: 0
+  },
+  casualLeave: {
+    type: Number,
+    default: 0
+  },
+  compOff: {
+    type: Number,
+    default: 0
+  },
+  otherLeaves: {
+    type: Number,
+    default: 0
+  },
   carryForward: {
     type: Number,
     default: 0

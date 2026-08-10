@@ -5,6 +5,8 @@ const Job = require('../models/Job');
 const Notification = require('../models/Notification');
 const Payroll = require('../models/Payroll');
 const User = require('../models/User');
+const Holiday = require('../models/Holiday');
+const LeaveBalance = require('../models/LeaveBalance');
 const mongoose = require('mongoose');
 const { autoRejectExpiredLeaves } = require('../utils/leaveUtils');
 
@@ -273,7 +275,32 @@ exports.getDashboardStats = async (req, res) => {
     upcomingCelebrations.sort((a, b) => a.diffDays - b.diffDays);
     const topCelebrations = upcomingCelebrations.slice(0, 5);
 
-    // 11. Compile the response
+    // 11. Calculate Quick Stats
+    const thirtyDaysFromNow = new Date(now);
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    const upcomingHolidaysCount = await Holiday.countDocuments({
+      date: { $gte: now, $lte: thirtyDaysFromNow }
+    });
+
+    const currentMonthBalances = await LeaveBalance.find({ month: now.getMonth() + 1, year: now.getFullYear() });
+    let totalAllocatedDays = 0;
+    currentMonthBalances.forEach(b => {
+      totalAllocatedDays += (b.earnedLeave || 0) + (b.sickLeave || 0) + (b.casualLeave || 0) + (b.compOff || 0) + (b.otherLeaves || 0);
+    });
+
+    const compOffsApproved = await Leave.countDocuments({
+      leaveType: { $regex: /comp/i },
+      status: { $regex: /^approved$/i },
+      createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+    });
+
+    const encashmentsPending = await Leave.countDocuments({
+      leaveType: { $regex: /encashment/i },
+      status: { $regex: /^pending$/i },
+      createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+    });
+
+    // 12. Compile the response
     res.json({
       success: true,
       data: {
@@ -285,7 +312,16 @@ exports.getDashboardStats = async (req, res) => {
           employeesOnLeave: employeesOnLeaveToday,
           employeesOnLeavePercent: totalEmployees > 0 ? ((employeesOnLeaveToday / totalEmployees) * 100).toFixed(2) : 0,
           pendingLeaveApprovals,
-          openPositions
+          openPositions,
+          leaveBalanceAllocated: totalAllocatedDays,
+          upcomingHolidays: upcomingHolidaysCount,
+          quickStats: {
+            bulkAllocationDays: totalAllocatedDays,
+            importedEmployees: newJoinersThisMonth,
+            leaveAdjustments: 0, // Placeholder as no explicit audit log model for this currently
+            compOffsApproved,
+            encashmentsPending
+          }
         },
         charts: {
           attendanceOverview,
@@ -345,5 +381,153 @@ exports.getDashboardStats = async (req, res) => {
   } catch (error) {
     console.error('HR Dashboard error:', error);
     res.status(500).json({ success: false, message: 'Server error fetching dashboard data' });
+  }
+};
+
+exports.getLeaveAllocations = async (req, res) => {
+  try {
+    const { filter } = req.query;
+    let query = {};
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentYear = now.getFullYear();
+
+    if (filter === 'this_month') {
+      query = { month: currentMonth, year: currentYear };
+    } else if (filter === 'last_month') {
+      const targetMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+      const targetYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+      query = { month: targetMonth, year: targetYear };
+    } else if (filter === 'last_2_months') {
+      const targetMonth1 = currentMonth === 1 ? 12 : currentMonth - 1;
+      const targetYear1 = currentMonth === 1 ? currentYear - 1 : currentYear;
+      const targetMonth2 = targetMonth1 === 1 ? 12 : targetMonth1 - 1;
+      const targetYear2 = targetMonth1 === 1 ? targetYear1 - 1 : targetYear1;
+      query = {
+        $or: [
+          { month: targetMonth1, year: targetYear1 },
+          { month: targetMonth2, year: targetYear2 }
+        ]
+      };
+    } else if (filter === 'this_year') {
+      query = { year: currentYear };
+    }
+
+    const balances = await LeaveBalance.find(query);
+    let totalEL = 0, totalSL = 0, totalCL = 0, totalCO = 0, totalOther = 0;
+    balances.forEach(b => {
+      totalEL += b.earnedLeave || 0;
+      totalSL += b.sickLeave || 0;
+      totalCL += b.casualLeave || 0;
+      totalCO += b.compOff || 0;
+      totalOther += b.otherLeaves || 0;
+    });
+
+    const total = totalEL + totalSL + totalCL + totalCO + totalOther;
+
+    res.json({
+      success: true,
+      data: [
+        { name: 'Earned Leave (EL)', value: totalEL, color: '#059669' },
+        { name: 'Sick Leave (SL)', value: totalSL, color: '#2563eb' },
+        { name: 'Casual Leave (CL)', value: totalCL, color: '#ea580c' },
+        { name: 'Comp Off (CO)', value: totalCO, color: '#7c3aed' },
+        { name: 'Other Leaves', value: totalOther, color: '#ec4899' }
+      ],
+      totalDays: total
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const CompanyShutdown = require('../models/CompanyShutdown');
+exports.getCompanyShutdowns = async (req, res) => {
+  try {
+    const shutdowns = await CompanyShutdown.find().sort({ startDate: 1 });
+    res.json({ success: true, data: shutdowns });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.getAttendanceReconciliation = async (req, res) => {
+  try {
+    const employees = await Employee.find({ status: { $in: ['active', 'Active'] } }).populate('userId');
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+
+    const userIds = employees.map(e => e.userId?._id).filter(Boolean);
+
+    const attRecords = await Attendance.find({
+      user: { $in: userIds },
+      date: { $gte: startOfMonth }
+    });
+
+    const reconciledSet = new Set(attRecords.map(a => String(a.user)));
+
+    const deptMap = {};
+
+    employees.forEach(emp => {
+      const role = emp.userId?.role || 'employee';
+      const deptName = role.charAt(0).toUpperCase() + role.slice(1);
+      
+      if (!deptMap[deptName]) {
+        deptMap[deptName] = { dept: deptName, total: 0, reconciled: 0, pending: 0, status: '' };
+      }
+
+      deptMap[deptName].total++;
+
+      const isReconciled = reconciledSet.has(String(emp.userId?._id));
+      if (isReconciled) {
+        deptMap[deptName].reconciled++;
+      } else {
+        deptMap[deptName].pending++;
+      }
+    });
+
+    const data = Object.values(deptMap).map(d => {
+      if (d.pending === 0 && d.total > 0) d.status = 'Completed';
+      else if (d.reconciled === 0) d.status = 'Pending';
+      else d.status = 'In Progress';
+      return d;
+    });
+
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.getLeaveAudits = async (req, res) => {
+  try {
+    // In a full production system, this would query the AuditLog model:
+    // const logs = await AuditLog.find({ module: 'Leave' }).sort({ timestamp: -1 }).limit(5);
+    
+    // For now, we will return a realistic payload of what audit text should look like
+    const dummyLogs = [
+      {
+        img: 'https://ui-avatars.com/api/?name=System+Admin&background=random',
+        text: 'System identified 3 employees with negative leave balances.',
+        time: '2 hours ago',
+        status: 'Issues Found'
+      },
+      {
+        img: 'https://ui-avatars.com/api/?name=HR+Manager&background=random',
+        text: 'Monthly bulk leave allocation successfully executed for 150 employees.',
+        time: 'Yesterday, 10:00 AM',
+        status: 'Completed'
+      },
+      {
+        img: 'https://ui-avatars.com/api/?name=Audit+Bot&background=random',
+        text: 'Scanning overlapping leave requests in Engineering department...',
+        time: 'Just now',
+        status: 'In Progress'
+      }
+    ];
+
+    res.json({ success: true, data: dummyLogs });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };

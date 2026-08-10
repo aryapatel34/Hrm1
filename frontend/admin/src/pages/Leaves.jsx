@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { PlusCircle, Calendar, CheckCircle, XCircle, Clock, AlertTriangle, MoreHorizontal, User } from 'lucide-react';
+import { 
+  CheckSquare, Clock, Users, Calendar, BarChart2, 
+  CheckCircle2, AlertTriangle, ArrowRight, XCircle, LayoutGrid
+} from 'lucide-react';
+import LeavePolicyOverview from '../components/LeavePolicyOverview';
+import HolidayManagement from '../components/HolidayManagement';
 
 const Leaves = () => {
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const token = sessionStorage.getItem('token');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+
+  // Basic stats for summary cards
+  const pendingRequests = leaves.filter(l => l.status?.toLowerCase() === 'pending').length;
+  const approvedLeaves = leaves.filter(l => l.status?.toLowerCase() === 'approved').length;
+  const totalRequests = leaves.length;
 
   useEffect(() => {
     const fetchLeaves = async () => {
@@ -21,166 +32,103 @@ const Leaves = () => {
       }
     };
     fetchLeaves();
-  }, []);
-
-  const handleAction = async (id, status) => {
-    try {
-      await axios.put(`/api/leaves/${id}`, { status }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      return true;
-    } catch (err) {
-      console.error('Action failed:', err);
-      return false;
-    }
-  };
-
-  const handleRejectAll = async () => {
-    const pendingRequests = leaves.filter(l => l.status === 'Pending');
-    if (pendingRequests.length === 0) {
-      alert('No organization-wide pending leave protocols detected.');
-      return;
-    }
-
-    if (window.confirm(`⚠️ GLOBAL AUTHORITY ALERT: You are about to mass-reject ${pendingRequests.length} leave requests across the entire organization. This action is final. Proceed?`)) {
-      setLoading(true);
-      try {
-        await Promise.all(
-          pendingRequests.map(l => handleAction(l._id, 'Rejected'))
-        );
-        alert(`Institutional Veto Complete: ${pendingRequests.length} organization-wide protocols successfully declined.`);
-
-        // Refresh local state
-        const res = await axios.get('/api/leaves', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setLeaves(res.data || []);
-      } catch (err) {
-        console.error('Mass veto failed:', err);
-        alert('Institutional Veto disrupted. Check connection node.');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
+  }, [token]);
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-500 pb-20">
-
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0b1120] text-[#1e293b] dark:text-[#cbd5e1] font-['Inter',sans-serif] px-4 py-8 transition-colors duration-300">
+      
+      {/* 1. HEADER */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
         <div>
-          <h1 className="text-4xl font-black text-[#1E2026] tracking-tight leading-none mb-3">
-            Leave <span className="text-[#F0B90B]">Management</span>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-2">
+            Good Morning, {user.firstName || 'Priya'}! 👋
           </h1>
-          <p className="text-[#848E9C] font-bold text-[11px] uppercase tracking-[0.2em] flex items-center gap-3">
-            <span className="w-12 h-[2px] bg-[#F0B90B]"></span>
-            Protocol Scheduling Node
+          <p className="text-gray-500 dark:text-gray-400 font-medium text-sm">
+            Here's the leave management overview for your organization.
           </p>
         </div>
-        <div className="flex gap-4">
-          <button
-            onClick={handleRejectAll}
-            className="border border-[#F6465D] text-[#F6465D] hover:bg-[#F6465D] hover:text-white px-8 py-4 rounded-full font-black text-[12px] uppercase tracking-wider transition-all flex items-center gap-2"
-          >
-            <XCircle size={18} />
-            Reject All Pending
-          </button>
-          <button className="bg-[#F0B90B] text-[#1E2026] px-10 py-4 rounded-full font-black text-[13px] uppercase tracking-wider shadow-lg hover:bg-[#FFD000] transition-all flex items-center gap-2">
-            <Calendar size={18} />
-            Adjust Policies
+        <div className="flex gap-3">
+          <button className="bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-sm">
+            <Calendar size={16} /> Today, {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
           </button>
         </div>
       </div>
 
-      {/* SUMMARY STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* 2. SUMMARY CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         {[
-          { label: 'Pending Requests', val: leaves.filter(l => l.status === 'Pending').length, cap: 'Immediate Action', color: 'text-[#F0B90B]', bg: 'bg-[#F0B90B]/10' },
-          { label: 'Currently On Leave', val: leaves.filter(l => l.status === 'Approved').length, cap: 'Capacity: 92%', color: 'text-[#1EAEDB]', bg: 'bg-[#1EAEDB]/10' },
-          { label: 'System Denials', val: leaves.filter(l => l.status === 'Rejected').length, cap: 'Policy Constraints', color: 'text-[#F6465D]', bg: 'bg-[#F6465D]/10' }
+          { label: 'Total Leave Requests', val: totalRequests, sub: 'This Month', icon: CheckSquare, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20', link: 'View All Requests' },
+          { label: 'Pending Approvals', val: pendingRequests, sub: 'Requests', icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', link: 'View Pending' },
+          { label: 'Employees On Leave', val: 78, sub: 'Today', icon: Users, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', link: 'View Calendar' },
+          { label: 'Leave Balance Allocated', val: '18,560', sub: 'Days', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', link: 'View Allocation' },
+          { label: 'Upcoming Holidays', val: 5, sub: 'In Next 30 Days', icon: Calendar, color: 'text-pink-600', bg: 'bg-pink-50 dark:bg-pink-900/20', link: 'View Holidays' }
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-8 border border-[#E6E8EA] rounded-xl hover:shadow-[0_8px_24px_rgba(0,0,0,0.05)] transition-all">
-            <div className="flex justify-between items-start mb-10">
-              <span className={`text-[10px] font-black uppercase tracking-widest ${stat.color} px-4 py-1.5 rounded-full ${stat.bg}`}>{stat.label}</span>
-              <Clock size={18} className="text-[#848E9C]" />
+          <div key={i} className="bg-white dark:bg-[#1e293b] p-5 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2.5 rounded-xl ${stat.bg}`}>
+                <stat.icon size={20} className={stat.color} />
+              </div>
+              <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">{stat.label}</span>
             </div>
-            <div className="text-left">
-              <h3 className="text-4xl font-black text-[#1E2026] tabular-nums mb-1">{stat.val}</h3>
-              <p className="text-[11px] font-bold text-[#848E9C] uppercase tracking-[0.1em]">{stat.cap}</p>
+            <div className="flex items-baseline gap-2 mb-4">
+              <h3 className="text-3xl font-black text-gray-900 dark:text-white tabular-nums">{stat.val}</h3>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{stat.sub}</p>
             </div>
+            <button className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 hover:gap-2 transition-all">
+              {stat.link} <ArrowRight size={14} />
+            </button>
           </div>
         ))}
       </div>
 
-      <div className="bg-white border border-[#E6E8EA] rounded-2xl overflow-hidden shadow-[0_3px_5px_rgba(32,32,37,0.05)]">
-        <div className="p-8 border-b border-[#E6E8EA] bg-[#F5F5F5]/30 flex justify-between items-center">
-          <h3 className="text-[14px] font-black uppercase tracking-widest text-[#1E2026]">Protocol Request History</h3>
-          <div className="flex gap-4">
-            <span className="text-[11px] font-black text-[#848E9C] uppercase tracking-widest bg-white px-4 py-2 rounded-full border border-[#E6E8EA]">All Segments</span>
+      {/* 3. ROW 1: Policy Overview + Allocation Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <LeavePolicyOverview />
+        
+        {/* Placeholder for Leave Allocation Donut Chart */}
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Leave Allocation Summary</h2>
+            <button className="text-xs font-bold bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300">
+              This Month ▼
+            </button>
           </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#F5F5F5]/50 border-b border-[#E6E8EA]">
-                <th className="px-10 py-6 text-[11px] font-black text-[#848E9C] uppercase tracking-widest">Personnel Node</th>
-                <th className="px-10 py-6 text-[11px] font-black text-[#848E9C] uppercase tracking-widest">Type</th>
-                <th className="px-10 py-6 text-[11px] font-black text-[#848E9C] uppercase tracking-widest">Duration Cycle</th>
-                <th className="px-10 py-6 text-[11px] font-black text-[#848E9C] uppercase tracking-widest">Status Trace</th>
-                <th className="px-10 py-6 text-[11px] font-black text-[#848E9C] uppercase tracking-widest text-right">Ops Logic</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E6E8EA]">
-              {loading ? (
-                <tr><td colSpan="5" className="text-center py-32 opacity-30 text-[11px] font-black uppercase tracking-[0.2em]">Querying Leave Matrix...</td></tr>
-              ) : leaves.length === 0 ? (
-                <tr><td colSpan="5" className="text-center py-32 opacity-30 text-[11px] font-black uppercase tracking-[0.2em]">No scheduling logs detected</td></tr>
-              ) : (
-                [...leaves].reverse().map((row, i) => (
-                  <tr key={i} className="hover:bg-[#F5F5F5] transition-colors group">
-                    <td className="px-10 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#1E2026] border border-[#E6E8EA] font-black text-xs">
-                          <User size={16} className="text-[#F0B90B]" />
-                        </div>
-                        <span className="text-[13px] font-black text-[#1E2026]">
-                          {row.employeeId?.profile?.firstName} {row.employeeId?.profile?.lastName}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-10 py-6 text-[12px] font-bold text-[#1E2026] uppercase tracking-widest">{row.leaveType}</td>
-                    <td className="px-10 py-6">
-                      <p className="text-[13px] font-black text-[#1E2026] tabular-nums">{row.startDate} - {row.endDate}</p>
-                      <p className="text-[11px] font-bold text-[#848E9C]">{row.totalDays} Days</p>
-                    </td>
-                    <td className="px-10 py-6">
-                      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${row.status === 'Approved' ? 'bg-[#0ECB81]/10 text-[#0ECB81]' :
-                          row.status === 'Rejected' ? 'bg-[#F6465D]/10 text-[#F6465D]' :
-                            'bg-[#F0B90B]/10 text-[#D0980B]'
-                        }`}>
-                        {row.status}
-                      </span>
-                    </td>
-                    <td className="px-10 py-6 text-right">
-                      <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all">
-                        {row.status === 'Pending' && (
-                          <>
-                            <button onClick={() => handleAction(row._id, 'Approved')} className="p-2.5 rounded-lg bg-[#0ECB81]/10 text-[#0ECB81] hover:bg-[#0ECB81] hover:text-white transition-all"><CheckCircle size={16} /></button>
-                            <button onClick={() => handleAction(row._id, 'Rejected')} className="p-2.5 rounded-lg bg-[#F6465D]/10 text-[#F6465D] hover:bg-[#F6465D] hover:text-white transition-all"><XCircle size={16} /></button>
-                          </>
-                        )}
-                        <button className="p-2.5 text-[#848E9C] hover:text-[#1E2026]"><MoreHorizontal size={18} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <div className="flex-1 flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50 dark:bg-[#0f172a]">
+            <p className="text-gray-400 text-sm font-bold flex items-center gap-2">
+              <BarChart2 size={18} /> Donut Chart Placeholder (Increment 2)
+            </p>
+          </div>
+          <button className="mt-6 text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 hover:gap-2 transition-all">
+            View Allocation Report <ArrowRight size={14} />
+          </button>
         </div>
       </div>
+
+      {/* 4. ROW 2: Holiday Management + Shutdown Days */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <HolidayManagement />
+        
+        {/* Placeholder for Company Shutdown Days */}
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Company Shutdown Days</h2>
+            <button className="text-xs font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+              View All
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50 dark:bg-[#0f172a]">
+            <p className="text-gray-400 text-sm font-bold flex items-center gap-2">
+              <Calendar size={18} /> Shutdown Table Placeholder (Increment 2)
+            </p>
+          </div>
+          <button className="mt-6 text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 hover:gap-2 transition-all">
+            View Shutdown Calendar <ArrowRight size={14} />
+          </button>
+        </div>
+      </div>
+      
+      {/* (Other rows like quick stats, reconciliation, etc. will be scaffolded in next increments) */}
+      
     </div>
   );
 };

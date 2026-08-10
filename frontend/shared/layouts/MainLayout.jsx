@@ -434,6 +434,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Daily Tasks Board', path: '/hr/tasks', icon: CheckSquare },
           { name: 'Events Management', path: '/hr/events', icon: Calendar },
           // { name: 'Task Management', path: '/hr/task-management', icon: ClipboardList },
+          { name: 'Apply Leave', path: '/hr/leave', icon: ClipboardList },
           { name: 'Attendance', path: '/hr/attendance', icon: Calendar },
           { name: 'Time Tracker', path: '/hr/time-tracker', icon: Clock },
           { name: 'Team Chat', path: '/hr/chat', icon: MessageSquare },
@@ -449,6 +450,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Dashboard', path: '/employee/dashboard', icon: LayoutDashboard },
           { name: 'Attendance', path: '/employee/attendance', icon: Calendar },
           { name: 'Time Tracker', path: '/employee/time-tracker', icon: Clock },
+          { name: 'Apply Leave', path: '/employee/leave', icon: ClipboardList },
           { name: 'Team Chat', path: '/employee/chat', icon: MessageSquare },
           { name: 'Create Task', path: '/employee/task-management/create', icon: PlusCircle },
           { name: 'My Documents', path: '/employee/documents', icon: FileText },
@@ -467,7 +469,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Team Attendance', path: '/manager/attendance', icon: Calendar },
           { name: 'Monitoring Logs', path: '/manager/screenshots', icon: Camera },
           { name: 'Notifications', path: '/manager/notifications', icon: Bell },
-          // { name: 'Review Leaves', path: '/manager/leave', icon: FileText },
+          { name: 'Leave Management', path: '/manager/leave', icon: FileText },
         ];
       case 'admin':
       default:
@@ -477,7 +479,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Daily Tasks Board', path: `/${currentRole}/tasks`, icon: CheckSquare },
           { name: 'Events Management', path: `/${currentRole}/events`, icon: Calendar },
           // { name: 'Task Management', path: `/${currentRole}/task-management`, icon: ClipboardList },
-          // { name: 'Request For Leave', path: `/${currentRole}/leave`, icon: FileText },
+          { name: 'Apply Leave', path: `/${currentRole}/leave`, icon: ClipboardList },
           { name: 'Attendance', path: `/${currentRole}/attendance`, icon: Calendar },
           { name: 'Time Tracker', path: `/${currentRole}/time-tracker`, icon: Clock },
           { name: 'Global Chat', path: `/${currentRole}/chat`, icon: MessageSquare },

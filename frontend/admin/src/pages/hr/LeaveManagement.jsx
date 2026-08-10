@@ -1,511 +1,154 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ShieldAlert, CheckCircle, XCircle, Calendar, Users, Filter, Search, MoreHorizontal, User, ArrowUpRight, RefreshCw, Zap } from 'lucide-react';
+import {
+  CheckSquare, Clock, Users, Calendar, BarChart2,
+  CheckCircle2, AlertTriangle, ArrowRight, XCircle, LayoutGrid,
+  FileText, Upload, RefreshCcw, HandCoins, DollarSign
+} from 'lucide-react';
+import LeavePolicyOverview from '../../components/LeavePolicyOverview';
+import HolidayManagement from '../../components/HolidayManagement';
+import LeaveAllocationSummary from '../../components/LeaveAllocationSummary';
+import CompanyShutdowns from '../../components/CompanyShutdowns';
+import AttendanceReconciliation from '../../components/AttendanceReconciliation';
+import EmployeeLeaveAudit from '../../components/EmployeeLeaveAudit';
+import LeaveDashboardHeader from '../../components/LeaveDashboardHeader';
 
-const LeaveManagement = () => {
+const Leaves = () => {
   const [leaves, setLeaves] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedLeave, setSelectedLeave] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [createFormData, setCreateFormData] = useState({
-    leaveType: '',
-    startDate: '',
-    endDate: '',
-    reason: ''
-  });
-  const [error, setError] = useState('');
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const token = sessionStorage.getItem('token');
-  const userRole = sessionStorage.getItem('role');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
 
-  // Sync theme status reactively
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
-
-  const fetchLeaves = async () => {
-    try {
-      setLoading(true);
-      let endpoint = '/api/leaves';
-      if (userRole === 'manager') endpoint = '/api/leaves/manager';
-      if (userRole === 'hr') endpoint = '/api/leaves/hr';
-
-      const response = await axios.get(endpoint, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setLeaves(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-      console.error('Leave Protocol Disrupted:', err);
-      setError('Connection to Leave Protocol node disrupted.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Basic stats for summary cards
+  const pendingRequests = leaves.filter(l => l.status?.toLowerCase() === 'pending').length;
+  const approvedLeaves = leaves.filter(l => l.status?.toLowerCase() === 'approved').length;
+  const totalRequests = leaves.length;
 
   useEffect(() => {
-    fetchLeaves();
-  }, [userRole]);
-
-  const handleStatusUpdate = async (id, status) => {
-    try {
-      let endpoint = `/api/leaves/reject/${id}`;
-      if (status === 'approved') {
-        if (userRole === 'manager') endpoint = `/api/leaves/manager-approve/${id}`;
-        else if (userRole === 'hr') endpoint = `/api/leaves/hr-approve/${id}`;
-      }
-
-      await axios.put(endpoint, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      return true;
-    } catch (err) {
-      console.error('Status update failed:', err);
-      alert('Action failed: ' + (err.response?.data?.message || err.message));
-      return false;
-    }
-  };
-
-  const handleRejectAll = async () => {
-    const pendingRequests = leaves.filter(l => l.status === 'pending');
-    if (pendingRequests.length === 0) {
-      alert('No pending leave protocols detected in current matrix.');
-      return;
-    }
-
-    if (window.confirm(`⚠️ AUTHORITY ALERT: You are about to mass-reject ${pendingRequests.length} leave requests. This action cannot be reversed. Proceed?`)) {
-      setLoading(true);
+    const fetchData = async () => {
       try {
-        const results = await Promise.all(
-          pendingRequests.map(l => handleStatusUpdate(l._id, 'rejected'))
-        );
-        alert(`Institutional Veto Complete: ${results.filter(r => r).length} protocols successfully declined.`);
-        fetchLeaves();
+        const [leavesRes, statsRes] = await Promise.all([
+          axios.get('/api/leaves', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('/api/hr-dashboard/summary', { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+        setLeaves(leavesRes.data || []);
+        if (statsRes.data && statsRes.data.data) {
+          setStats(statsRes.data.data.stats);
+        }
       } catch (err) {
-        console.error('Mass veto failed:', err);
-        alert('Institutional Veto disrupted. Check connection node.');
+        console.error('Fetch failed:', err);
       } finally {
         setLoading(false);
       }
-    }
-  };
-
-  const calculateDays = (start, end) => {
-    if (!start || !end) return 0;
-    const diff = new Date(end).getTime() - new Date(start).getTime();
-    return Math.max(1, Math.ceil(diff / (1000 * 3600 * 24)));
-  };
-
-  const handleCreateSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const days = calculateDays(createFormData.startDate, createFormData.endDate);
-      await axios.post('/api/leaves/apply', { ...createFormData, totalDays: days }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      alert('Leave protocol successfully initiated for review.');
-      setIsCreateModalOpen(false);
-      setCreateFormData({ leaveType: '', startDate: '', endDate: '', reason: '' });
-      fetchLeaves();
-    } catch (err) {
-      console.error('Submission failed:', err);
-      alert('Node transmission error: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const pendingCount = leaves.length; // In this view, all fetched leaves are pending for the current role
+    };
+    fetchData();
+  }, [token]);
 
   return (
-    <>
-      <div className="animate-fade-in pb-32">
-      
-      {/* HEADER */}
-      <div className={`mb-16 flex flex-col md:flex-row justify-between items-end border-b pb-10 ${
-        isDark ? 'border-[#38352e]' : 'border-[#c5c0b1]'
-      }`}>
-        <div>
-          <p className="zap-caption-upper text-[#00a76b] mb-4">Personnel Logistics</p>
-          <h1 className="zap-display-hero">Leave <span className="text-[#00a76b]">Protocol.</span></h1>
-        </div>
-        <div className="flex gap-4">
-          {(userRole === 'manager' || userRole === 'hr') && (
-            <button 
-              onClick={handleRejectAll}
-              className="zap-btn zap-btn-orange h-14 px-8 flex items-center gap-2"
-            >
-              <XCircle size={18} />
-              Reject All Pending
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0b1120] text-[#1e293b] dark:text-[#cbd5e1] font-['Inter',sans-serif] px-4 pb-8 pt-2 transition-colors duration-300">
+
+      {/* 1. HEADER */}
+      <LeaveDashboardHeader userName={user.name?.split(' ')[0] || user.firstName || 'Admin'} />
+
+      {/* 2. SUMMARY CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        {[
+          { label: 'Total Leave Requests', val: totalRequests, sub: 'This Month', icon: CheckSquare, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20', link: 'View All Requests' },
+          { label: 'Pending Approvals', val: pendingRequests, sub: 'Requests', icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', link: 'View Pending' },
+          { label: 'Employees On Leave', val: stats?.employeesOnLeave || 0, sub: 'Today', icon: Users, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', link: 'View Calendar' },
+          { label: 'Leave Balance Allocated', val: (stats?.leaveBalanceAllocated || 0).toLocaleString(), sub: 'Days', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', link: 'View Allocation' },
+          { label: 'Upcoming Holidays', val: stats?.upcomingHolidays || 0, sub: 'In Next 30 Days', icon: Calendar, color: 'text-pink-600', bg: 'bg-pink-50 dark:bg-pink-900/20', link: 'View Holidays' }
+        ].map((stat, i) => (
+          <div key={i} className="bg-white dark:bg-[#1e293b] p-5 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2.5 rounded-xl ${stat.bg}`}>
+                <stat.icon size={20} className={stat.color} />
+              </div>
+              <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">{stat.label}</span>
+            </div>
+            <div className="flex items-baseline gap-2 mb-4">
+              <h3 className="text-3xl font-black text-gray-900 dark:text-white tabular-nums">{stat.val}</h3>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{stat.sub}</p>
+            </div>
+            <button className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 hover:gap-2 transition-all">
+              {stat.link} <ArrowRight size={14} />
             </button>
-          )}
-          {userRole !== 'admin' && (
-            <button 
-              onClick={() => setIsCreateModalOpen(true)}
-              className="zap-btn zap-btn-orange h-14 px-8"
-            >
-              <Calendar size={18} className="mr-3" />
-              Request For Leave
+          </div>
+        ))}
+      </div>
+
+      {/* 3. ROW 1: Policy Overview + Allocation Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <LeavePolicyOverview />
+        <LeaveAllocationSummary />
+      </div>
+
+      {/* 4. ROW 2: Holiday Management + Shutdown Days */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <HolidayManagement />
+        <CompanyShutdowns />
+      </div>
+
+      {/* 5. ROW 3: 5 Quick-Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        {[
+          { label: 'Bulk Leave Allocation', val: (stats?.quickStats?.bulkAllocationDays || 0).toLocaleString(), sub: 'Days Allocated This Month', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', link: 'View Details' },
+          { label: 'Bulk Import', val: (stats?.quickStats?.importedEmployees || 0).toLocaleString(), sub: 'Employees Imported This Month', icon: Upload, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20', link: 'View Import Status' },
+          { label: 'Leave Adjustments', val: (stats?.quickStats?.leaveAdjustments || 0).toLocaleString(), sub: 'Adjustments Made This Month', icon: RefreshCcw, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', link: 'View Adjustments' },
+          { label: 'Comp-Off Management', val: (stats?.quickStats?.compOffsApproved || 0).toLocaleString(), sub: 'Comp-Offs Approved This Month', icon: HandCoins, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', link: 'View Comp-Offs' },
+          { label: 'Leave Encashment', val: (stats?.quickStats?.encashmentsPending || 0).toLocaleString(), sub: 'Requests Pending This Month', icon: DollarSign, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20', link: 'View Requests' }
+        ].map((stat, i) => (
+          <div key={i} className="bg-white dark:bg-[#1e293b] p-5 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2.5 rounded-xl ${stat.bg}`}>
+                <stat.icon size={20} className={stat.color} />
+              </div>
+              <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">{stat.label}</span>
+            </div>
+            <div className="flex flex-col gap-1 mb-4">
+              <h3 className="text-3xl font-black text-gray-900 dark:text-white tabular-nums">{stat.val}</h3>
+              <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 max-w-[120px] leading-tight">{stat.sub}</p>
+            </div>
+            <button className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 hover:gap-2 transition-all">
+              {stat.link} <ArrowRight size={14} />
             </button>
-          )}
-        </div>
-      </div>
-
-      {/* SUMMARY GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-16">
-        <div className={`zap-card group transition-all ${
-          isDark ? 'bg-[#0f0d0a] border-[#38352e] hover:border-white' : 'bg-white border-[#c5c0b1] hover:border-[#201515]'
-        }`}>
-           <div className={`w-12 h-12 rounded-[8px] mb-8 flex items-center justify-center transition-all ${
-             isDark ? 'bg-[#282520] text-white' : 'bg-[#eceae3] text-[#201515] group-hover:bg-[#00a76b] group-hover:text-white'
-           }`}>
-              <Users size={20} />
-           </div>
-           <h3 className={`text-[36px] font-medium leading-none mb-2 tabular-nums ${isDark ? 'text-white' : 'text-[#201515]'}`}>98%</h3>
-           <p className="text-[13px] font-bold text-[#939084] uppercase tracking-wider">Presence Pulse</p>
-           <div className={`mt-8 w-full rounded-full h-1 ${isDark ? 'bg-[#282520]' : 'bg-[#eceae3]'}`}>
-              <div className="bg-[#24a148] h-full rounded-full transition-all duration-1000" style={{ width: '98%' }}></div>
-           </div>
-        </div>
-
-        <div className={`zap-card group transition-all ${
-          isDark ? 'bg-[#0f0d0a] border-[#38352e] hover:border-white' : 'bg-white border-[#c5c0b1] hover:border-[#201515]'
-        }`}>
-           <div className={`w-12 h-12 rounded-[8px] mb-8 flex items-center justify-center transition-all ${
-             pendingCount > 0 
-               ? (isDark ? 'bg-[#181612] border border-[#00a76b] text-[#00a76b]' : 'bg-[#fffdf9] border border-[#00a76b] text-[#00a76b]') 
-               : (isDark ? 'bg-[#282520] text-[#a3a094]' : 'bg-[#eceae3] text-[#939084]')
-           }`}>
-              <ShieldAlert size={20} />
-           </div>
-           <h3 className={`text-[36px] font-medium leading-none mb-2 tabular-nums ${isDark ? 'text-white' : 'text-[#201515]'}`}>{pendingCount}</h3>
-           <p className="text-[13px] font-bold text-[#939084] uppercase tracking-wider">
-             {userRole === 'manager' ? 'Awaiting My Approval' : 'Awaiting HR Approval'}
-           </p>
-           <p className={`mt-8 text-[11px] font-bold uppercase tracking-widest ${pendingCount > 0 ? 'text-[#00a76b] animate-pulse' : 'text-[#939084]'}`}>
-              {pendingCount > 0 ? 'Immediate Action' : 'System Synchronized'}
-           </p>
-        </div>
-
-        <div className={`md:col-span-2 zap-card p-10 flex flex-col justify-between overflow-hidden relative transition-colors ${
-          isDark ? 'bg-[#0f0d0a] border border-[#38352e] text-white' : 'bg-[#201515] text-[#fffefb]'
-        }`}>
-           <div className="absolute top-0 right-0 w-40 h-40 bg-[#00a76b]/10 blur-3xl rounded-full"></div>
-           <div className="relative z-10">
-              <p className="zap-caption-upper !text-[#939084] mb-4">Organizational Quota Trace</p>
-              <h4 className={`text-[28px] font-medium leading-tight mb-4 ${isDark ? 'text-white' : 'text-[#fffefb]'}`}>
-                Standard cycle set to <span className="text-[#00a76b]">24 units</span> per personnel node.
-              </h4>
-           </div>
-           <button className="text-[#00a76b] font-bold text-[14px] uppercase tracking-widest flex items-center gap-2 hover:underline bg-transparent border-none p-0 cursor-pointer transition-all">
-              Modify Global Protocol <ArrowUpRight size={18} />
-           </button>
-           <Calendar size={100} className="absolute -right-4 -bottom-4 text-white/5 rotate-12" />
-        </div>
-      </div>
-
-      {/* REQUEST TABLE */}
-      <div className={`zap-card p-0 overflow-hidden transition-colors ${isDark ? 'bg-[#0f0d0a] border-[#38352e]' : ''}`}>
-        <div className={`p-8 border-b flex flex-col md:flex-row justify-between items-center gap-6 transition-colors ${
-          isDark ? 'bg-[#181612] border-[#38352e]' : 'bg-[#fffdf9] border-[#c5c0b1]'
-        }`}>
-           <h3 className={`text-[14px] font-black uppercase tracking-widest ${isDark ? 'text-white' : 'text-[#201515]'}`}>
-             {userRole === 'manager' ? 'Direct Report Matrix' : 'Manager Approved Matrix'}
-           </h3>
-           <div className={`flex items-center gap-4 px-6 h-12 rounded-[4px] border focus-within:border-[#00a76b] transition-all w-full md:w-96 ${
-             isDark ? 'bg-[#181612] border-[#38352e]' : 'bg-white border-[#c5c0b1]'
-           }`}>
-              <Search size={18} className="text-[#939084]" />
-              <input 
-                type="text" 
-                placeholder="Search trace..." 
-                className={`bg-transparent border-none focus:outline-none text-[14px] font-medium w-full ${
-                  isDark ? 'text-white placeholder-[#939084]' : 'text-[#201515]'
-                }`} 
-              />
-           </div>
-        </div>
-
-        {loading ? (
-          <div className="py-24 flex flex-col items-center justify-center gap-4">
-             <RefreshCw size={24} className="text-[#00a76b] animate-spin" />
-             <p className="zap-caption-upper text-[#939084]">Tracing Matrix...</p>
           </div>
-        ) : error ? (
-           <div className="py-24 text-center text-[#00a76b] font-bold uppercase tracking-widest text-[13px]">{error}</div>
-        ) : leaves.length === 0 ? (
-           <div className="py-24 text-center text-[#939084] font-medium text-[15px]">Matrix queue empty</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className={`border-b ${isDark ? 'bg-[#181612] border-[#38352e]' : 'bg-[#fffdf9] border-[#c5c0b1]'}`}>
-                  <th className={`px-8 py-5 text-[11px] font-bold uppercase tracking-widest ${isDark ? 'text-[#a3a094]' : 'text-[#939084]'}`}>Personnel Node</th>
-                  <th className={`px-8 py-5 text-[11px] font-bold uppercase tracking-widest ${isDark ? 'text-[#a3a094]' : 'text-[#939084]'}`}>Type</th>
-                  <th className={`px-8 py-5 text-[11px] font-bold uppercase tracking-widest ${isDark ? 'text-[#a3a094]' : 'text-[#939084]'}`}>Cycle Window</th>
-                  <th className={`px-8 py-5 text-[11px] font-bold uppercase tracking-widest ${isDark ? 'text-[#a3a094]' : 'text-[#939084]'}`}>Status Trace</th>
-                  <th className={`px-8 py-5 text-[11px] font-bold uppercase tracking-widest text-right ${isDark ? 'text-[#a3a094]' : 'text-[#939084]'}`}>Ops Logic</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${isDark ? 'divide-[#38352e]' : 'divide-[#c5c0b1]'}`}>
-                {leaves.map((row, i) => (
-                  <tr 
-                    key={row?._id || i} 
-                    onClick={() => {
-                      setSelectedLeave(row);
-                      setIsModalOpen(true);
-                    }}
-                    className={`transition-colors group cursor-pointer ${
-                      isDark ? 'hover:bg-[#181612]/50' : 'hover:bg-[#fffdf9]'
-                    }`}
-                  >
-                    <td className="px-8 py-6">
-                       <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-[4px] border flex items-center justify-center font-bold text-xs ${
-                            isDark ? 'bg-[#282520] border-[#38352e] text-white' : 'bg-[#eceae3] border-[#c5c0b1] text-[#201515]'
-                          }`}>
-                             {(row?.user?.name || 'U').charAt(0)}
-                          </div>
-                          <div>
-                             <p className={`text-[15px] font-bold uppercase group-hover:text-[#00a76b] transition-colors ${
-                               isDark ? 'text-white' : 'text-[#201515]'
-                             }`}>
-                                {row?.user?.name || 'Anonymous Node'}
-                             </p>
-                             <p className="text-[12px] font-medium text-[#939084] mt-1">
-                                {row?.user?.email}
-                             </p>
-                          </div>
-                       </div>
-                    </td>
-                    <td className="px-8 py-6">
-                       <span className={`px-3 py-1 rounded-[4px] text-[10px] font-bold uppercase tracking-widest ${
-                         isDark ? 'bg-[#282520] text-white' : 'bg-[#eceae3] text-[#201515]'
-                       }`}>
-                          {row?.leaveType}
-                       </span>
-                    </td>
-                    <td className="px-8 py-6">
-                       <p className={`text-[14px] font-bold tabular-nums uppercase ${isDark ? 'text-white' : 'text-[#201515]'}`}>
-                          {new Date(row.startDate).toLocaleDateString()} - {new Date(row.endDate).toLocaleDateString()}
-                       </p>
-                       <p className="text-[11px] font-bold text-[#00a76b] uppercase tracking-widest mt-1">{row?.totalDays || 0} Units</p>
-                    </td>
-                    <td className="px-8 py-6">
-                       <span className={`px-4 py-1.5 rounded-[4px] text-[10px] font-bold uppercase tracking-widest ${
-                         row?.status === 'approved' ? 'bg-[#24a148] text-white' : 
-                         row?.status === 'rejected' ? 'bg-[#00a76b] text-white' : 
-                         (isDark ? 'bg-[#181612] border border-[#00a76b] text-[#00a76b] animate-pulse' : 'bg-[#fffdf9] border border-[#00a76b] text-[#00a76b] animate-pulse')
-                       }`}>
-                          {row?.status}
-                       </span>
-                    </td>
-                    <td className="px-8 py-6 text-right">
-                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                          {row?.status === 'pending' && (
-                             <>
-                               <button 
-                                 onClick={(e) => {
-                                   e.stopPropagation();
-                                   handleStatusUpdate(row._id, 'approved');
-                                 }} 
-                                 className="w-10 h-10 flex items-center justify-center bg-[#24a148] text-white rounded-[4px] hover:bg-[#1e8a3d] transition-all cursor-pointer"
-                               >
-                                  <CheckCircle size={18} />
-                               </button>
-                               <button 
-                                 onClick={(e) => {
-                                   e.stopPropagation();
-                                   handleStatusUpdate(row._id, 'rejected');
-                                 }} 
-                                 className="w-10 h-10 flex items-center justify-center bg-[#00a76b] text-white rounded-[4px] hover:bg-[#201515] transition-all cursor-pointer"
-                               >
-                                  <XCircle size={18} />
-                               </button>
-                             </>
-                          )}
-                          <button className={`w-10 h-10 flex items-center justify-center transition-all bg-transparent border-none cursor-pointer ${
-                            isDark ? 'text-[#a3a094] hover:text-white' : 'text-[#939084] hover:text-[#201515]'
-                          }`}><MoreHorizontal size={18} /></button>
-                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        ))}
       </div>
+
+      {/* 6. ROW 4: Attendance Reconciliation + Audit Log */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <AttendanceReconciliation />
+        <EmployeeLeaveAudit />
+      </div>
+
+      {/* 7. ROW 5: Quick Actions Row */}
+      <div className="mb-4">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 ml-1">Quick Actions</h3>
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
+          {[
+            { label: 'Create Policy', icon: FileText, color: 'text-purple-500' },
+            { label: 'Allocate Leave', icon: ArrowRight, color: 'text-green-500' },
+            { label: 'Bulk Allocation', icon: Upload, color: 'text-blue-500' },
+            { label: 'Import Employees', icon: FileText, color: 'text-orange-500' },
+            { label: 'Add Holiday', icon: Calendar, color: 'text-pink-500' },
+            { label: 'Comp-Off Approval', icon: HandCoins, color: 'text-emerald-500' },
+            { label: 'Leave Encashment', icon: DollarSign, color: 'text-red-500' },
+            { label: 'Download Report', icon: Upload, color: 'text-indigo-500', isRotate: true }
+          ].map((action, i) => (
+            <button key={i} className="bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 p-4 rounded-2xl font-bold text-xs transition-all flex flex-col items-center justify-center gap-3 shadow-sm group">
+              <div className={`p-3 rounded-xl bg-gray-50 dark:bg-[#0f172a] ${action.color} group-hover:scale-110 transition-transform`}>
+                <action.icon size={20} className={action.isRotate ? "rotate-180" : ""} />
+              </div>
+              <span className="text-center">{action.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
     </div>
-    
-    {/* DETAILS MODAL */}
-    {isModalOpen && selectedLeave && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#201515]/90 backdrop-blur-md animate-in fade-in duration-300">
-        <div className="bg-[#fffefb] w-full max-w-2xl rounded-xl overflow-hidden shadow-2xl border border-[#c5c0b1] animate-in zoom-in-95 duration-300">
-          <div className="p-8 border-b border-[#c5c0b1] bg-[#fffdf9] flex justify-between items-center">
-            <div>
-              <p className="zap-caption-upper !text-[#00a76b] mb-2">Request Validation</p>
-              <h3 className="text-2xl font-medium text-[#201515] uppercase flex items-center gap-4">
-                {selectedLeave?.user?.name || 'Personnel Node'}
-                <span className={`px-4 py-1.5 rounded-[4px] text-[10px] font-bold uppercase tracking-widest ${
-                  selectedLeave.status === 'approved' ? 'bg-[#24a148] text-white' : 
-                  selectedLeave.status === 'rejected' ? 'bg-[#00a76b] text-white' : 
-                  'bg-[#eceae3] text-[#201515]'
-                }`}>
-                  {selectedLeave.status}
-                </span>
-              </h3>
-            </div>
-            <button 
-              onClick={() => setIsModalOpen(false)}
-              className="w-10 h-10 bg-white border border-[#c5c0b1] rounded-[4px] flex items-center justify-center text-[#939084] hover:bg-[#00a76b] hover:text-white transition-all active:scale-90"
-            >
-              <span className="text-lg font-bold">✕</span>
-            </button>
-          </div>
-          
-          <div className="p-10 space-y-10">
-            <div className="grid grid-cols-2 gap-8">
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-widest text-[#939084] block mb-2">Protocol Window</label>
-                <p className="text-[16px] font-bold text-[#201515] tabular-nums">
-                  {new Date(selectedLeave.startDate).toLocaleDateString()} - {new Date(selectedLeave.endDate).toLocaleDateString()}
-                </p>
-                <p className="text-[12px] font-bold text-[#00a76b] uppercase mt-1">{selectedLeave.totalDays} Total Units</p>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-widest text-[#939084] block mb-2">Leave Designation</label>
-                <p className="text-[16px] font-bold text-[#201515] uppercase">{selectedLeave.leaveType} Leave</p>
-              </div>
-            </div>
-
-            <div className="p-8 bg-[#fffdf9] rounded-[8px] border border-[#c5c0b1]">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-[#939084] block mb-4">Justification Matrix</label>
-              <p className="text-[15px] font-medium text-[#201515] leading-relaxed whitespace-pre-wrap">
-                {selectedLeave.reason || 'No justification trace found.'}
-              </p>
-            </div>
-          </div>
-
-          <div className="p-10 pt-0 flex gap-4">
-             <button 
-               onClick={() => {
-                 handleStatusUpdate(selectedLeave._id, 'approved');
-                 setIsModalOpen(false);
-               }}
-               className="flex-1 py-5 bg-[#24a148] text-white rounded-[4px] font-bold text-[12px] uppercase tracking-widest hover:opacity-90 transition-all"
-             >
-               Authorize Request
-             </button>
-             <button 
-               onClick={() => {
-                 handleStatusUpdate(selectedLeave._id, 'rejected');
-                 setIsModalOpen(false);
-               }}
-               className="flex-1 py-5 bg-[#00a76b] text-white rounded-[4px] font-bold text-[12px] uppercase tracking-widest hover:bg-[#201515] transition-all"
-             >
-               Decline Trace
-             </button>
-             <button 
-               onClick={() => setIsModalOpen(false)}
-               className="flex-1 py-5 border border-[#c5c0b1] text-[#201515] rounded-[4px] font-bold text-[12px] uppercase tracking-widest hover:bg-[#eceae3] transition-all"
-             >
-               Close View
-             </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {/* CREATE LEAVE MODAL */}
-    {isCreateModalOpen && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#201515]/90 backdrop-blur-md animate-in fade-in duration-300">
-        <div className="bg-[#fffefb] w-full max-w-lg rounded-lg overflow-hidden shadow-2xl border border-[#c5c0b1] animate-in zoom-in-95 duration-300">
-           <div className="p-6 border-b border-[#c5c0b1] bg-[#fffdf9] flex justify-between items-center">
-              <div>
-                <p className="zap-caption-upper !text-[#00a76b] mb-1">Internal Protocol</p>
-                <h3 className="text-xl font-medium text-[#201515] uppercase">Initiate Leave Trace</h3>
-              </div>
-              <button 
-                onClick={() => setIsCreateModalOpen(false)}
-                className="w-10 h-10 bg-white border border-[#c5c0b1] rounded-[4px] flex items-center justify-center text-[#939084] hover:bg-[#00a76b] hover:text-white transition-all"
-              >
-                <span className="text-lg font-bold">✕</span>
-              </button>
-           </div>
-
-           <form onSubmit={handleCreateSubmit} className="p-6 space-y-6">
-              <div className="space-y-1.5">
-                 <label className="text-[10px] font-bold uppercase tracking-widest text-[#939084]">Leave Designation</label>
-                 <select 
-                   required
-                   value={createFormData.leaveType}
-                   onChange={e => setCreateFormData({...createFormData, leaveType: e.target.value})}
-                   className="w-full h-12 px-8 rounded-[4px] bg-white border border-[#c5c0b1] text-[#201515] text-[13px] font-bold focus:outline-none focus:border-[#00a76b] appearance-none"
-                 >
-                    <option value="" disabled>Choose the option</option>
-                    <option value="sick">Sick Leave</option>
-                    <option value="casual">Casual Leave</option>
-                    <option value="earned">Earned Leave</option>
-                    <option value="emergency">Emergency Leave</option>
-                 </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#939084]">Start Cycle</label>
-                    <input 
-                      type="date" 
-                      required
-                      value={createFormData.startDate}
-                      onChange={e => setCreateFormData({...createFormData, startDate: e.target.value})}
-                      className="w-full h-12 px-5 rounded-[4px] bg-white border border-[#c5c0b1] text-[#201515] text-[13px] font-bold focus:outline-none focus:border-[#00a76b]"
-                    />
-                 </div>
-                 <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#939084]">End Cycle</label>
-                    <input 
-                      type="date" 
-                      required
-                      value={createFormData.endDate}
-                      onChange={e => setCreateFormData({...createFormData, endDate: e.target.value})}
-                      className="w-full h-12 px-5 rounded-[4px] bg-white border border-[#c5c0b1] text-[#201515] text-[13px] font-bold focus:outline-none focus:border-[#00a76b]"
-                    />
-                 </div>
-              </div>
-
-              <div className="space-y-1.5">
-                 <label className="text-[10px] font-bold uppercase tracking-widest text-[#939084]">Justification Matrix</label>
-                 <textarea 
-                   required
-                   value={createFormData.reason}
-                   onChange={e => setCreateFormData({...createFormData, reason: e.target.value})}
-                   placeholder="Provide internal context..."
-                   className="w-full p-5 rounded-[4px] bg-white border border-[#c5c0b1] text-[#201515] text-[13px] font-medium focus:outline-none focus:border-[#00a76b] min-h-[100px] resize-none"
-                 />
-              </div>
-
-              <div className="pt-2 flex gap-4">
-                 <button type="submit" className="flex-1 py-4 bg-[#00a76b] text-white rounded-[4px] font-bold text-[11px] uppercase tracking-widest hover:bg-[#201515] transition-all">
-                    Request For Leave
-                 </button>
-                 <button 
-                   type="button"
-                   onClick={() => setIsCreateModalOpen(false)}
-                   className="flex-1 py-4 border border-[#c5c0b1] text-[#201515] rounded-[4px] font-bold text-[11px] uppercase tracking-widest hover:bg-[#eceae3] transition-all"
-                 >
-                    Cancel
-                 </button>
-              </div>
-           </form>
-        </div>
-      </div>
-    )}
-  </>
-);
+  );
 };
 
-export default LeaveManagement;
+export default Leaves;

@@ -569,11 +569,84 @@ const HRDashboard = () => {
         </Card>
       </div>
 
-      {/* 5. Fourth Row (Quick Actions, Pending Approvals) */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      {/* 5. Fourth Row (Pending Approvals, Quick Actions) */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <Card className="p-6 xl:col-span-1 flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-bold text-gray-900 dark:text-white">Pending Approvals</h3>
+            <button onClick={() => navigate('/hr/leave')} className="text-xs font-bold text-[#00a76b] hover:underline cursor-pointer">View All</button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {pendingApprovals.length > 0 ? (
+              <div className="space-y-3">
+                {pendingApprovals.map((approval) => (
+                  <div
+                    key={approval._id}
+                    onClick={() => setSelectedLeaveApproval(approval)}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50/50 dark:bg-[#1a1714] hover:bg-white dark:hover:bg-[#221e19] rounded-xl border border-gray-100 dark:border-[#2b2722] hover:border-gray-200 dark:hover:border-[#38332c] hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-start sm:items-center gap-4">
+                      <div className="p-3 bg-white dark:bg-[#25201b] group-hover:bg-blue-50 dark:group-hover:bg-blue-950/40 shadow-sm rounded-xl text-blue-500 transition-colors">
+                        <FileText size={20} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-gray-900 dark:text-white text-sm group-hover:text-[#00a76b] transition-colors">{approval.name}</h4>
+                          <span className="text-[10px] bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full capitalize">
+                            {approval.subType || approval.type}
+                          </span>
+                        </div>
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1.5">
+                          <Calendar size={13} className="text-gray-400 dark:text-gray-400" />
+                          {approval.details}
+                        </p>
+                        {approval.reason && (
+                          <p className="text-xs text-gray-400 dark:text-gray-400 italic mt-1 line-clamp-1 max-w-md">
+                            "{approval.reason}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 mt-4 sm:mt-0" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-[10px] font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/50 px-2 py-1 rounded-md uppercase">
+                        {Math.floor((new Date() - new Date(approval.date)) / (1000 * 60 * 60 * 24)) || 1} days ago
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApproveLeave(approval._id);
+                        }}
+                        title="Approve Leave"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#00a76b] text-white hover:bg-[#00915c] transition-colors shadow-sm cursor-pointer"
+                      >
+                        <Check size={16} strokeWidth={3} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRejectLeave(approval._id);
+                        }}
+                        title="Reject Leave"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm cursor-pointer"
+                      >
+                        <X size={16} strokeWidth={3} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                <ShieldCheck size={48} className="mb-3 text-gray-200 dark:text-neutral-700" />
+                <p className="font-medium text-sm">No pending approvals required.</p>
+              </div>
+            )}
+          </div>
+        </Card>
+
         <Card className="p-6 xl:col-span-1">
           <h3 className="font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
-          <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               {
                 label: 'Add Employee',
@@ -647,79 +720,6 @@ const HRDashboard = () => {
                 <span className={`text-[11px] font-bold text-gray-600 dark:text-gray-300 ${action.hoverText} text-center uppercase tracking-wider transition-colors`}>{action.label}</span>
               </button>
             ))}
-          </div>
-        </Card>
-
-        <Card className="p-6 xl:col-span-2 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900 dark:text-white">Pending Approvals</h3>
-            <button onClick={() => navigate('/hr/leave')} className="text-xs font-bold text-[#00a76b] hover:underline cursor-pointer">View All</button>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {pendingApprovals.length > 0 ? (
-              <div className="space-y-3">
-                {pendingApprovals.map((approval) => (
-                  <div
-                    key={approval._id}
-                    onClick={() => setSelectedLeaveApproval(approval)}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50/50 dark:bg-[#1a1714] hover:bg-white dark:hover:bg-[#221e19] rounded-xl border border-gray-100 dark:border-[#2b2722] hover:border-gray-200 dark:hover:border-[#38332c] hover:shadow-md transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-start sm:items-center gap-4">
-                      <div className="p-3 bg-white dark:bg-[#25201b] group-hover:bg-blue-50 dark:group-hover:bg-blue-950/40 shadow-sm rounded-xl text-blue-500 transition-colors">
-                        <FileText size={20} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-gray-900 dark:text-white text-sm group-hover:text-[#00a76b] transition-colors">{approval.name}</h4>
-                          <span className="text-[10px] bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full capitalize">
-                            {approval.subType || approval.type}
-                          </span>
-                        </div>
-                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1.5">
-                          <Calendar size={13} className="text-gray-400 dark:text-gray-400" />
-                          {approval.details}
-                        </p>
-                        {approval.reason && (
-                          <p className="text-xs text-gray-400 dark:text-gray-400 italic mt-1 line-clamp-1 max-w-md">
-                            "{approval.reason}"
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 mt-4 sm:mt-0" onClick={(e) => e.stopPropagation()}>
-                      <span className="text-[10px] font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/50 px-2 py-1 rounded-md uppercase">
-                        {Math.floor((new Date() - new Date(approval.date)) / (1000 * 60 * 60 * 24)) || 1} days ago
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleApproveLeave(approval._id);
-                        }}
-                        title="Approve Leave"
-                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#00a76b] text-white hover:bg-[#00915c] transition-colors shadow-sm cursor-pointer"
-                      >
-                        <Check size={16} strokeWidth={3} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRejectLeave(approval._id);
-                        }}
-                        title="Reject Leave"
-                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm cursor-pointer"
-                      >
-                        <X size={16} strokeWidth={3} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                <ShieldCheck size={48} className="mb-3 text-gray-200 dark:text-neutral-700" />
-                <p className="font-medium text-sm">No pending approvals required.</p>
-              </div>
-            )}
           </div>
         </Card>
       </div>

@@ -39,7 +39,7 @@ exports.applyLeave = async (req, res) => {
   }
 };
 
-// @desc    Get manager's pending leaves
+// @desc    Get manager's leaves (all statuses for dashboard)
 // @route   GET /api/leaves/manager
 // @access  Private/Manager
 exports.getManagerLeaves = async (req, res) => {
@@ -47,10 +47,7 @@ exports.getManagerLeaves = async (req, res) => {
     const io = req.app.get('io');
     await autoRejectExpiredLeaves(io);
 
-    const leaves = await Leave.find({
-      managerId: req.user.id,
-      status: 'pending'
-    }).populate('user', 'name email profile');
+    const leaves = await Leave.find({}).populate('user', 'name email profile role employeeId profileImage');
     res.json(leaves);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -93,7 +90,7 @@ exports.managerApprove = async (req, res) => {
   }
 };
 
-// @desc    Get HR's approved leaves (for tracking)
+// @desc    Get HR's leaves (all statuses for dashboard)
 // @route   GET /api/leaves/hr
 // @access  Private/HR
 exports.getHRLeaves = async (req, res) => {
@@ -101,9 +98,7 @@ exports.getHRLeaves = async (req, res) => {
     const io = req.app.get('io');
     await autoRejectExpiredLeaves(io);
 
-    const leaves = await Leave.find({
-      status: 'approved'
-    }).populate('user', 'name email profile')
+    const leaves = await Leave.find({}).populate('user', 'name email profile role employeeId profileImage')
       .populate('managerId', 'name email');
     res.json(leaves);
   } catch (error) {
