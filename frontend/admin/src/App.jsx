@@ -25,6 +25,7 @@ import Attendance from './pages/Attendance';
 
 import HRTasks from './pages/hr/HRTasks';
 import LeaveManagement from './pages/hr/LeaveManagement';
+import ManagerLeaveManagement from './pages/manager/LeaveManagement';
 import TeamManagement from './pages/hr/TeamManagement';
 import HREmployees from './pages/hr/HREmployees';
 import EmployeeLeave from './pages/employee/LeaveManagement';
@@ -242,7 +243,7 @@ const App = () => {
           <Route path="task-management/create" element={<TaskCreate />} />
           <Route path="task-management/update/:id" element={<TaskUpdate />} />
           <Route path="projects" element={<ManagerProjects />} />
-          <Route path="leave" element={<LeaveManagement />} />
+          <Route path="leave" element={<ManagerLeaveManagement />} />
           <Route path="attendance" element={<Attendance />} />
           <Route path="chat" element={<Chat />} />
           <Route path="screenshots" element={<Screenshots />} />

@@ -1,232 +1,12 @@
-const Leave = require('../models/Leave');
-const User = require('../models/User');
-const { isLeaveDatePassed, autoRejectExpiredLeaves } = require('../utils/leaveUtils');
+const fs = require('fs');
 
-// @desc    Apply for leave
-// @route   POST /api/leaves/apply
-// @access  Private/Employee
-exports.applyLeave = async (req, res) => {
-  try {
-    const { leaveType, startDate, endDate, reason, totalDays } = req.body;
-
-    // Prevent applying for dates that have already passed
-    if (isLeaveDatePassed(startDate, endDate)) {
-      return res.status(400).json({ message: 'Cannot apply for leave for dates that have already passed.' });
-    }
-
-    // Find employee's manager
-    const employee = await User.findById(req.user.id);
-    if (!employee) return res.status(404).json({ message: 'User not found' });
-
-    const leave = await Leave.create({
-      user: req.user.id,
-      managerId: employee.reportingManager,
-      leaveType: leaveType.toLowerCase(),
-      startDate,
-      endDate,
-      reason,
-      totalDays: totalDays || 1,
-      status: 'pending'
-    });
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
-    }
-    res.status(201).json(leave);
-  } catch (error) {
-    console.error('Apply Leave Error:', error);
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Get manager's leaves (all statuses for dashboard)
-// @route   GET /api/leaves/manager
-// @access  Private/Manager
-exports.getManagerLeaves = async (req, res) => {
-  try {
-    const io = req.app.get('io');
-    await autoRejectExpiredLeaves(io);
-
-    const leaves = await Leave.find({}).populate('user', 'name email profile role employeeId profileImage');
-    res.json(leaves);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Manager Approve (FINAL)
-// @route   PUT /api/leaves/manager-approve/:id
-// @access  Private/Manager
-exports.managerApprove = async (req, res) => {
-  try {
-    const leave = await Leave.findById(req.params.id);
-    if (!leave) return res.status(404).json({ message: 'Leave request not found' });
-
-    if (leave.managerId && leave.managerId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized to approve this leave' });
-    }
-
-    const io = req.app.get('io');
-
-    // Auto-reject if the leave date has already passed
-    if (isLeaveDatePassed(leave.startDate, leave.endDate)) {
-      leave.status = 'rejected';
-      leave.rejectionReason = 'Auto-rejected: Leave period expired (date passed without approval)';
-      await leave.save();
-      if (io) {
-        io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
-      }
-      return res.status(400).json({ message: 'Cannot approve leave request. The requested leave date has already passed.' });
-    }
-
-    leave.status = 'approved';
-    await leave.save();
-    if (io) {
-      io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
-    }
-    res.json(leave);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Get HR's leaves (all statuses for dashboard)
-// @route   GET /api/leaves/hr
-// @access  Private/HR
-exports.getHRLeaves = async (req, res) => {
-  try {
-    const io = req.app.get('io');
-    await autoRejectExpiredLeaves(io);
-
-    const leaves = await Leave.find({}).populate('user', 'name email profile role employeeId profileImage')
-      .populate('managerId', 'name email');
-    res.json(leaves);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    HR Direct Approve (Alternative)
-// @route   PUT /api/leaves/hr-approve/:id
-// @access  Private/HR
-exports.hrApprove = async (req, res) => {
-  try {
-    const leave = await Leave.findById(req.params.id);
-    if (!leave) return res.status(404).json({ message: 'Leave request not found' });
-
-    const io = req.app.get('io');
-
-    // Auto-reject if the leave date has already passed
-    if (isLeaveDatePassed(leave.startDate, leave.endDate)) {
-      leave.status = 'rejected';
-      leave.rejectionReason = 'Auto-rejected: Leave period expired (date passed without approval)';
-      await leave.save();
-      if (io) {
-        io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
-      }
-      return res.status(400).json({ message: 'Cannot approve leave request. The requested leave date has already passed.' });
-    }
-
-    leave.status = 'approved';
-    leave.hrId = req.user.id;
-    await leave.save();
-    if (io) {
-      io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
-    }
-    res.json(leave);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Reject Leave
-// @route   PUT /api/leaves/reject/:id
-// @access  Private/Manager/HR
-exports.rejectLeave = async (req, res) => {
-  try {
-    const leave = await Leave.findById(req.params.id);
-    if (!leave) return res.status(404).json({ message: 'Leave request not found' });
-
-    leave.status = 'rejected';
-    if (req.body.reason || req.body.rejectionReason) {
-      leave.rejectionReason = req.body.reason || req.body.rejectionReason;
-    }
-    await leave.save();
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
-    }
-    res.json(leave);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Cancel Leave
-// @route   PUT /api/leaves/cancel/:id
-// @access  Private/Employee
-exports.cancelLeave = async (req, res) => {
-  try {
-    const leave = await Leave.findById(req.params.id);
-    if (!leave) return res.status(404).json({ message: 'Leave request not found' });
-
-    // Verify ownership
-    if (leave.user.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized to cancel this request' });
-    }
-
-    if (leave.status !== 'pending') {
-      return res.status(400).json({ message: 'Cannot cancel an already processed request' });
-    }
-
-    leave.status = 'cancelled';
-    await leave.save();
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
-    }
-    res.json(leave);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Get my leaves
-// @route   GET /api/leaves/my
-// @access  Private/Employee
-exports.getMyLeaves = async (req, res) => {
-  try {
-    const io = req.app.get('io');
-    await autoRejectExpiredLeaves(io);
-
-    const leaves = await Leave.find({ user: req.user.id });
-    res.json(leaves);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Get all leaves (Admin)
-// @route   GET /api/leaves
-// @access  Private/Admin
-exports.getAllLeaves = async (req, res) => {
-  try {
-    const io = req.app.get('io');
-    await autoRejectExpiredLeaves(io);
-
-    const leaves = await Leave.find().populate('user', 'name email profile');
-    res.json(leaves);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
+const code = `
 const Holiday = require('../models/Holiday');
 const LeaveBalance = require('../models/LeaveBalance');
 
 exports.getManagerStats = async (req, res) => {
   try {
-    const subordinates = await User.find({ reportingManager: req.user.id }).select('_id');
+    const subordinates = await User.find({ reportingManager: req.user._id }).select('_id');
     const subIds = subordinates.map(s => s._id);
 
     const pending = await Leave.countDocuments({ user: { $in: subIds }, status: 'pending' });
@@ -294,7 +74,7 @@ exports.getTeamLeaves = async (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 5;
     const skip = (page - 1) * limit;
 
-    const subordinates = await User.find({ reportingManager: req.user.id }).select('_id');
+    const subordinates = await User.find({ reportingManager: req.user._id }).select('_id');
     const subIds = subordinates.map(s => s._id);
 
     const query = { user: { $in: subIds }, status: 'pending' };
@@ -321,7 +101,7 @@ exports.getTeamLeaves = async (req, res) => {
 
 exports.getAvailabilityStats = async (req, res) => {
   try {
-    const subordinates = await User.find({ reportingManager: req.user.id }).select('_id');
+    const subordinates = await User.find({ reportingManager: req.user._id }).select('_id');
     const subIds = subordinates.map(s => s._id);
 
     const now = new Date();
@@ -375,7 +155,7 @@ exports.getManagerCalendar = async (req, res) => {
     const startDate = new Date(y, m, 1);
     const endDate = new Date(y, m + 1, 0, 23, 59, 59);
 
-    const subordinates = await User.find({ reportingManager: req.user.id }).select('_id');
+    const subordinates = await User.find({ reportingManager: req.user._id }).select('_id');
     const subIds = subordinates.map(s => s._id);
 
     const leaves = await Leave.find({
@@ -400,16 +180,14 @@ exports.getTeamLeaveBalances = async (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 5;
     const skip = (page - 1) * limit;
 
+    const subordinates = await User.find({ reportingManager: req.user._id }).select('_id');
+    const subIds = subordinates.map(s => s._id);
+
     const now = new Date();
     const currentMonth = now.getMonth() + 1;
     const currentYear = now.getFullYear();
 
-    let query = { month: currentMonth, year: currentYear };
-    if (req.user.role !== 'admin') {
-      const subordinates = await User.find({ reportingManager: req.user.id }).select('_id');
-      const subIds = subordinates.map(s => s._id);
-      query.employeeId = { $in: subIds };
-    }
+    const query = { employeeId: { $in: subIds }, month: currentMonth, year: currentYear };
     
     const total = await LeaveBalance.countDocuments(query);
     const balances = await LeaveBalance.find(query)
@@ -417,24 +195,8 @@ exports.getTeamLeaveBalances = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    console.log('Query:', query);
-    console.log('Total found:', total, balances.length);
-
-    const formattedBalances = balances.map(b => {
-      const doc = b.toObject();
-      doc.usedLeave = {
-        casual: Math.floor(Math.random() * (doc.casualLeave || 1)),
-        sick: Math.floor(Math.random() * (doc.sickLeave || 1)),
-        earned: Math.floor(Math.random() * (doc.earnedLeave || 1)),
-        compOff: Math.floor(Math.random() * (doc.compOff || 1)),
-      };
-      doc.usedLeave.total = doc.usedLeave.casual + doc.usedLeave.sick + doc.usedLeave.earned + doc.usedLeave.compOff;
-      doc.totalLeave = (doc.casualLeave||0) + (doc.sickLeave||0) + (doc.earnedLeave||0) + (doc.compOff||0);
-      return doc;
-    });
-
     res.json({
-      data: formattedBalances,
+      data: balances,
       pagination: {
         total,
         page,
@@ -452,7 +214,7 @@ exports.getLeaveMonthlyTrend = async (req, res) => {
     const startDate = new Date(year, 0, 1);
     const endDate = new Date(year, 11, 31, 23, 59, 59);
 
-    const subordinates = await User.find({ reportingManager: req.user.id }).select('_id');
+    const subordinates = await User.find({ reportingManager: req.user._id }).select('_id');
     const subIds = subordinates.map(s => s._id);
 
     const leaves = await Leave.aggregate([
@@ -494,7 +256,7 @@ exports.getDepartmentAnalytics = async (req, res) => {
     const startDate = new Date(year, month, 1);
     const endDate = new Date(year, month + 1, 0, 23, 59, 59);
 
-    const subordinates = await User.find({ reportingManager: req.user.id });
+    const subordinates = await User.find({ reportingManager: req.user._id });
     const subIds = subordinates.map(s => s._id);
 
     const leaves = await Leave.find({
@@ -537,7 +299,7 @@ exports.bulkApproveLeaves = async (req, res) => {
       await leave.save();
     }
 
-    res.json({ success: true, message: `${leaves.length} leaves approved` });
+    res.json({ success: true, message: \`\${leaves.length} leaves approved\` });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -547,7 +309,7 @@ exports.exportTeamLeaves = async (req, res) => {
   try {
     const { format } = req.query; // pdf or xlsx
     
-    const subordinates = await User.find({ reportingManager: req.user.id }).select('_id');
+    const subordinates = await User.find({ reportingManager: req.user._id }).select('_id');
     const subIds = subordinates.map(s => s._id);
 
     const leaves = await Leave.find({ user: { $in: subIds } })
@@ -598,9 +360,9 @@ exports.exportTeamLeaves = async (req, res) => {
       
       leaves.forEach(l => {
         const empName = l.user ? l.user.name : 'Unknown';
-        doc.fontSize(12).text(`${empName} - ${l.leaveType} (${l.status})`);
-        doc.fontSize(10).text(`Dates: ${l.startDate.toISOString().split('T')[0]} to ${l.endDate.toISOString().split('T')[0]}`);
-        doc.text(`Reason: ${l.reason}`);
+        doc.fontSize(12).text(\`\${empName} - \${l.leaveType} (\${l.status})\`);
+        doc.fontSize(10).text(\`Dates: \${l.startDate.toISOString().split('T')[0]} to \${l.endDate.toISOString().split('T')[0]}\`);
+        doc.text(\`Reason: \${l.reason}\`);
         doc.moveDown();
       });
       
@@ -610,3 +372,7 @@ exports.exportTeamLeaves = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+`;
+
+fs.appendFileSync('controllers/leaveController.js', code);
+console.log('Appended to leaveController.js');

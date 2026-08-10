@@ -13,10 +13,22 @@ import AttendanceReconciliation from '../../components/AttendanceReconciliation'
 import EmployeeLeaveAudit from '../../components/EmployeeLeaveAudit';
 import LeaveDashboardHeader from '../../components/LeaveDashboardHeader';
 
+// Modals
+import CreatePolicyModal from '../../components/modals/CreatePolicyModal';
+import AllocateLeaveModal from '../../components/modals/AllocateLeaveModal';
+import BulkAllocationModal from '../../components/modals/BulkAllocationModal';
+import AddHolidayModal from '../../components/modals/AddHolidayModal';
+import CompOffApprovalModal from '../../components/modals/CompOffApprovalModal';
+import LeaveEncashmentModal from '../../components/modals/LeaveEncashmentModal';
+
 const Leaves = () => {
   const [leaves, setLeaves] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Modal states
+  const [activeModal, setActiveModal] = useState(null);
+
   const token = sessionStorage.getItem('token');
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
 
@@ -44,6 +56,38 @@ const Leaves = () => {
     };
     fetchData();
   }, [token]);
+
+  const handleDownloadReport = () => {
+    if (!leaves || leaves.length === 0) {
+      alert('No data available to download');
+      return;
+    }
+
+    const headers = ['Employee Name', 'Leave Type', 'Start Date', 'End Date', 'Total Days', 'Status', 'Reason'];
+    const csvRows = [headers.join(',')];
+
+    leaves.forEach(leave => {
+      const empName = leave.user?.name || 'Unknown';
+      const type = leave.leaveType || '';
+      const start = leave.startDate ? new Date(leave.startDate).toISOString().split('T')[0] : '';
+      const end = leave.endDate ? new Date(leave.endDate).toISOString().split('T')[0] : '';
+      const days = leave.totalDays || 0;
+      const status = leave.status || '';
+      const reason = `"${(leave.reason || '').replace(/"/g, '""')}"`;
+
+      csvRows.push([empName, type, start, end, days, status, reason].join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `leave_report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0b1120] text-[#1e293b] dark:text-[#cbd5e1] font-['Inter',sans-serif] px-4 pb-8 pt-2 transition-colors duration-300">
@@ -126,18 +170,17 @@ const Leaves = () => {
       {/* 7. ROW 5: Quick Actions Row */}
       <div className="mb-4">
         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 ml-1">Quick Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
           {[
-            { label: 'Create Policy', icon: FileText, color: 'text-purple-500' },
-            { label: 'Allocate Leave', icon: ArrowRight, color: 'text-green-500' },
-            { label: 'Bulk Allocation', icon: Upload, color: 'text-blue-500' },
-            { label: 'Import Employees', icon: FileText, color: 'text-orange-500' },
-            { label: 'Add Holiday', icon: Calendar, color: 'text-pink-500' },
-            { label: 'Comp-Off Approval', icon: HandCoins, color: 'text-emerald-500' },
-            { label: 'Leave Encashment', icon: DollarSign, color: 'text-red-500' },
-            { label: 'Download Report', icon: Upload, color: 'text-indigo-500', isRotate: true }
+            { label: 'Create Policy', icon: FileText, color: 'text-purple-500', onClick: () => setActiveModal('createPolicy') },
+            { label: 'Allocate Leave', icon: ArrowRight, color: 'text-green-500', onClick: () => setActiveModal('allocateLeave') },
+            { label: 'Bulk Allocation', icon: Upload, color: 'text-blue-500', onClick: () => setActiveModal('bulkAllocation') },
+            { label: 'Add Holiday', icon: Calendar, color: 'text-pink-500', onClick: () => setActiveModal('addHoliday') },
+            { label: 'Comp-Off Approval', icon: HandCoins, color: 'text-emerald-500', onClick: () => setActiveModal('compOff') },
+            { label: 'Leave Encashment', icon: DollarSign, color: 'text-red-500', onClick: () => setActiveModal('leaveEncashment') },
+            { label: 'Download Report', icon: Upload, color: 'text-indigo-500', isRotate: true, onClick: handleDownloadReport }
           ].map((action, i) => (
-            <button key={i} className="bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 p-4 rounded-2xl font-bold text-xs transition-all flex flex-col items-center justify-center gap-3 shadow-sm group">
+            <button key={i} onClick={action.onClick} className="bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 p-4 rounded-2xl font-bold text-xs transition-all flex flex-col items-center justify-center gap-3 shadow-sm group">
               <div className={`p-3 rounded-xl bg-gray-50 dark:bg-[#0f172a] ${action.color} group-hover:scale-110 transition-transform`}>
                 <action.icon size={20} className={action.isRotate ? "rotate-180" : ""} />
               </div>
@@ -146,6 +189,14 @@ const Leaves = () => {
           ))}
         </div>
       </div>
+
+      {/* Modals */}
+      <CreatePolicyModal isOpen={activeModal === 'createPolicy'} onClose={() => setActiveModal(null)} onSuccess={() => {}} />
+      <AllocateLeaveModal isOpen={activeModal === 'allocateLeave'} onClose={() => setActiveModal(null)} />
+      <BulkAllocationModal isOpen={activeModal === 'bulkAllocation'} onClose={() => setActiveModal(null)} />
+      <AddHolidayModal isOpen={activeModal === 'addHoliday'} onClose={() => setActiveModal(null)} onSuccess={() => {}} />
+      <CompOffApprovalModal isOpen={activeModal === 'compOff'} onClose={() => setActiveModal(null)} />
+      <LeaveEncashmentModal isOpen={activeModal === 'leaveEncashment'} onClose={() => setActiveModal(null)} />
 
     </div>
   );

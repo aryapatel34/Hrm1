@@ -300,6 +300,12 @@ exports.getDashboardStats = async (req, res) => {
       createdAt: { $gte: startOfMonth, $lte: endOfMonth }
     });
 
+    const AuditLog = require('../models/AuditLog');
+    const leaveAdjustments = await AuditLog.countDocuments({
+      action: { $regex: /adjust/i },
+      timestamp: { $gte: startOfMonth, $lte: endOfMonth }
+    });
+
     // 12. Compile the response
     res.json({
       success: true,
@@ -318,7 +324,7 @@ exports.getDashboardStats = async (req, res) => {
           quickStats: {
             bulkAllocationDays: totalAllocatedDays,
             importedEmployees: newJoinersThisMonth,
-            leaveAdjustments: 0, // Placeholder as no explicit audit log model for this currently
+            leaveAdjustments,
             compOffsApproved,
             encashmentsPending
           }
@@ -501,32 +507,40 @@ exports.getAttendanceReconciliation = async (req, res) => {
 
 exports.getLeaveAudits = async (req, res) => {
   try {
-    // In a full production system, this would query the AuditLog model:
-    // const logs = await AuditLog.find({ module: 'Leave' }).sort({ timestamp: -1 }).limit(5);
+    const AuditLog = require('../models/AuditLog');
     
-    // For now, we will return a realistic payload of what audit text should look like
-    const dummyLogs = [
-      {
-        img: 'https://ui-avatars.com/api/?name=System+Admin&background=random',
-        text: 'System identified 3 employees with negative leave balances.',
-        time: '2 hours ago',
-        status: 'Issues Found'
-      },
-      {
-        img: 'https://ui-avatars.com/api/?name=HR+Manager&background=random',
-        text: 'Monthly bulk leave allocation successfully executed for 150 employees.',
-        time: 'Yesterday, 10:00 AM',
-        status: 'Completed'
-      },
-      {
-        img: 'https://ui-avatars.com/api/?name=Audit+Bot&background=random',
-        text: 'Scanning overlapping leave requests in Engineering department...',
-        time: 'Just now',
-        status: 'In Progress'
-      }
-    ];
+    // Fetch real audit logs for the Leave module
+    const logs = await AuditLog.find({ 
+      $or: [
+        { module: { $regex: /leave/i } },
+        { action: { $regex: /leave/i } }
+      ]
+    })
+    .sort({ timestamp: -1 })
+    .limit(5);
+    
+    // Format them for the frontend
+    const formattedLogs = logs.map(log => {
+      // Calculate time ago string
+      const seconds = Math.floor((new Date() - new Date(log.timestamp)) / 1000);
+      let timeStr = 'Just now';
+      if (seconds > 86400) timeStr = Math.floor(seconds / 86400) + ' days ago';
+      else if (seconds > 3600) timeStr = Math.floor(seconds / 3600) + ' hours ago';
+      else if (seconds > 60) timeStr = Math.floor(seconds / 60) + ' minutes ago';
 
-    res.json({ success: true, data: dummyLogs });
+      let displayStatus = 'Completed';
+      if (log.status === 'Warning' || log.status === 'Failed') displayStatus = 'Issues Found';
+      else if (log.action.includes('Processing')) displayStatus = 'In Progress';
+
+      return {
+        img: `https://ui-avatars.com/api/?name=${encodeURIComponent(log.userName)}&background=random`,
+        text: log.description,
+        time: timeStr,
+        status: displayStatus
+      };
+    });
+
+    res.json({ success: true, data: formattedLogs });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

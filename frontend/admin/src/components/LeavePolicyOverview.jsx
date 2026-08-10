@@ -45,9 +45,9 @@ const LeavePolicyOverview = () => {
               policies.map((policy) => (
                 <tr key={policy._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                   <td className="px-4 py-4 font-bold text-gray-900 dark:text-white text-xs">{policy.name}</td>
-                  <td className="px-4 py-4 text-xs font-black text-gray-900 dark:text-white text-center tabular-nums">{policy.defaultDays}</td>
+                  <td className="px-4 py-4 text-xs font-black text-gray-900 dark:text-white text-center tabular-nums">{policy.annualAllowance || 0}</td>
                   <td className="px-4 py-4 text-xs font-bold text-gray-700 dark:text-gray-300 text-center">
-                    {policy.isCarryForward ? `Yes (Max: ${policy.maxCarryForwardDays})` : 'No'}
+                    {policy.carryForwardLimit > 0 ? `Yes (Max: ${policy.carryForwardLimit})` : 'No'}
                   </td>
                 </tr>
               ))

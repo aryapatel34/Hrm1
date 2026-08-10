@@ -19,6 +19,16 @@ router.get('/my', protect, getMyLeaves);
 router.put('/cancel/:id', protect, cancelLeave);
 
 // 👨‍💼 Manager Routes
+router.get('/manager/summary', protect, authorize('manager', 'admin'), require('../controllers/leaveController').getManagerStats);
+router.get('/manager/pending', protect, authorize('manager', 'admin'), require('../controllers/leaveController').getTeamLeaves);
+router.get('/manager/availability', protect, authorize('manager', 'admin'), require('../controllers/leaveController').getAvailabilityStats);
+router.get('/manager/calendar', protect, authorize('manager', 'admin'), require('../controllers/leaveController').getManagerCalendar);
+router.get('/manager/balances', protect, authorize('manager', 'admin'), require('../controllers/leaveController').getTeamLeaveBalances);
+router.get('/manager/monthly-trend', protect, authorize('manager', 'admin'), require('../controllers/leaveController').getLeaveMonthlyTrend);
+router.get('/manager/department-analytics', protect, authorize('manager', 'admin'), require('../controllers/leaveController').getDepartmentAnalytics);
+router.put('/manager/bulk-approve', protect, authorize('manager', 'admin'), require('../controllers/leaveController').bulkApproveLeaves);
+router.get('/manager/export', protect, authorize('manager', 'admin'), require('../controllers/leaveController').exportTeamLeaves);
+
 router.get('/manager', protect, authorize('manager', 'admin'), getManagerLeaves);
 router.put('/manager-approve/:id', protect, authorize('manager', 'admin'), managerApprove);
 
