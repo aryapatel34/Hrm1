@@ -5,7 +5,7 @@ const leavePolicySchema = new mongoose.Schema({
   description: { type: String, default: '' },
   applicableTo: { type: [String], default: ['All Employees'] },
   status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
-  type: { type: String, enum: ['paid', 'unpaid'], default: 'paid' },
+  type: { type: String, default: 'paid' },
   annualAllowance: { type: Number, required: true, default: 0 },
   carryForwardLimit: { type: Number, default: 0 },
   requiresApproval: { type: Boolean, default: true }

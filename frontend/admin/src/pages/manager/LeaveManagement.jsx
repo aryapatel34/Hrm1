@@ -9,11 +9,13 @@ import TeamLeaveCalendar from '../../components/manager/TeamLeaveCalendar';
 import TeamLeaveBalance from '../../components/manager/TeamLeaveBalance';
 import LeaveAnalyticsCharts from '../../components/manager/LeaveAnalyticsCharts';
 import QuickActions from '../../components/manager/QuickActions';
+import EmployeeLeaveManagement from '../employee/LeaveManagement';
 
 const LeaveManagement = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [viewMode, setViewMode] = useState('manager');
 
   const fetchStats = async () => {
     try {
@@ -40,12 +42,34 @@ const LeaveManagement = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Leave Management Dashboard</h1>
       </div>
 
-      {/* Summary Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      {/* VIEW MODE TOGGLE */}
+      <div className="flex justify-start w-full mb-6 mt-2">
+        <div className="bg-white dark:bg-[#1e293b] p-1 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm inline-flex">
+          <button 
+            onClick={() => setViewMode('employee')}
+            className={`px-6 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'employee' ? 'bg-[#00a76b] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
+          >
+            My Leaves
+          </button>
+          <button 
+            onClick={() => setViewMode('manager')}
+            className={`px-6 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'manager' ? 'bg-[#00a76b] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
+          >
+            Team Leaves (Manager)
+          </button>
+        </div>
+      </div>
+
+      {viewMode === 'employee' ? (
+        <EmployeeLeaveManagement />
+      ) : (
+        <>
+          {/* Summary Cards Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         
         {/* Pending Approvals */}
         <div className="bg-white dark:bg-[#1e293b] p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between">
@@ -167,6 +191,8 @@ const LeaveManagement = () => {
       {/* Quick Actions */}
       <QuickActions />
 
+        </>
+      )}
     </div>
   );
 };

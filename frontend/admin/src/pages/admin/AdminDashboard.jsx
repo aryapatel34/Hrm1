@@ -284,13 +284,13 @@ return (
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">{getGreeting()}, {firstName}! 👋</h1>
       </div>
       <div className="flex flex-wrap md:flex-nowrap items-center gap-4 mt-4 md:mt-0">
-        <div className="flex items-center whitespace-nowrap text-gray-600 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 font-medium font-mono tabular-nums">
+        <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-4 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 font-medium font-mono tabular-nums">
           <Clock size={18} className="mr-2 text-[#00a76b] shrink-0 animate-pulse" />
-          {liveTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+          {liveTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
         </div>
-        <div className="flex items-center whitespace-nowrap text-gray-600 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 font-medium">
+        <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-4 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 font-medium">
           <Calendar size={18} className="mr-2 text-[#00a76b] shrink-0" />
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </div>
       </div>
     </div>

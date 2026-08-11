@@ -705,10 +705,10 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f8fafc] dark:bg-[#08100e] text-[#201515] dark:text-[#e2e8f0] transition-colors duration-300 ease-in-out overflow-x-hidden w-full">
+    <div className="flex flex-col min-h-screen bg-[#f8fafc] dark:bg-[#08100e] text-[#201515] dark:text-[#e2e8f0] transition-colors duration-300 ease-in-out overflow-x-clip w-full">
       {/* 1. FULL WIDTH TOP BAR (Fixed at top) */}
       <header
-        className="sticky top-0 w-full z-[200] border-b bg-white dark:bg-[#08100e] flex items-center transition-colors duration-300 ease-in-out"
+        className="fixed top-0 left-0 w-full z-[200] border-b bg-white dark:bg-[#08100e] flex items-center transition-colors duration-300 ease-in-out"
         style={{ height: '70px', borderColor: isDarkMode ? '#1a2d29' : '#e2eae7' }}
       >
         {/* Brand Block / Logo (Fixed width matching expanded sidebar) */}
@@ -1209,7 +1209,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
       </header>
 
       {/* 2. BODY AREA (Sidebar + Content starts below top bar) */}
-      <div className="flex flex-1 relative">
+      <div className="flex flex-1 relative mt-[70px]">
         {/* Mobile Drawer Overlay */}
         {isSidebarOpen && (
           <div

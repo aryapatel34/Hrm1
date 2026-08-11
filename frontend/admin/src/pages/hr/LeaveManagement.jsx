@@ -12,6 +12,7 @@ import CompanyShutdowns from '../../components/CompanyShutdowns';
 import AttendanceReconciliation from '../../components/AttendanceReconciliation';
 import EmployeeLeaveAudit from '../../components/EmployeeLeaveAudit';
 import LeaveDashboardHeader from '../../components/LeaveDashboardHeader';
+import EmployeeLeaveManagement from '../employee/LeaveManagement';
 
 // Modals
 import CreatePolicyModal from '../../components/modals/CreatePolicyModal';
@@ -25,6 +26,7 @@ const Leaves = () => {
   const [leaves, setLeaves] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('hr'); // 'hr' or 'employee'
   
   // Modal states
   const [activeModal, setActiveModal] = useState(null);
@@ -35,6 +37,7 @@ const Leaves = () => {
 
   const token = sessionStorage.getItem('token');
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const role = sessionStorage.getItem('role');
 
   // Basic stats for summary cards
   const pendingRequests = leaves.filter(l => l.status?.toLowerCase() === 'pending').length;
@@ -99,7 +102,29 @@ const Leaves = () => {
       {/* 1. HEADER */}
       <LeaveDashboardHeader userName={user.name?.split(' ')[0] || user.firstName || 'Admin'} />
 
-      {/* 2. SUMMARY CARDS */}
+      {/* VIEW MODE TOGGLE */}
+      <div className="flex justify-start w-full mb-6 mt-4">
+        <div className="bg-white dark:bg-[#1e293b] p-1 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm inline-flex">
+          <button 
+            onClick={() => setViewMode('employee')}
+            className={`px-6 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'employee' ? 'bg-[#00a76b] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
+          >
+            My Leaves
+          </button>
+          <button 
+            onClick={() => setViewMode('hr')}
+            className={`px-6 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'hr' ? 'bg-[#00a76b] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
+          >
+            Team Leaves ({role === 'admin' ? 'Admin' : 'HR'})
+          </button>
+        </div>
+      </div>
+
+      {viewMode === 'employee' ? (
+        <EmployeeLeaveManagement />
+      ) : (
+        <>
+          {/* 2. SUMMARY CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         {[
           { label: 'Total Leave Requests', val: totalRequests, sub: 'This Month', icon: CheckSquare, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20', link: 'View All Requests' },
@@ -201,6 +226,9 @@ const Leaves = () => {
       <AddHolidayModal isOpen={activeModal === 'addHoliday'} onClose={() => setActiveModal(null)} onSuccess={triggerRefresh} />
       <CompOffApprovalModal isOpen={activeModal === 'compOff'} onClose={() => setActiveModal(null)} />
       <LeaveEncashmentModal isOpen={activeModal === 'leaveEncashment'} onClose={() => setActiveModal(null)} />
+
+        </>
+      )}
 
     </div>
   );

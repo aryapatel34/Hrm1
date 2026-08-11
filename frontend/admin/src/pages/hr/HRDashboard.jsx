@@ -571,7 +571,7 @@ const HRDashboard = () => {
 
       {/* 5. Fourth Row (Pending Approvals, Quick Actions) */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Card className="p-6 xl:col-span-1 flex flex-col">
+        <Card className="p-6 xl:col-span-1 flex flex-col h-[420px]">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-gray-900 dark:text-white">Pending Approvals</h3>
             <button onClick={() => navigate('/hr/leave')} className="text-xs font-bold text-[#00a76b] hover:underline cursor-pointer">View All</button>
@@ -644,9 +644,9 @@ const HRDashboard = () => {
           </div>
         </Card>
 
-        <Card className="p-6 xl:col-span-1">
+        <Card className="p-6 xl:col-span-1 flex flex-col h-[420px]">
           <h3 className="font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto">
             {[
               {
                 label: 'Add Employee',

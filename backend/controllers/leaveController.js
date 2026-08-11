@@ -1,5 +1,6 @@
 const Leave = require('../models/Leave');
 const User = require('../models/User');
+const AuditLog = require('../models/AuditLog');
 const { isLeaveDatePassed, autoRejectExpiredLeaves } = require('../utils/leaveUtils');
 
 // @desc    Apply for leave
@@ -28,6 +29,17 @@ exports.applyLeave = async (req, res) => {
       totalDays: totalDays || 1,
       status: 'pending'
     });
+
+    await AuditLog.create({
+      userId: employee._id,
+      userName: employee.name || 'Unknown User',
+      userRole: employee.role || 'employee',
+      action: 'Apply Leave',
+      module: 'Leave',
+      description: `${employee.name || 'User'} applied for ${totalDays || 1} day(s) of ${leaveType} leave.`,
+      status: 'Success'
+    });
+
     const io = req.app.get('io');
     if (io) {
       io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
@@ -81,6 +93,21 @@ exports.managerApprove = async (req, res) => {
 
     leave.status = 'approved';
     await leave.save();
+
+    const approvingUser = await User.findById(req.user.id);
+    const leaveUser = await User.findById(leave.user);
+    if (approvingUser && leaveUser) {
+      await AuditLog.create({
+        userId: approvingUser._id,
+        userName: approvingUser.name || 'Manager',
+        userRole: approvingUser.role || 'manager',
+        action: 'Approve Leave',
+        module: 'Leave',
+        description: `${approvingUser.name || 'Manager'} approved ${leave.totalDays || 1} day(s) leave for ${leaveUser.name || 'User'}.`,
+        status: 'Success'
+      });
+    }
+
     if (io) {
       io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
     }
@@ -90,7 +117,7 @@ exports.managerApprove = async (req, res) => {
   }
 };
 
-// @desc    Get HR's leaves (all statuses for dashboard)
+// @desc    Get HR's leaves (Only Employee & Manager leaves)
 // @route   GET /api/leaves/hr
 // @access  Private/HR
 exports.getHRLeaves = async (req, res) => {
@@ -98,7 +125,11 @@ exports.getHRLeaves = async (req, res) => {
     const io = req.app.get('io');
     await autoRejectExpiredLeaves(io);
 
-    const leaves = await Leave.find({}).populate('user', 'name email profile role employeeId profileImage')
+    const targetUsers = await User.find({ role: { $in: ['employee', 'manager'] } }).select('_id');
+    const targetUserIds = targetUsers.map(u => u._id);
+
+    const leaves = await Leave.find({ user: { $in: targetUserIds } })
+      .populate('user', 'name email profile role employeeId profileImage')
       .populate('managerId', 'name email');
     res.json(leaves);
   } catch (error) {
@@ -130,6 +161,21 @@ exports.hrApprove = async (req, res) => {
     leave.status = 'approved';
     leave.hrId = req.user.id;
     await leave.save();
+
+    const approvingUser = await User.findById(req.user.id);
+    const leaveUser = await User.findById(leave.user);
+    if (approvingUser && leaveUser) {
+      await AuditLog.create({
+        userId: approvingUser._id,
+        userName: approvingUser.name || 'HR',
+        userRole: approvingUser.role || 'hr',
+        action: 'Approve Leave',
+        module: 'Leave',
+        description: `${approvingUser.name || 'HR'} approved ${leave.totalDays || 1} day(s) leave for ${leaveUser.name || 'User'}.`,
+        status: 'Success'
+      });
+    }
+
     if (io) {
       io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
     }
