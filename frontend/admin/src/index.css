@@ -26,6 +26,12 @@
 @tailwind utilities;
 
 @layer base {
+  html, body, #root {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+  
   body {
     background-color: var(--zap-cream);
     color: var(--zap-charcoal);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const HolidayManagement = () => {
+const HolidayManagement = ({ refreshTrigger }) => {
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
   const token = sessionStorage.getItem('token');
@@ -20,7 +20,7 @@ const HolidayManagement = () => {
       }
     };
     fetchData();
-  }, [token]);
+  }, [token, refreshTrigger]);
 
   return (
     <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col h-full">

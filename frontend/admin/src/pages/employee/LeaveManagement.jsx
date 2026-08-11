@@ -223,8 +223,8 @@ const LeaveManagement = () => {
 
       {/* 1. Header Section */}
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Leave Manage</h1>
-        <button onClick={() => setIsRequestModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Leave Manage</h1>
+        <button onClick={() => setIsRequestModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap">
           <Plus size={16} /> Apply for Leave
         </button>
       </div>
@@ -243,11 +243,11 @@ const LeaveManagement = () => {
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${card.bg}`}>
                 <card.icon size={20} className={card.color} />
               </div>
-              <h3 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{card.title}</h3>
+              <h3 className="text-[9px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{card.title}</h3>
             </div>
             <div className="mb-4 flex items-center">
-              <span className="text-3xl font-extrabold text-gray-900 dark:text-white mr-2">{card.value}</span>
-              <span className="text-sm font-medium text-gray-500 mt-1">{card.unit}</span>
+              <span className="text-2xl font-extrabold text-gray-900 dark:text-white mr-2">{card.value}</span>
+              <span className="text-xs font-medium text-gray-500 mt-1">{card.unit}</span>
             </div>
           </div>
         ))}
@@ -260,15 +260,15 @@ const LeaveManagement = () => {
         <div className="bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Leave Balance Summary</h2>
-              <p className="text-xs text-gray-500 mt-1">As on {refDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+              <h2 className="text-base font-bold text-gray-900 dark:text-white">Leave Balance Summary</h2>
+              <p className="text-[10px] text-gray-500 mt-1">As on {refDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
             </div>
-            <button className="text-sm font-bold text-blue-600">View All</button>
+            <button className="text-xs font-bold text-blue-600">View All</button>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-gray-500 uppercase bg-gray-50 dark:bg-[#162722]">
+            <table className="w-full text-xs text-left">
+              <thead className="text-[10px] text-gray-500 uppercase bg-gray-50 dark:bg-[#162722]">
                 <tr>
                   <th className="px-4 py-3 rounded-l-lg">Leave Type</th>
                   <th className="px-4 py-3 text-center">Balance</th>
@@ -304,8 +304,8 @@ const LeaveManagement = () => {
         {/* Leave Calendar */}
         <div className="bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Leave Calendar</h2>
-            <button onClick={() => navigate(`/${user.role || 'employee'}/holidays`)} className="text-sm font-bold text-blue-600">View Full Calendar</button>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">Leave Calendar</h2>
+            <button onClick={() => navigate(`/${user.role || 'employee'}/holidays`)} className="text-xs font-bold text-blue-600">View Full Calendar</button>
           </div>
 
           <div className="flex justify-between items-center mb-4">
@@ -316,7 +316,7 @@ const LeaveManagement = () => {
               {refDate.toLocaleString('default', { month: 'long' })} {currentYear}
             </h3>
             <div className="flex gap-2">
-              <button onClick={() => setRefDate(new Date())} className="text-xs font-bold bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded hover:bg-gray-200">Today</button>
+              <button onClick={() => setRefDate(new Date())} className="text-[10px] font-bold bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded hover:bg-gray-200">Today</button>
               <button onClick={() => setRefDate(new Date(currentYear, currentMonth + 1, 1))} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
                 <ChevronRight size={20} />
               </button>
@@ -325,7 +325,7 @@ const LeaveManagement = () => {
 
           <div className="grid grid-cols-7 gap-1 text-center mb-2">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-xs font-bold text-gray-400 py-2">{day}</div>
+              <div key={day} className="text-[10px] font-bold text-gray-400 py-2">{day}</div>
             ))}
           </div>
 
@@ -355,7 +355,7 @@ const LeaveManagement = () => {
               }
 
               return (
-                <div key={idx} className={`aspect-square flex flex-col items-center justify-center rounded-lg text-sm cursor-pointer transition-colors ${bgClass} ${textClass}`}>
+                <div key={idx} className={`aspect-square flex flex-col items-center justify-center rounded-lg text-xs cursor-pointer transition-colors ${bgClass} ${textClass}`}>
                   <span>{day.date}</span>
                   {dot}
                 </div>
@@ -363,7 +363,7 @@ const LeaveManagement = () => {
             })}
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 mt-6 text-xs text-gray-500 font-medium">
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-6 text-[10px] text-gray-500 font-medium">
             <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-green-500"></div> Approved</div>
             <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-orange-500"></div> Pending</div>
             <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-purple-500"></div> Holiday</div>
@@ -378,27 +378,27 @@ const LeaveManagement = () => {
         {/* My Upcoming Leaves */}
         <div className="bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">My Upcoming Leaves</h2>
-            <button className="text-sm font-bold text-blue-600">View All</button>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">My Upcoming Leaves</h2>
+            <button className="text-xs font-bold text-blue-600">View All</button>
           </div>
           <div className="space-y-4">
             {leaves.filter(l => new Date(l.startDate) >= new Date() && (l.status === 'approved' || l.status === 'pending')).length > 0 ? (
               leaves.filter(l => new Date(l.startDate) >= new Date() && (l.status === 'approved' || l.status === 'pending')).slice(0, 3).map((l, idx) => (
                 <div key={idx} className="flex gap-4 p-4 border border-gray-100 dark:border-gray-800 rounded-lg hover:shadow-md transition-shadow">
                   <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-lg p-3 flex flex-col items-center justify-center min-w-[70px]">
-                    <span className="text-xs font-bold uppercase">{new Date(l.startDate).toLocaleString('default', { month: 'short' })}</span>
-                    <span className="text-xl font-black leading-none my-1">{new Date(l.startDate).getDate()}</span>
-                    <span className="text-[10px] font-semibold uppercase">{new Date(l.startDate).toLocaleString('default', { weekday: 'short' })}</span>
+                    <span className="text-[10px] font-bold uppercase">{new Date(l.startDate).toLocaleString('default', { month: 'short' })}</span>
+                    <span className="text-lg font-black leading-none my-1">{new Date(l.startDate).getDate()}</span>
+                    <span className="text-[9px] font-semibold uppercase">{new Date(l.startDate).toLocaleString('default', { weekday: 'short' })}</span>
                   </div>
                   <div className="flex-1 flex justify-between">
                     <div>
                       <h4 className="font-bold text-gray-900 dark:text-gray-100 capitalize">{l.leaveType} Leave</h4>
-                      <p className="text-sm text-gray-500 mt-1"><span className="font-semibold">Reason:</span> {l.reason || 'N/A'}</p>
-                      <p className="text-xs text-gray-400 mt-1">Applied on: {new Date(l.createdAt).toLocaleDateString()}</p>
+                      <p className="text-xs text-gray-500 mt-1"><span className="font-semibold">Reason:</span> {l.reason || 'N/A'}</p>
+                      <p className="text-[10px] text-gray-400 mt-1">Applied on: {new Date(l.createdAt).toLocaleDateString()}</p>
                     </div>
                     <div className="flex flex-col items-end justify-between">
-                      <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{l.totalDays} Day(s)</span>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${getStatusColor(l.status)} capitalize`}>{l.status}</span>
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{l.totalDays} Day(s)</span>
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${getStatusColor(l.status)} capitalize`}>{l.status}</span>
                     </div>
                   </div>
                 </div>
@@ -412,8 +412,8 @@ const LeaveManagement = () => {
         {/* Leave Policy */}
         <div className="bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Leave Policy</h2>
-            <button className="text-sm font-bold text-blue-600">View Full Policy</button>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">Leave Policy</h2>
+            <button className="text-xs font-bold text-blue-600">View Full Policy</button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 border border-gray-100 dark:border-gray-800 rounded-lg flex gap-3">
@@ -421,9 +421,9 @@ const LeaveManagement = () => {
                 <Calendar size={20} />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-gray-500 uppercase">Annual Leave Allocation</h4>
-                <p className="font-bold text-gray-900 dark:text-gray-100 text-sm mt-1">CL: 12 | SL: 10 | EL: 20</p>
-                <p className="text-xs text-gray-400 mt-1">per year</p>
+                <h4 className="text-[10px] font-bold text-gray-500 uppercase">Annual Leave Allocation</h4>
+                <p className="font-bold text-gray-900 dark:text-gray-100 text-xs mt-1">CL: 12 | SL: 10 | EL: 20</p>
+                <p className="text-[10px] text-gray-400 mt-1">per year</p>
               </div>
             </div>
             <div className="p-4 border border-gray-100 dark:border-gray-800 rounded-lg flex gap-3">
@@ -431,9 +431,9 @@ const LeaveManagement = () => {
                 <Clock size={20} />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-gray-500 uppercase">Carry Forward</h4>
-                <p className="font-bold text-gray-900 dark:text-gray-100 text-sm mt-1">Max 5 days</p>
-                <p className="text-xs text-gray-400 mt-1">per year</p>
+                <h4 className="text-[10px] font-bold text-gray-500 uppercase">Carry Forward</h4>
+                <p className="font-bold text-gray-900 dark:text-gray-100 text-xs mt-1">Max 5 days</p>
+                <p className="text-[10px] text-gray-400 mt-1">per year</p>
               </div>
             </div>
             <div className="p-4 border border-gray-100 dark:border-gray-800 rounded-lg flex gap-3">
@@ -441,9 +441,9 @@ const LeaveManagement = () => {
                 <AlertCircle size={20} />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-gray-500 uppercase">Advance Notice</h4>
-                <p className="font-bold text-gray-900 dark:text-gray-100 text-sm mt-1">3 days</p>
-                <p className="text-xs text-gray-400 mt-1">minimum</p>
+                <h4 className="text-[10px] font-bold text-gray-500 uppercase">Advance Notice</h4>
+                <p className="font-bold text-gray-900 dark:text-gray-100 text-xs mt-1">3 days</p>
+                <p className="text-[10px] text-gray-400 mt-1">minimum</p>
               </div>
             </div>
             <div className="p-4 border border-gray-100 dark:border-gray-800 rounded-lg flex gap-3">
@@ -451,9 +451,9 @@ const LeaveManagement = () => {
                 <FileText size={20} />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-gray-500 uppercase">Medical Certificate</h4>
-                <p className="font-bold text-gray-900 dark:text-gray-100 text-sm mt-1">Required after</p>
-                <p className="text-xs text-gray-400 mt-1">2 sick leave days</p>
+                <h4 className="text-[10px] font-bold text-gray-500 uppercase">Medical Certificate</h4>
+                <p className="font-bold text-gray-900 dark:text-gray-100 text-xs mt-1">Required after</p>
+                <p className="text-[10px] text-gray-400 mt-1">2 sick leave days</p>
               </div>
             </div>
             <div className="col-span-2 p-4 border border-gray-100 dark:border-gray-800 rounded-lg flex gap-3">
@@ -461,9 +461,9 @@ const LeaveManagement = () => {
                 <CheckCircle2 size={20} />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-gray-500 uppercase">Max Continuous Leave</h4>
-                <p className="font-bold text-gray-900 dark:text-gray-100 text-sm mt-1">15 days</p>
-                <p className="text-xs text-gray-400 mt-1">at a time</p>
+                <h4 className="text-[10px] font-bold text-gray-500 uppercase">Max Continuous Leave</h4>
+                <p className="font-bold text-gray-900 dark:text-gray-100 text-xs mt-1">15 days</p>
+                <p className="text-[10px] text-gray-400 mt-1">at a time</p>
               </div>
             </div>
           </div>
@@ -476,8 +476,8 @@ const LeaveManagement = () => {
         {/* My Leave Requests */}
         <div className="xl:col-span-2 bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">My Leave Requests</h2>
-            <button className="text-sm font-bold text-blue-600 border border-blue-200 px-4 py-1.5 rounded-lg hover:bg-blue-50">View All Requests</button>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">My Leave Requests</h2>
+            <button className="text-xs font-bold text-blue-600 border border-blue-200 px-4 py-1.5 rounded-lg hover:bg-blue-50">View All Requests</button>
           </div>
 
           <div className="flex gap-6 border-b border-gray-100 dark:border-gray-800 mb-4 overflow-x-auto">
@@ -485,7 +485,7 @@ const LeaveManagement = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`pb-3 text-sm font-bold whitespace-nowrap ${activeTab === tab ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`pb-3 text-xs font-bold whitespace-nowrap ${activeTab === tab ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 {tab}
               </button>
@@ -493,8 +493,8 @@ const LeaveManagement = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-gray-500 uppercase">
+            <table className="w-full text-xs text-left">
+              <thead className="text-[10px] text-gray-500 uppercase">
                 <tr>
                   <th className="py-3 px-4 font-semibold whitespace-nowrap">Leave Dates</th>
                   <th className="py-3 px-4 font-semibold whitespace-nowrap">Leave Type</th>
@@ -515,7 +515,7 @@ const LeaveManagement = () => {
                     <td className="py-4 px-4 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">{lv.totalDays} {lv.totalDays === 1 ? 'Day' : 'Days'}</td>
                     <td className="py-4 px-4 text-gray-500 max-w-[200px] truncate">{lv.reason || '-'}</td>
                     <td className="py-4 px-4 whitespace-nowrap">
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${getStatusColor(lv.status)} capitalize`}>{lv.status}</span>
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${getStatusColor(lv.status)} capitalize`}>{lv.status}</span>
                     </td>
                     <td className="py-4 px-4 text-center whitespace-nowrap">
                       <button onClick={() => { setSelectedLeave(lv); setIsModalOpen(true); }} className="p-1.5 hover:bg-gray-200 rounded text-gray-500">
@@ -536,8 +536,8 @@ const LeaveManagement = () => {
         {/* Upcoming Holidays */}
         <div className="bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Upcoming Holidays</h2>
-            <button onClick={() => navigate(`/${user.role || 'employee'}/holidays`)} className="text-sm font-bold text-blue-600">View Calendar</button>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">Upcoming Holidays</h2>
+            <button onClick={() => navigate(`/${user.role || 'employee'}/holidays`)} className="text-xs font-bold text-blue-600">View Calendar</button>
           </div>
           <div className="space-y-4">
             {MOCK_HOLIDAYS.map((h, idx) => (
@@ -548,10 +548,10 @@ const LeaveManagement = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-gray-900 dark:text-gray-100">{h.date}</h4>
-                    <p className="text-xs text-gray-500">{h.day}</p>
+                    <p className="text-[10px] text-gray-500">{h.day}</p>
                   </div>
                 </div>
-                <div className="font-bold text-sm text-gray-700 dark:text-gray-300 text-right">
+                <div className="font-bold text-xs text-gray-700 dark:text-gray-300 text-right">
                   {h.name}
                 </div>
               </div>
@@ -568,16 +568,16 @@ const LeaveManagement = () => {
             <button onClick={() => setIsRequestModalOpen(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
               <X size={20} />
             </button>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Request Leave</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Request Leave</h3>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Leave Type</label>
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300">Leave Type</label>
                 <select
                   required
                   value={formData.leaveType}
                   onChange={e => setFormData({ ...formData, leaveType: e.target.value })}
-                  className="w-full bg-gray-50 dark:bg-[#162722] border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/50"
+                  className="w-full bg-gray-50 dark:bg-[#162722] border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-blue-500/50"
                 >
                   <option value="" disabled>Choose Leave Type</option>
                   <option value="sick">Sick Leave (SL)</option>
@@ -589,35 +589,35 @@ const LeaveManagement = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Start Date</label>
+                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300">Start Date</label>
                   <input
                     type="date"
                     required
                     value={formData.startDate}
                     onChange={e => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full bg-gray-50 dark:bg-[#162722] border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="w-full bg-gray-50 dark:bg-[#162722] border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-blue-500/50"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-bold text-gray-700 dark:text-gray-300">End Date</label>
+                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300">End Date</label>
                   <input
                     type="date"
                     required
                     value={formData.endDate}
                     onChange={e => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full bg-gray-50 dark:bg-[#162722] border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="w-full bg-gray-50 dark:bg-[#162722] border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-blue-500/50"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Reason</label>
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300">Reason</label>
                 <textarea
                   required
                   value={formData.reason}
                   onChange={e => setFormData({ ...formData, reason: e.target.value })}
                   placeholder="State your reason..."
-                  className="w-full min-h-[100px] bg-gray-50 dark:bg-[#162722] border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
+                  className="w-full min-h-[100px] bg-gray-50 dark:bg-[#162722] border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-3 text-xs outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
                 />
               </div>
 
@@ -636,26 +636,26 @@ const LeaveManagement = () => {
             <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
               <X size={20} />
             </button>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 capitalize">{selectedLeave.leaveType} Leave Details</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 capitalize">{selectedLeave.leaveType} Leave Details</h3>
 
             <div className="flex flex-col gap-5">
               <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-[#162722] p-4 rounded-xl border border-gray-100 dark:border-gray-800">
                 <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Start Date</label>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">{new Date(selectedLeave.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                  <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Start Date</label>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white mt-1">{new Date(selectedLeave.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">End Date</label>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">{new Date(selectedLeave.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                  <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">End Date</label>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white mt-1">{new Date(selectedLeave.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Days</label>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">{selectedLeave.totalDays} day(s)</p>
+                  <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Total Days</label>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white mt-1">{selectedLeave.totalDays} day(s)</p>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</label>
+                  <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Status</label>
                   <p className="mt-1">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${getStatusColor(selectedLeave.status)} capitalize`}>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getStatusColor(selectedLeave.status)} capitalize`}>
                       {selectedLeave.status}
                     </span>
                   </p>
@@ -663,8 +663,8 @@ const LeaveManagement = () => {
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 block">Reason</label>
-                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed p-4 bg-gray-50 dark:bg-[#162722] rounded-xl border border-gray-100 dark:border-gray-800">
+                <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-2 block">Reason</label>
+                <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed p-4 bg-gray-50 dark:bg-[#162722] rounded-xl border border-gray-100 dark:border-gray-800">
                   {selectedLeave.reason || 'No justification provided.'}
                 </p>
               </div>

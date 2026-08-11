@@ -28,6 +28,10 @@ const Leaves = () => {
   
   // Modal states
   const [activeModal, setActiveModal] = useState(null);
+  
+  // Data refresh trigger
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const triggerRefresh = () => setRefreshTrigger(prev => prev + 1);
 
   const token = sessionStorage.getItem('token');
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -55,7 +59,7 @@ const Leaves = () => {
       }
     };
     fetchData();
-  }, [token]);
+  }, [token, refreshTrigger]);
 
   const handleDownloadReport = () => {
     if (!leaves || leaves.length === 0) {
@@ -130,7 +134,7 @@ const Leaves = () => {
 
       {/* 4. ROW 2: Holiday Management + Shutdown Days */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <HolidayManagement />
+        <HolidayManagement refreshTrigger={refreshTrigger} />
         <CompanyShutdowns />
       </div>
 
@@ -194,7 +198,7 @@ const Leaves = () => {
       <CreatePolicyModal isOpen={activeModal === 'createPolicy'} onClose={() => setActiveModal(null)} onSuccess={() => {}} />
       <AllocateLeaveModal isOpen={activeModal === 'allocateLeave'} onClose={() => setActiveModal(null)} />
       <BulkAllocationModal isOpen={activeModal === 'bulkAllocation'} onClose={() => setActiveModal(null)} />
-      <AddHolidayModal isOpen={activeModal === 'addHoliday'} onClose={() => setActiveModal(null)} onSuccess={() => {}} />
+      <AddHolidayModal isOpen={activeModal === 'addHoliday'} onClose={() => setActiveModal(null)} onSuccess={triggerRefresh} />
       <CompOffApprovalModal isOpen={activeModal === 'compOff'} onClose={() => setActiveModal(null)} />
       <LeaveEncashmentModal isOpen={activeModal === 'leaveEncashment'} onClose={() => setActiveModal(null)} />
 

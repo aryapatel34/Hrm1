@@ -234,9 +234,15 @@ const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currenc
 
 if (loading) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[500px] text-[#939084] bg-[#F8F9FB] dark:bg-[#110e0c]">
-      <Activity className="animate-pulse mb-4 text-[#00a76b]" size={48} />
-      <p className="font-semibold text-lg dark:text-gray-300 animate-pulse">Loading Dashboard...</p>
+    <div className="flex flex-col items-center justify-center min-h-[500px] bg-[#F8F9FB] dark:bg-[#110e0c] w-full h-full">
+      <div className="relative flex justify-center items-center h-20 w-20">
+         <div className="absolute animate-ping w-16 h-16 rounded-full bg-[#00a76b] opacity-20"></div>
+         <Activity className="animate-bounce text-[#00a76b] relative z-10" size={42} />
+      </div>
+      <p className="font-bold text-xl text-gray-800 dark:text-gray-200 mt-2 tracking-wide">
+        Loading Dashboard...
+      </p>
+      <p className="text-sm text-gray-500 mt-1">Gathering your workspace insights</p>
     </div>
   );
 }
@@ -258,7 +264,7 @@ const getGreeting = () => {
   if (h < 17) return 'Good Afternoon';
   return 'Good Evening';
 };
-const displayName = profile?.name || (profile?.profile ? `${profile.profile.firstName || ''} ${profile.profile.lastName || ''}`.trim() : '') || localStorage.getItem('userName') || 'Admin';
+const displayName = profile?.fullName || profile?.name || (profile?.profile ? `${profile.profile.firstName || ''} ${profile.profile.lastName || ''}`.trim() : '') || sessionStorage.getItem('userName') || localStorage.getItem('userName') || 'Admin';
 const firstName = displayName.split(' ')[0] || 'Admin';
 
 const currentLeaveOverview = leaveOverview?.byPeriod?.[leavePeriod] || leaveOverview || {
@@ -300,13 +306,13 @@ return (
       ].map((stat, i) => (
         <Card key={i} className={`py-3.5 px-4 flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md ${stat.hoverBorder}`}>
           <div className="flex items-center gap-2.5 mb-2.5">
-            <div className={`inline-flex p-1.5 rounded-lg shrink-0 ${stat.bg} ${stat.color}`}>
-              <stat.icon size={16} strokeWidth={2.5} />
+            <div className={`inline-flex p-2 rounded-lg shrink-0 ${stat.bg} ${stat.color}`}>
+              <stat.icon size={20} strokeWidth={2.5} />
             </div>
-            <p className="text-[10px] sm:text-[11px] font-bold text-gray-500 uppercase tracking-wider leading-tight">{stat.label}</p>
+            <p className="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider leading-tight">{stat.label}</p>
           </div>
           <div className="flex items-baseline gap-2.5 mt-0.5">
-            <h3 className="text-[18px] font-black text-gray-900 leading-none">{stat.val}</h3>
+            <h3 className="text-2xl font-black text-gray-900 leading-none">{stat.val}</h3>
             <p className={`text-xs font-bold ${stat.subtext.includes('+') ? 'text-green-600' : 'text-gray-400'}`}>
               {stat.subtext}
             </p>
@@ -361,21 +367,27 @@ return (
 
       {/* Role Distribution */}
       <Card className="p-4 sm:p-5">
-        <h3 className="font-bold text-gray-900 mb-3">Role-wise Employees</h3>
+        <h3 className="font-bold text-gray-900 dark:text-white mb-3">Role-wise Employees</h3>
         <div className="flex flex-col items-center justify-center">
           {charts.departmentDistribution.length > 0 ? (
             <>
               <div className="h-48 w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={charts.departmentDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={2} dataKey="value">
+                    <Pie 
+                      data={charts.departmentDistribution} cx="50%" cy="50%" 
+                      innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={true}
+                      className="text-[10px] font-semibold"
+                    >
                       {charts.departmentDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                     </Pie>
                     <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[18px] font-black text-gray-900">{stats.totalEmployees}</span>
+                  <span className="text-[18px] font-black text-gray-900 dark:text-white">{stats.totalEmployees}</span>
                   <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total</span>
                 </div>
               </div>
@@ -383,7 +395,7 @@ return (
                 {charts.departmentDistribution.map((entry, index) => (
                   <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
-                    {entry.name}: <span className="text-gray-900 font-bold">{entry.value}</span>
+                    {entry.name}: <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
                   </div>
                 ))}
               </div>
@@ -396,21 +408,27 @@ return (
 
       {/* Gender Distribution */}
       <Card className="p-4 sm:p-5">
-        <h3 className="font-bold text-gray-900 mb-3">Gender Distribution</h3>
+        <h3 className="font-bold text-gray-900 dark:text-white mb-3">Gender Distribution</h3>
         <div className="flex flex-col items-center justify-center">
           {charts.genderDistribution.length > 0 ? (
             <>
               <div className="h-48 w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={charts.genderDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={2} dataKey="value">
+                    <Pie 
+                      data={charts.genderDistribution} cx="50%" cy="50%" 
+                      innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={true}
+                      className="text-[10px] font-semibold"
+                    >
                       {charts.genderDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={['#3b82f6', '#f43f5e', '#f59e0b'][index % 3]} />)}
                     </Pie>
                     <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[18px] font-black text-gray-900">{stats.totalEmployees}</span>
+                  <span className="text-[18px] font-black text-gray-900 dark:text-white">{stats.totalEmployees}</span>
                   <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total</span>
                 </div>
               </div>
@@ -435,7 +453,7 @@ return (
       <Card className="p-4 sm:p-5 flex flex-col justify-between">
         <div>
           <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-gray-900">Leave Overview</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white">Leave Overview</h3>
             <CustomDropdown
               value={leavePeriod}
               onChange={setLeavePeriod}
@@ -443,27 +461,27 @@ return (
             />
           </div>
           <div className="grid grid-cols-2 gap-2.5 mb-3">
-            <div className="p-2.5 bg-gray-50 rounded-xl">
+            <div className="p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
               <p className="text-[11px] font-bold text-gray-500 mb-0.5">Total Leaves</p>
-              <p className="text-[18px] font-black text-gray-900">{currentLeaveOverview.total || 0}</p>
+              <p className="text-[18px] font-black text-gray-900 dark:text-white">{currentLeaveOverview.total || 0}</p>
             </div>
-            <div className="p-2.5 bg-green-50 rounded-xl">
-              <p className="text-[11px] font-bold text-green-700 mb-0.5">Approved</p>
-              <p className="text-[18px] font-black text-green-800">{currentLeaveOverview.approved || 0}</p>
+            <div className="p-2.5 bg-green-50 dark:bg-green-900/30 rounded-xl">
+              <p className="text-[11px] font-bold text-green-700 dark:text-green-500 mb-0.5">Approved</p>
+              <p className="text-[18px] font-black text-green-800 dark:text-green-400">{currentLeaveOverview.approved || 0}</p>
               <p className="text-[10px] font-semibold text-green-600">
                 {currentLeaveOverview.total ? Math.round((currentLeaveOverview.approved / currentLeaveOverview.total) * 100) : 0}%
               </p>
             </div>
-            <div className="p-2.5 bg-red-50 rounded-xl">
-              <p className="text-[11px] font-bold text-red-700 mb-0.5">Rejected</p>
-              <p className="text-[18px] font-black text-red-800">{currentLeaveOverview.rejected || 0}</p>
+            <div className="p-2.5 bg-red-50 dark:bg-red-900/30 rounded-xl">
+              <p className="text-[11px] font-bold text-red-700 dark:text-red-500 mb-0.5">Rejected</p>
+              <p className="text-[18px] font-black text-red-800 dark:text-red-400">{currentLeaveOverview.rejected || 0}</p>
               <p className="text-[10px] font-semibold text-red-600">
                 {currentLeaveOverview.total ? Math.round((currentLeaveOverview.rejected / currentLeaveOverview.total) * 100) : 0}%
               </p>
             </div>
-            <div className="p-2.5 bg-orange-50 rounded-xl">
-              <p className="text-[11px] font-bold text-orange-700 mb-0.5">Cancelled</p>
-              <p className="text-[18px] font-black text-orange-800">{currentLeaveOverview.cancelled || 0}</p>
+            <div className="p-2.5 bg-orange-50 dark:bg-orange-900/30 rounded-xl">
+              <p className="text-[11px] font-bold text-orange-700 dark:text-orange-500 mb-0.5">Cancelled</p>
+              <p className="text-[18px] font-black text-orange-800 dark:text-orange-400">{currentLeaveOverview.cancelled || 0}</p>
               <p className="text-[10px] font-semibold text-orange-600">
                 {currentLeaveOverview.total ? Math.round((currentLeaveOverview.cancelled / currentLeaveOverview.total) * 100) : 0}%
               </p>
@@ -484,14 +502,14 @@ return (
       <Card className="p-4 sm:p-5 flex flex-col justify-between">
         <div>
           <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-gray-900">Payroll Summary</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white">Payroll Summary</h3>
             <CustomDropdown
               value={payrollPeriod}
               onChange={setPayrollPeriod}
               options={[payrollPeriod]}
             />
           </div>
-          <h2 className="text-[18px] font-black text-gray-900 mb-0.5">{formatCurrency(payrollSummary.total)}</h2>
+          <h2 className="text-[18px] font-black text-gray-900 dark:text-white mb-0.5">{formatCurrency(payrollSummary.total)}</h2>
           <p className="text-xs font-semibold text-gray-500 mb-3">Total Payroll Cost</p>
 
           <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
@@ -502,11 +520,11 @@ return (
           <div className="flex justify-between items-center">
             <div>
               <p className="text-[11px] font-bold text-gray-500">Processed</p>
-              <p className="text-sm font-bold text-gray-900">{formatCurrency(payrollSummary.processed)}</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(payrollSummary.processed)}</p>
             </div>
             <div className="text-right">
               <p className="text-[11px] font-bold text-gray-500">Pending</p>
-              <p className="text-sm font-bold text-gray-900">{formatCurrency(payrollSummary.pending)}</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(payrollSummary.pending)}</p>
             </div>
           </div>
         </div>
@@ -518,27 +536,27 @@ return (
       <Card className="p-4 sm:p-5 flex flex-col justify-between">
         <div>
           <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-gray-900">Recruitment Overview</h3>
-            <select className="text-xs bg-gray-50 rounded-lg font-bold text-gray-600 outline-none p-1.5">
+            <h3 className="font-bold text-gray-900 dark:text-white">Recruitment Overview</h3>
+            <select className="text-xs bg-gray-50 dark:bg-gray-800 rounded-lg font-bold text-gray-600 dark:text-gray-300 outline-none p-1.5">
               <option>This Month</option>
             </select>
           </div>
           <div className="space-y-2">
             {[
-              { label: 'New Applications', val: '0', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' },
-              { label: 'Shortlisted', val: '0', icon: CheckCircle, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-              { label: 'Interviews Scheduled', val: '0', icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50' },
-              { label: 'Offers Issued', val: '0', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50' },
-              { label: 'Hires This Month', val: '0', icon: UserPlus, color: 'text-[#00a76b]', bg: 'bg-green-50' }
+              { label: 'New Applications', val: '0', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+              { label: 'Shortlisted', val: '0', icon: CheckCircle, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
+              { label: 'Interviews Scheduled', val: '0', icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/30' },
+              { label: 'Offers Issued', val: '0', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/30' },
+              { label: 'Hires This Month', val: '0', icon: UserPlus, color: 'text-[#00a76b]', bg: 'bg-green-50 dark:bg-green-900/30' }
             ].map((r, i) => (
-              <div key={i} className="flex justify-between items-center py-1.5 px-2.5 rounded-lg border border-gray-50 hover:bg-gray-50 transition-colors">
+              <div key={i} className="flex justify-between items-center py-1.5 px-2.5 rounded-lg border border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                 <div className="flex items-center gap-2">
                   <div className={`p-1.5 rounded-md ${r.bg} ${r.color}`}>
                     <r.icon size={14} />
                   </div>
-                  <span className="text-xs font-semibold text-gray-700">{r.label}</span>
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{r.label}</span>
                 </div>
-                <span className="text-xs font-black text-gray-900">{r.val}</span>
+                <span className="text-xs font-black text-gray-900 dark:text-white">{r.val}</span>
               </div>
             ))}
           </div>
@@ -872,9 +890,9 @@ return (
             { id: 'absenteeism', label: 'Absenteeism Rate', val: '2.6%', trend: 'down', trendVal: '0.8%', color: '#f59e0b', trendColor: 'text-[#f59e0b]', data: [{ v: 3.2 }, { v: 3.0 }, { v: 3.1 }, { v: 2.8 }, { v: 2.9 }, { v: 2.5 }, { v: 2.7 }, { v: 2.9 }] },
             { id: 'training', label: 'Training Completion Rate', val: '76%', trend: 'up', trendVal: '6%', color: '#14b8a6', trendColor: 'text-[#14b8a6]', data: [{ v: 65 }, { v: 68 }, { v: 66 }, { v: 70 }, { v: 70 }, { v: 74 }, { v: 73 }, { v: 76 }] },
           ].map((metric, i) => (
-            <div key={i} className="p-4 border border-gray-100 rounded-xl bg-white shadow-sm relative overflow-hidden flex flex-col h-36">
-              <p className="text-[11px] font-bold text-gray-700 tracking-tight mb-2 truncate">{metric.label}</p>
-              <h4 className="text-[18px] font-black text-gray-900">{metric.val}</h4>
+            <div key={i} className="p-4 border border-gray-100 dark:border-[#28251e] rounded-xl bg-white dark:bg-transparent shadow-sm relative overflow-hidden flex flex-col h-36">
+              <p className="text-[11px] font-bold text-gray-700 dark:text-gray-400 tracking-tight mb-2 truncate">{metric.label}</p>
+              <h4 className="text-[18px] font-black text-gray-900 dark:text-white">{metric.val}</h4>
               <p className={`text-[10px] font-bold mt-1 flex items-center gap-1 ${metric.trendColor}`}>
                 {metric.trend === 'up' ? '↑' : '↓'} {metric.trendVal} vs last quarter
               </p>

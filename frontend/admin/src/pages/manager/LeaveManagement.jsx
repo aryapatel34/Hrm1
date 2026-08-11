@@ -53,10 +53,10 @@ const LeaveManagement = () => {
             <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
               <ClipboardList className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">Pending Approvals</span>
+            <span className="text-xs font-semibold text-gray-900 dark:text-white">Pending Approvals</span>
           </div>
           <div className="flex items-end gap-2 mt-2 mb-4">
-            <span className="text-4xl font-bold text-gray-900 dark:text-white">{stats?.pending || 0}</span>
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">{stats?.pending || 0}</span>
             <span className="text-sm font-medium text-gray-500 mb-1">Requests</span>
           </div>
           <button className="text-indigo-600 text-sm font-bold hover:underline self-start">View all &rarr;</button>
@@ -68,10 +68,10 @@ const LeaveManagement = () => {
             <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
               <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">Employees On Leave Today</span>
+            <span className="text-xs font-semibold text-gray-900 dark:text-white">Employees On Leave Today</span>
           </div>
           <div className="flex items-end gap-2 mt-2 mb-4">
-            <span className="text-4xl font-bold text-gray-900 dark:text-white">{stats?.onLeaveToday || 0}</span>
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">{stats?.onLeaveToday || 0}</span>
             <span className="text-sm font-medium text-gray-500 mb-1">Employees</span>
           </div>
           <button className="text-indigo-600 text-sm font-bold hover:underline self-start">View details &rarr;</button>
@@ -84,12 +84,12 @@ const LeaveManagement = () => {
               <CalendarDays className="w-5 h-5 text-orange-600 dark:text-orange-400" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">Upcoming Leaves</span>
+              <span className="text-xs font-semibold text-gray-900 dark:text-white leading-tight">Upcoming Leaves</span>
               <span className="text-xs text-gray-500">(Next 7 Days)</span>
             </div>
           </div>
           <div className="flex items-end gap-2 mt-2 mb-4">
-            <span className="text-4xl font-bold text-gray-900 dark:text-white">{stats?.upcoming || 0}</span>
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">{stats?.upcoming || 0}</span>
             <span className="text-sm font-medium text-gray-500 mb-1">Employees</span>
           </div>
           <button className="text-indigo-600 text-sm font-bold hover:underline self-start">View details &rarr;</button>
@@ -101,11 +101,11 @@ const LeaveManagement = () => {
             <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
               <PieChart className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">Team Availability</span>
+            <span className="text-xs font-semibold text-gray-900 dark:text-white">Team Availability</span>
           </div>
           <div className="mt-2 mb-4">
             <div className="flex items-end gap-1 mb-2">
-              <span className="text-4xl font-bold text-gray-900 dark:text-white">{stats?.availabilityPercent || 0}</span>
+              <span className="text-3xl font-bold text-gray-900 dark:text-white">{stats?.availabilityPercent || 0}</span>
               <span className="text-xl font-bold text-gray-900 dark:text-white mb-1">%</span>
             </div>
             <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 mb-1">
@@ -121,11 +121,11 @@ const LeaveManagement = () => {
             <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             </div>
-            <span className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">This Month<br/>Leave Requests</span>
+            <span className="text-xs font-semibold text-gray-900 dark:text-white leading-tight">This Month<br/>Leave Requests</span>
           </div>
           <div className="mt-2 mb-2">
             <div className="flex items-end gap-2">
-              <span className="text-4xl font-bold text-gray-900 dark:text-white">{stats?.thisMonthRequests || 0}</span>
+              <span className="text-3xl font-bold text-gray-900 dark:text-white">{stats?.thisMonthRequests || 0}</span>
               <span className="text-sm font-medium text-gray-500 mb-1">Requests</span>
             </div>
             <div className="flex items-center mt-1">

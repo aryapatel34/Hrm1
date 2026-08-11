@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { X } from 'lucide-react';
@@ -15,10 +16,10 @@ const AllocateLeaveModal = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (isOpen) {
-      axios.get('/api/users?role=employee', {
+      axios.get('/api/employees', {
         headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
       }).then(res => {
-        setEmployees(res.data.users || res.data || []);
+        setEmployees(res.data.employees || res.data || []);
       }).catch(err => console.error(err));
     }
   }, [isOpen]);
@@ -36,15 +37,14 @@ const AllocateLeaveModal = ({ isOpen, onClose }) => {
       toast.success('Leave allocated successfully');
       onClose();
     } catch (err) {
-      toast.error('Allocation functionality is pending backend support.');
-      onClose(); // close anyway since backend is pending
+      toast.error(err.response?.data?.message || 'Failed to allocate leave');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-xl w-full max-w-md p-6 relative">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
           <X size={20} />
@@ -61,11 +61,13 @@ const AllocateLeaveModal = ({ isOpen, onClose }) => {
             >
               <option value="">-- Select Employee --</option>
               {employees.map(emp => (
-                <option key={emp._id} value={emp._id}>{emp.name} ({emp.department})</option>
+                <option key={emp._id} value={emp.userId?._id || emp._id}>
+                  {emp.userId?.name || emp.fullName || 'Unknown Employee'} ({emp.designation || 'Employee'})
+                </option>
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Leave Type</label>
               <select 
@@ -105,7 +107,8 @@ const AllocateLeaveModal = ({ isOpen, onClose }) => {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
