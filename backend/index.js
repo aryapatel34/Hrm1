@@ -174,6 +174,8 @@ app.use('/api/search', searchRoutes);
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/hr-dashboard', require('./routes/hrDashboardRoutes'));
 app.use('/api/desktop-app', require('./routes/desktopAppRoutes'));
+app.use('/api/leave-policies', require('./routes/leavePolicyRoutes'));
+app.use('/api/holidays', require('./routes/holidayRoutes'));
 
 
 // Health check
@@ -199,7 +201,7 @@ mongoose.connect(MONGO_URI)
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
-  
+
   // Initialize Cron Jobs
   initCronJobs();
 });

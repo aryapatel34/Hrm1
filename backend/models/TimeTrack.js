@@ -95,6 +95,7 @@ const timeTrackSchema = new mongoose.Schema({
 timeTrackSchema.index({ employeeId: 1, date: 1 });
 timeTrackSchema.index({ managerId: 1, date: 1 });
 timeTrackSchema.index({ employeeRole: 1, date: 1 });
+timeTrackSchema.index({ date: -1 });
 timeTrackSchema.index({ status: 1 });
 
 module.exports = mongoose.model('TimeTrack', timeTrackSchema);

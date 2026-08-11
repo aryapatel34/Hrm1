@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { 
-  getEmployees, 
+const {
+  getEmployees,
   getEmployeeById,
   createEmployee,
-  updateEmployee, 
+  updateEmployee,
   deleteEmployee,
   updateEmployeeStatus,
   getEmployeesByManager

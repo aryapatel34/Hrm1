@@ -20,7 +20,7 @@ const COLORS = ['#00a76b', '#3b82f6', '#f43f5e', '#f59e0b', '#8b5cf6', '#64748b'
 const Card = ({ children, className = '', style = {}, ...props }) => (
   <div
     style={style}
-    className={`bg-white dark:bg-[#161311] rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-[#eceae3] dark:border-[#28251e] transition-all duration-300 ${className}`}
+    className={`bg-white dark:bg-[#161311] rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-[#eceae3] dark:border-[#28251e] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${className}`}
     {...props}
   >
     {children}
@@ -51,7 +51,7 @@ const CustomDropdown = ({ value, onChange, options, className = '' }) => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 bg-[#F8F9FB] dark:bg-[#1f1b17] hover:bg-[#eceae3] dark:hover:bg-[#2a2520] text-gray-700 dark:text-gray-200 text-xs font-bold px-3 py-1.5 rounded-lg border border-[#eceae3] dark:border-[#28251e] transition-all cursor-pointer shadow-xs"
       >
-        <span>{selectedLabel}</span>
+        <span className="whitespace-nowrap">{selectedLabel}</span>
         <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -236,7 +236,7 @@ if (loading) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[500px] text-[#939084] bg-[#F8F9FB] dark:bg-[#110e0c]">
       <Activity className="animate-pulse mb-4 text-[#00a76b]" size={48} />
-      <p className="font-semibold text-lg dark:text-gray-300">Gathering insights...</p>
+      <p className="font-semibold text-lg dark:text-gray-300 animate-pulse">Loading Dashboard...</p>
     </div>
   );
 }
@@ -307,7 +307,7 @@ return (
           </div>
           <div className="flex items-baseline gap-2.5 mt-0.5">
             <h3 className="text-[18px] font-black text-gray-900 leading-none">{stat.val}</h3>
-            <p className={`text-[10px] font-bold ${stat.subtext.includes('+') ? 'text-green-600' : 'text-gray-400'}`}>
+            <p className={`text-xs font-bold ${stat.subtext.includes('+') ? 'text-green-600' : 'text-gray-400'}`}>
               {stat.subtext}
             </p>
           </div>
@@ -320,7 +320,7 @@ return (
       {/* Attendance */}
       <Card className="lg:col-span-1 p-4 sm:p-5">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="font-bold text-gray-900">Attendance Overview</h3>
+          <h3 className="font-bold text-gray-900 whitespace-nowrap">Attendance Overview</h3>
           <CustomDropdown
             value={attPeriod}
             onChange={setAttPeriod}
@@ -332,26 +332,26 @@ return (
             const isMock = !charts.attendanceOverview || charts.attendanceOverview.length === 0 || charts.attendanceOverview.every(d => d.present === 0 && d.absent === 0 && d.late === 0);
             const displayData = isMock
               ? [
-                { name: 'Mon', present: 85, absent: 5, late: 10 },
-                { name: 'Tue', present: 90, absent: 2, late: 8 },
-                { name: 'Wed', present: 88, absent: 4, late: 8 },
-                { name: 'Thu', present: 92, absent: 1, late: 7 },
-                { name: 'Fri', present: 80, absent: 10, late: 10 },
-                { name: 'Sat', present: 40, absent: 50, late: 10 },
-                { name: 'Sun', present: 0, absent: 100, late: 0 }
-              ]
+                  { name: 'Mon', present: 85, absent: 5, late: 10 },
+                  { name: 'Tue', present: 90, absent: 2, late: 8 },
+                  { name: 'Wed', present: 88, absent: 4, late: 8 },
+                  { name: 'Thu', present: 92, absent: 1, late: 7 },
+                  { name: 'Fri', present: 80, absent: 10, late: 10 },
+                  { name: 'Sat', present: 40, absent: 50, late: 10 },
+                  { name: 'Sun', present: 0, absent: 100, late: 0 }
+                ]
               : charts.attendanceOverview;
 
           return (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={displayData} margin={{ top: 25, right: 20, left: 0, bottom: 5 }}>
+            <LineChart data={displayData} margin={{ top: 25, right: 20, left: 0, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} domain={[0, 120]} ticks={[0, 25, 50, 75, 100]} tickMargin={6} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} dy={15} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} tickMargin={12} allowDecimals={false} />
               <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.5)' }} />
-              <Line type="monotone" dataKey="present" stroke="#00a76b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-              <Line type="monotone" dataKey="absent" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />
-              <Line type="monotone" dataKey="late" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />
+              {displayData.some(d => d.present > 0) && <Line type="monotone" dataKey="present" stroke="#00a76b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />}
+              {displayData.some(d => d.absent > 0) && <Line type="monotone" dataKey="absent" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />}
+              {displayData.some(d => d.late > 0) && <Line type="monotone" dataKey="late" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />}
             </LineChart>
           </ResponsiveContainer>
           );
@@ -365,13 +365,13 @@ return (
         <div className="flex flex-col items-center justify-center">
           {charts.departmentDistribution.length > 0 ? (
             <>
-              <div className="h-40 w-full relative">
+              <div className="h-48 w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={charts.departmentDistribution} cx="50%" cy="50%" innerRadius={42} outerRadius={60} paddingAngle={2} dataKey="value">
+                    <Pie data={charts.departmentDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={2} dataKey="value">
                       {charts.departmentDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                     </Pie>
-                    <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff' }} />
+                    <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -400,13 +400,13 @@ return (
         <div className="flex flex-col items-center justify-center">
           {charts.genderDistribution.length > 0 ? (
             <>
-              <div className="h-40 w-full relative">
+              <div className="h-48 w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={charts.genderDistribution} cx="50%" cy="50%" innerRadius={42} outerRadius={60} paddingAngle={2} dataKey="value">
+                    <Pie data={charts.genderDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={2} dataKey="value">
                       {charts.genderDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={['#3b82f6', '#f43f5e', '#f59e0b'][index % 3]} />)}
                     </Pie>
-                    <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff' }} />
+                    <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -726,7 +726,7 @@ return (
         <Card className="p-6 h-[380px] flex flex-col">
           <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-gray-900 dark:text-white">Birthdays & Anniv.</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white truncate pr-2">Birthdays & Anniversaries</h3>
               {upcomingCelebrations.some(c => checkIsToday(c.date, c.diffDays)) && (
                 <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 animate-pulse">
                   🎉 Today
@@ -795,9 +795,12 @@ return (
                 </div>
               );
             }) : (
-              <div className="flex flex-col items-center justify-center h-32 text-gray-400">
-                <Gift size={40} className="mb-3 text-gray-200 dark:text-neutral-700" />
-                <p className="font-medium text-sm">No upcoming events this week</p>
+              <div className="flex flex-col items-center justify-center h-full text-center p-6 group">
+                <div className="w-16 h-16 bg-pink-50/50 dark:bg-pink-900/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Gift size={32} className="text-pink-300 dark:text-pink-800 group-hover:-rotate-12 transition-transform duration-300" />
+                </div>
+                <p className="text-gray-900 dark:text-white font-bold text-sm mb-1">No Upcoming Events</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">There are no birthdays or work anniversaries in the next 30 days.</p>
               </div>
             )}
           </div>

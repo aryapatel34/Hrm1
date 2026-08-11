@@ -303,7 +303,17 @@ const EmployeeDashboard = () => {
   const totalWeeklySeconds = pastDaysWeeklySeconds + (timer || 0);
   const weeklyHours = fmtHrs(totalWeeklySeconds);
 
-  const approvedLeaves = leaves.filter(l => l.status === 'approved').length;
+  const QUOTAS = { sick: 10, earned: 20, casual: 12, emergency: 5, compOff: 3, optionalHoliday: 1 };
+  const approvedLeavesArray = leaves.filter(l => l.status === 'approved');
+  const usedEarned = approvedLeavesArray.filter(l => l.leaveType === 'earned').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
+  const usedSick = approvedLeavesArray.filter(l => l.leaveType === 'sick').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
+  const usedCasual = approvedLeavesArray.filter(l => l.leaveType === 'casual').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
+  
+  const totalAllocated = QUOTAS.earned + QUOTAS.sick + QUOTAS.casual + QUOTAS.compOff + QUOTAS.optionalHoliday;
+  const totalUsedLeaves = usedEarned + usedSick + usedCasual;
+  const totalLeaveBalance = totalAllocated - totalUsedLeaves;
+
+  const approvedLeaves = approvedLeavesArray.length;
   const pendingLeaves = leaves.filter(l => l.status === 'pending').length;
   const leavesTakenThisMonth = leaves.filter(l => l.status === 'approved' && new Date(l.startDate).getMonth() === new Date().getMonth()).length;
 
@@ -460,7 +470,7 @@ const EmployeeDashboard = () => {
         </Card>
 
         {/* Leave Balance */}
-        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#ea580c] cursor-pointer relative group overflow-hidden" onClick={() => navigate('/employee/leaves')}>
+        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#ea580c] cursor-pointer relative group overflow-hidden" onClick={() => navigate('/employee/leave')}>
           <div className="pb-2">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-full bg-[#ffedd5] flex items-center justify-center">
@@ -468,7 +478,7 @@ const EmployeeDashboard = () => {
               </div>
               <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Leave Balance</span>
             </div>
-            <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{Math.max(0, 18 - approvedLeaves)}</p>
+            <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalLeaveBalance}</p>
             <p className="text-xs text-[#939084] mt-1">Available leave days</p>
           </div>
           <div className="absolute inset-x-0 bottom-0 bg-[#f97316] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">

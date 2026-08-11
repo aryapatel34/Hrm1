@@ -8,7 +8,7 @@ const initUsers = async () => {
     try {
         await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/hrms');
         
-        const defaultPassword = await bcrypt.hash('admin123', 10);
+        const defaultPassword = 'admin123';
         
         const defaultUsers = [
             { email: 'hr@fluidhr.com', name: 'HR Manager', role: 'hr' },

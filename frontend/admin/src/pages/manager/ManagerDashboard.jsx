@@ -532,8 +532,8 @@ const ManagerDashboard = () => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-extrabold text-[#0f172a] dark:text-white">68%</span>
-                <span className="text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wide mt-1">Overall Progress</span>
+                <span className="text-3xl font-extrabold text-[#0f172a] dark:text-white leading-none">68%</span>
+                <span className="text-[9px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-widest mt-1 text-center leading-tight">Overall<br/>Progress</span>
               </div>
             </div>
 

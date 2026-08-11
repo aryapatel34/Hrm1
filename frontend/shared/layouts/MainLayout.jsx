@@ -434,6 +434,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Daily Tasks Board', path: '/hr/tasks', icon: CheckSquare },
           { name: 'Events Management', path: '/hr/events', icon: Calendar },
           // { name: 'Task Management', path: '/hr/task-management', icon: ClipboardList },
+          { name: 'Apply Leave', path: '/hr/leave', icon: ClipboardList },
           { name: 'Attendance', path: '/hr/attendance', icon: Calendar },
           { name: 'Time Tracker', path: '/hr/time-tracker', icon: Clock },
           { name: 'Team Chat', path: '/hr/chat', icon: MessageSquare },
@@ -449,6 +450,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Dashboard', path: '/employee/dashboard', icon: LayoutDashboard },
           { name: 'Attendance', path: '/employee/attendance', icon: Calendar },
           { name: 'Time Tracker', path: '/employee/time-tracker', icon: Clock },
+          { name: 'Apply Leave', path: '/employee/leave', icon: ClipboardList },
           { name: 'Team Chat', path: '/employee/chat', icon: MessageSquare },
           { name: 'Create Task', path: '/employee/task-management/create', icon: PlusCircle },
           { name: 'My Documents', path: '/employee/documents', icon: FileText },
@@ -467,7 +469,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Team Attendance', path: '/manager/attendance', icon: Calendar },
           { name: 'Monitoring Logs', path: '/manager/screenshots', icon: Camera },
           { name: 'Notifications', path: '/manager/notifications', icon: Bell },
-          // { name: 'Review Leaves', path: '/manager/leave', icon: FileText },
+          { name: 'Leave Management', path: '/manager/leave', icon: FileText },
         ];
       case 'admin':
       default:
@@ -477,7 +479,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Daily Tasks Board', path: `/${currentRole}/tasks`, icon: CheckSquare },
           { name: 'Events Management', path: `/${currentRole}/events`, icon: Calendar },
           // { name: 'Task Management', path: `/${currentRole}/task-management`, icon: ClipboardList },
-          // { name: 'Request For Leave', path: `/${currentRole}/leave`, icon: FileText },
+          { name: 'Apply Leave', path: `/${currentRole}/leave`, icon: ClipboardList },
           { name: 'Attendance', path: `/${currentRole}/attendance`, icon: Calendar },
           { name: 'Time Tracker', path: `/${currentRole}/time-tracker`, icon: Clock },
           { name: 'Global Chat', path: `/${currentRole}/chat`, icon: MessageSquare },
@@ -729,10 +731,10 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
 
         {/* Top Bar Controls */}
         <div className="flex-1 flex items-center h-full px-6 justify-between">
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
             <button
               onClick={toggleSidebar}
-              className="md:hidden flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-full text-[#374151] dark:text-[#cbd5e1] transition-all cursor-pointer border-none bg-transparent mr-2 sm:mr-3 shrink-0"
+              className="md:hidden flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-full text-[#374151] dark:text-[#cbd5e1] transition-all cursor-pointer border-none bg-transparent shrink-0"
               title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             >
               <Menu size={20} />
@@ -745,7 +747,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
             <div className="relative" ref={quickActionRef}>
               <button
                 onClick={() => setIsQuickActionOpen(!isQuickActionOpen)}
-                className="ml-4 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2 bg-[#00a76b] hover:bg-[#00915c] text-white rounded-full font-bold text-xs transition-all cursor-pointer border-none shadow-sm mr-2 sm:mr-4 shrink-0"
+                className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2 bg-[#00a76b] hover:bg-[#00915c] text-white rounded-full font-bold text-xs transition-all cursor-pointer border-none shadow-sm shrink-0"
               >
                 <Plus size={15} strokeWidth={2.8} />
                 <span className="hidden sm:inline">Quick action</span>
@@ -809,19 +811,19 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
             </div>
           </div>
 
-          <div className="ml-auto flex items-center h-full gap-2 px-6">
+          <div className="ml-auto flex items-center h-full gap-4">
             {/* ⏱️ GLOBAL INACTIVITY TRACKER */}
             {isPausedByIdle && (
               <button
                 onClick={handleResume}
-                className="flex items-center gap-2 px-4 py-1.5 bg-[#00a76b] text-white rounded-full border-none cursor-pointer hover:bg-[#e64600] transition-all animate-pulse mr-2"
+                className="flex items-center gap-2 px-4 py-1.5 bg-[#00a76b] text-white rounded-full border-none cursor-pointer hover:bg-[#e64600] transition-all animate-pulse"
               >
                 <Play size={14} fill="currentColor" />
                 <span className="text-[10px] font-black uppercase tracking-widest">Resume Timer</span>
               </button>
             )}
             {isTrackingActive && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#eceae3] dark:bg-[#111c18] rounded-full border border-[#c5c0b1] dark:border-[#1a2d29] mr-2">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#eceae3] dark:bg-[#111c18] rounded-full border border-[#c5c0b1] dark:border-[#1a2d29]">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#24a148]"></div>
                 <span className="text-[10px] font-black text-[#201515] dark:text-[#e2e8f0] uppercase tracking-widest tabular-nums">
                   Active
@@ -829,7 +831,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
               </div>
             )}
             {!isTrackingActive && !isPausedByIdle && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#eceae3] dark:bg-[#111c18] rounded-full border border-[#c5c0b1] dark:border-[#1a2d29] opacity-50 mr-2">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#eceae3] dark:bg-[#111c18] rounded-full border border-[#c5c0b1] dark:border-[#1a2d29] opacity-50">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#939084]"></div>
                 <span className="text-[10px] font-black text-[#201515] dark:text-[#e2e8f0] uppercase tracking-widest">Offline</span>
               </div>
