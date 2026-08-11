@@ -399,13 +399,13 @@ const ManagerDashboard = () => {
                 borderColor: stat.borderColor,
                 boxShadow: `0 8px 20px -2px ${stat.glowColor}`
               } : undefined}
-              className="flex flex-col aspect-square justify-between hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-xs"
+              className="flex flex-col h-full justify-between hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-xs"
             >
               <div className="flex flex-col items-start gap-2.5 mb-2">
                 <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center ${stat.bg} ${stat.iconColor}`}>
                   <stat.icon size={18} strokeWidth={2.5} />
                 </div>
-                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide leading-tight w-full break-words">{stat.label}</p>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide leading-tight w-full break-words">{stat.label}</p>
               </div>
               <div className="mt-auto">
                 <h3 className="text-2xl sm:text-3xl font-black text-[#0f172a] dark:text-white tracking-tight">{stat.value}</h3>
@@ -418,7 +418,7 @@ const ManagerDashboard = () => {
 
       {/* 3. SECOND ROW (Attendance Trend & Task Status) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="h-60 flex flex-col">
+        <Card className="min-h-[280px] flex flex-col">
           <SectionHeader
             title="Team Attendance Trend"
             action={<Dropdown value={attFilter} onChange={setAttFilter} options={[{ value: 'weekly', label: 'This Week' }, { value: 'monthly', label: 'This Month' }]} />}
@@ -442,7 +442,7 @@ const ManagerDashboard = () => {
           </div>
         </Card>
 
-        <Card className="h-60 flex flex-col">
+        <Card className="min-h-[280px] flex flex-col">
           <SectionHeader
             title="Task Status Overview"
             action={<Dropdown value={taskFilter} onChange={setTaskFilter} options={[{ value: 'monthly', label: 'This Month' }, { value: 'weekly', label: 'This Week' }]} />}
@@ -462,7 +462,7 @@ const ManagerDashboard = () => {
                   >
                     {donutData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }} />
+                  <Tooltip position={{ y: 0 }} contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }} itemStyle={{ color: '#e5e7eb' }} labelStyle={{ color: '#ffffff', fontWeight: 'bold' }} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -499,7 +499,7 @@ const ManagerDashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 600 }} tickFormatter={v => `${v}%`} domain={[0, 100]} />
-                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }} />
+                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }} itemStyle={{ color: '#e5e7eb' }} labelStyle={{ color: '#ffffff', fontWeight: 'bold' }} />
                 <Bar dataKey="performance" radius={[6, 6, 6, 6]} barSize={28}>
                   {teamPerfData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -608,12 +608,14 @@ const ManagerDashboard = () => {
       {/* 6. FOURTH ROW (Calendar, Availability, Active Projects) */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* Calendar */}
-        <Card className="h-80 flex flex-col">
+        <Card className="h-[350px] flex flex-col">
           <SectionHeader title="Team Calendar" />
           <div className="flex-1 flex flex-col">
             <div className="flex justify-between items-center mb-4 px-2">
               <button className="text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white cursor-pointer"><ChevronLeft size={18} /></button>
-              <h3 className="text-sm font-bold text-[#0f172a] dark:text-white">July 2026</h3>
+              <h3 className="text-sm font-bold text-[#0f172a] dark:text-white">
+                {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </h3>
               <div className="flex items-center gap-2">
                 <button className="text-[10px] font-bold border border-gray-200 dark:border-[#28251e] rounded px-2 py-0.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1f1b17] hover:bg-gray-50 dark:hover:bg-[#28251e] cursor-pointer">Today</button>
                 <button className="text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white cursor-pointer"><ChevronRight size={18} /></button>
@@ -625,20 +627,30 @@ const ManagerDashboard = () => {
               ))}
             </div>
             <div className="grid grid-cols-7 text-center gap-y-1 flex-1 px-2">
-              {[...Array(35)].map((_, i) => {
-                const day = i - 1;
-                if (day < 1 || day > 31) return <div key={i} className="p-0.5"></div>;
-                const isToday = day === 29;
-                return (
-                  <div key={i} className="flex flex-col items-center justify-center p-0.5 relative cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1f1b17] rounded-lg">
-                    <span className={`text-[11px] font-semibold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[#00a76b] text-white shadow-sm font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
-                      {day}
-                    </span>
-                    {day === 15 && <div className="absolute bottom-0 w-1 h-1 rounded-full bg-blue-500" />}
-                    {day === 23 && <div className="absolute bottom-0 flex gap-0.5"><div className="w-1 h-1 rounded-full bg-blue-500" /><div className="w-1 h-1 rounded-full bg-purple-500" /></div>}
-                  </div>
-                );
-              })}
+              {(() => {
+                const today = new Date();
+                const currentMonth = today.getMonth();
+                const currentYear = today.getFullYear();
+                const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+                const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+                const offset = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
+                const totalCells = offset + daysInMonth > 35 ? 42 : 35;
+                
+                return [...Array(totalCells)].map((_, i) => {
+                  const day = i - offset + 1;
+                  if (day < 1 || day > daysInMonth) return <div key={i} className="p-0.5"></div>;
+                  const isToday = day === today.getDate();
+                  return (
+                    <div key={i} className="flex flex-col items-center justify-center p-0.5 relative cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1f1b17] rounded-lg">
+                      <span className={`text-[11px] font-semibold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[#00a76b] text-white shadow-sm font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
+                        {day}
+                      </span>
+                      {day === 15 && <div className="absolute bottom-0 w-1 h-1 rounded-full bg-blue-500" />}
+                      {day === 23 && <div className="absolute bottom-0 flex gap-0.5"><div className="w-1 h-1 rounded-full bg-blue-500" /><div className="w-1 h-1 rounded-full bg-purple-500" /></div>}
+                    </div>
+                  );
+                });
+              })()}
             </div>
             <div className="flex items-center justify-center gap-4 mt-1 pt-2 border-t border-gray-100 dark:border-[#28251e]">
               <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" /><span className="text-[9px] font-bold text-gray-500 dark:text-[#a3a094]">Meeting</span></div>
@@ -650,7 +662,7 @@ const ManagerDashboard = () => {
         </Card>
 
         {/* Availability */}
-        <Card className="h-80 flex flex-col">
+        <Card className="h-[350px] flex flex-col">
           <SectionHeader title="Team Availability" />
           <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
             {teamAvailability.map((member, i) => (
@@ -664,7 +676,7 @@ const ManagerDashboard = () => {
                     <p className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094] mt-0.5">{member.role}</p>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 bg-transparent dark:bg-opacity-10" style={{ color: member.color, borderColor: member.color }}>
+                <span className="text-[10px] font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 bg-transparent dark:bg-opacity-10 whitespace-nowrap shrink-0" style={{ color: member.color, borderColor: member.color }}>
                   {member.hasDot && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: member.color }} />}
                   {member.status}
                 </span>
@@ -674,7 +686,7 @@ const ManagerDashboard = () => {
         </Card>
 
         {/* Active Projects */}
-        <Card className="h-80 flex flex-col">
+        <Card className="h-[350px] flex flex-col">
           <SectionHeader
             title="Active Projects"
             action={
@@ -720,7 +732,7 @@ const ManagerDashboard = () => {
                   <Pie data={workloadData} innerRadius={45} outerRadius={75} paddingAngle={2} dataKey="value" stroke="none">
                     {workloadData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 15px rgba(0,0,0,0.4)' }} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 15px rgba(0,0,0,0.4)' }} itemStyle={{ color: '#e5e7eb' }} labelStyle={{ color: '#ffffff', fontWeight: 'bold' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -783,7 +795,7 @@ const ManagerDashboard = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-extrabold text-[#0f172a] dark:text-white">{member.performance}%</span>
-                  <Star size={16} fill={i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : '#d97706'} stroke="none" />
+                  <Star size={16} fill="#f59e0b" stroke="none" />
                 </div>
               </div>
             ))}

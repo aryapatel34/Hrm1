@@ -94,9 +94,14 @@ exports.getDashboardStats = async (req, res) => {
     });
 
     // 5. Attendance Overview (Current Week: Mon - Sun)
+    const attPeriod = req.query.attPeriod || 'This Week';
     const currentDayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1; // 0 for Mon, 6 for Sun
     const startOfCurrentWeek = new Date(startOfToday);
     startOfCurrentWeek.setDate(startOfCurrentWeek.getDate() - currentDayOfWeek);
+    
+    if (attPeriod === 'Last Week') {
+      startOfCurrentWeek.setDate(startOfCurrentWeek.getDate() - 7);
+    }
 
     const startOfCurrentWeekStr = startOfCurrentWeek.toISOString().split('T')[0];
 

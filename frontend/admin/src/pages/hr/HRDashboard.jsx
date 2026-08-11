@@ -159,7 +159,7 @@ const HRDashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [attPeriod, leavePeriod]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -173,7 +173,7 @@ const HRDashboard = () => {
       setProfile(profRes.data?.data || profRes.data);
 
       // Fetch Aggregated Dashboard Data
-      const dashRes = await axios.get('/api/hr-dashboard/summary', { headers });
+      const dashRes = await axios.get('/api/hr-dashboard/summary', { headers, params: { attPeriod, leavePeriod } });
       const dData = dashRes.data.data;
       setDashboardData(dData);
 
@@ -245,7 +245,7 @@ const HRDashboard = () => {
     if (h < 17) return 'Good Afternoon';
     return 'Good Evening';
   };
-  const displayName = profile?.name || (profile?.profile ? `${profile.profile.firstName || ''} ${profile.profile.lastName || ''}`.trim() : '') || localStorage.getItem('userName') || 'HR Admin';
+  const displayName = profile?.fullName || profile?.name || (profile?.profile ? `${profile.profile.firstName || ''} ${profile.profile.lastName || ''}`.trim() : '') || sessionStorage.getItem('userName') || localStorage.getItem('userName') || 'HR Admin';
   const firstName = displayName.split(' ')[0] || 'HR Admin';
 
   // Filter out Admin role from Role-wise distribution for HR Dashboard

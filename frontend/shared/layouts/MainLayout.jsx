@@ -705,7 +705,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f8fafc] dark:bg-[#08100e] text-[#201515] dark:text-[#e2e8f0] transition-colors duration-300 ease-in-out">
+    <div className="flex flex-col min-h-screen bg-[#f8fafc] dark:bg-[#08100e] text-[#201515] dark:text-[#e2e8f0] transition-colors duration-300 ease-in-out overflow-x-hidden w-full">
       {/* 1. FULL WIDTH TOP BAR (Fixed at top) */}
       <header
         className="sticky top-0 w-full z-[200] border-b bg-white dark:bg-[#08100e] flex items-center transition-colors duration-300 ease-in-out"
@@ -714,8 +714,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
         {/* Brand Block / Logo (Fixed width matching expanded sidebar) */}
         <Link
           to={`/${activeRole}/dashboard`}
-          className="px-6 flex items-center no-underline hover:opacity-90 transition-opacity gap-3 shrink-0 h-full"
-          style={{ width: '250px', boxSizing: 'border-box' }}
+          className="px-3 md:px-6 flex items-center no-underline hover:opacity-90 transition-opacity gap-2 md:gap-3 shrink-0 h-full w-auto md:w-[250px]"
         >
           <div className="w-10 h-10 bg-[#00a76b] rounded-full flex items-center justify-center flex-shrink-0 shadow-sm transition-all duration-300 hover:scale-105">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -730,8 +729,8 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
         </Link>
 
         {/* Top Bar Controls */}
-        <div className="flex-1 flex items-center h-full px-6 justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex-1 flex items-center h-full px-3 md:px-6 justify-between">
+          <div className="flex items-center gap-2 md:gap-4">
             <button
               onClick={toggleSidebar}
               className="md:hidden flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-full text-[#374151] dark:text-[#cbd5e1] transition-all cursor-pointer border-none bg-transparent shrink-0"
@@ -756,62 +755,67 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
               {isQuickActionOpen && (
                 <div className="absolute top-[45px] left-4 w-56 bg-white dark:bg-[#0c1512] border border-[#eceae3] dark:border-[#1a2d29] rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden z-[110] p-2 flex flex-col">
                   {['admin', 'hr'].includes(activeRole) && (
-                    <button
-                      onClick={() => {
-                        setIsQuickActionOpen(false);
-                        navigate(`/${activeRole}/create-user`);
-                      }}
-                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer"
-                    >
-                      Add Employee
-                    </button>
-                  )}
-                  <button
-                    onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/leave`); }}
-                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer"
-                  >
-                    Apply Leave
-                  </button>
-                  {['admin', 'hr'].includes(activeRole) && (
                     <>
-                      <button
-                        onClick={() => {
-                          setIsQuickActionOpen(false);
-                          navigate(`/${activeRole}/notifications`);
-                        }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer"
-                      >
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/create-user`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
+                        Add Employee
+                      </button>
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/leave`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
+                        Apply Leave
+                      </button>
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/notifications`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
                         Create Announcement
                       </button>
-                      <button
-                        onClick={() => {
-                          setIsQuickActionOpen(false);
-                          navigate(`/${activeRole}/payroll`);
-                        }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer"
-                      >
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/payroll`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
                         Generate Payroll
                       </button>
-                      <button
-                        onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/recruitment`); }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer"
-                      >
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/recruitment`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
                         Schedule Interview
+                      </button>
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/task-management/create`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
+                        Assign Task
                       </button>
                     </>
                   )}
-                  <button
-                    onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/task-management/create`); }}
-                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer"
-                  >
-                    Assign Task
-                  </button>
+
+                  {activeRole === 'manager' && (
+                    <>
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/task-management/create`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
+                        Assign / Reassign Task
+                      </button>
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/leave`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
+                        Approve / Reject Leave
+                      </button>
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/create-user`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
+                        Add Team Member
+                      </button>
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/events`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
+                        Schedule
+                      </button>
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/projects`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
+                        Create Project
+                      </button>
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/reports`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
+                        Generate Report
+                      </button>
+                    </>
+                  )}
+
+                  {activeRole === 'employee' && (
+                    <>
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/leave`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
+                        Apply Leave
+                      </button>
+                      <button onClick={() => { setIsQuickActionOpen(false); navigate(`/${activeRole}/task-management/create`); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold text-gray-700 dark:text-slate-300 rounded-xl transition-colors border-none bg-transparent cursor-pointer">
+                        Assign Task
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="ml-auto flex items-center h-full gap-4">
+          <div className="ml-auto flex items-center h-full gap-2 md:gap-4">
             {/* ⏱️ GLOBAL INACTIVITY TRACKER */}
             {isPausedByIdle && (
               <button
@@ -1298,7 +1302,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
 
         {/* Main Workspace content */}
         <div className="flex-1 flex flex-col min-w-0">
-          <main className="flex-1 min-w-0 overflow-y-auto bg-[#f8fafc] dark:bg-[#08100e] relative flex flex-col p-6 md:p-8">
+          <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-[#f8fafc] dark:bg-[#08100e] relative flex flex-col p-6 md:p-8">
             {location.pathname.endsWith('/chat') ? (
               <div className="h-[calc(100vh-70px)] relative overflow-hidden">
                 <ErrorBoundary>

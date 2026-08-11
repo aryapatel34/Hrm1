@@ -9,7 +9,8 @@ const {
   rejectLeave, 
   cancelLeave,
   getMyLeaves, 
-  getAllLeaves 
+  getAllLeaves,
+  allocateLeave
 } = require('../controllers/leaveController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -38,6 +39,9 @@ router.put('/hr-approve/:id', protect, authorize('hr', 'admin'), hrApprove);
 
 // ❌ Unified Reject Route
 router.put('/reject/:id', protect, authorize('manager', 'hr', 'admin'), rejectLeave);
+
+// 💼 HR/Admin Allocation
+router.post('/allocate', protect, authorize('hr', 'admin'), allocateLeave);
 
 // 👑 Admin Route
 router.get('/', protect, authorize('admin', 'hr'), getAllLeaves);

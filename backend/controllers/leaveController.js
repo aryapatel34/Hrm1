@@ -610,3 +610,46 @@ exports.exportTeamLeaves = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+// @desc    Allocate Leave (Admin/HR)
+// @route   POST /api/leaves/allocate
+// @access  Private/HR/Admin
+exports.allocateLeave = async (req, res) => {
+  try {
+    const { userId, leaveType, days, action } = req.body;
+    const numDays = parseFloat(days);
+    
+    let balanceField = 'otherLeaves';
+    if (leaveType === 'casual') balanceField = 'casualLeave';
+    else if (leaveType === 'sick') balanceField = 'sickLeave';
+    else if (leaveType === 'earned') balanceField = 'earnedLeave';
+
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    
+    const LeaveBalance = require('../models/LeaveBalance');
+    let balance = await LeaveBalance.findOne({ employeeId: userId, month, year });
+    
+    if (!balance) {
+      balance = new LeaveBalance({
+        employeeId: userId,
+        month,
+        year
+      });
+    }
+    
+    if (action === 'add') {
+      balance[balanceField] += numDays;
+    } else if (action === 'deduct') {
+      balance[balanceField] -= numDays;
+      if (balance[balanceField] < 0) balance[balanceField] = 0;
+    }
+    
+    await balance.save();
+    res.json({ message: 'Leave allocated successfully', balance });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
