@@ -7,30 +7,46 @@ import { X, Check, XCircle } from 'lucide-react';
 const CompOffApprovalModal = ({ isOpen, onClose }) => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
+  const token = sessionStorage.getItem('token');
 
   useEffect(() => {
     if (isOpen) {
-      setLoading(true);
-      // Mocking fetch for comp-off requests since there might not be a specific API yet
-      setTimeout(() => {
-        setRequests([
-          { _id: '1', employee: 'John Doe', dateWorked: '2023-10-14', reason: 'Weekend Server Maintenance', status: 'pending' },
-          { _id: '2', employee: 'Jane Smith', dateWorked: '2023-10-15', reason: 'Emergency Client Meeting', status: 'pending' }
-        ]);
-        setLoading(false);
-      }, 800);
+      fetchRequests();
     }
   }, [isOpen]);
+
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get('/api/comp-off/all', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRequests(res.data || []);
+    } catch (err) {
+      toast.error('Failed to fetch comp-off requests');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
   const handleAction = async (id, action) => {
     try {
-      // Simulate API call
-      setRequests(requests.filter(r => r._id !== id));
-      toast.success(`Comp-Off request ${action}ed`);
+      let payload = { status: action === 'approve' ? 'approved' : 'rejected' };
+      if (action === 'reject') {
+        const reason = prompt('Reason for rejection?');
+        if (reason === null) return;
+        payload.rejectionReason = reason;
+      }
+      
+      await axios.put(`/api/comp-off/${id}/status`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(`Request ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+      fetchRequests();
     } catch (err) {
-      toast.error(`Failed to ${action} request`);
+      toast.error('Failed to update request status');
     }
   };
 
@@ -40,11 +56,11 @@ const CompOffApprovalModal = ({ isOpen, onClose }) => {
         <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
           <X size={20} />
         </button>
-        
-        <div className="flex-1 flex flex-col justify-between h-full pt-6">
+
+        <div className="flex-1 flex flex-col pt-6 h-full overflow-hidden">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Comp-Off Approvals</h2>
+          
           <div className="overflow-y-auto pr-1 flex-1 space-y-4">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Comp-Off Approvals</h2>
-            
             {loading ? (
               <div className="py-10 text-center text-gray-500">Loading requests...</div>
             ) : requests.length === 0 ? (
@@ -56,17 +72,29 @@ const CompOffApprovalModal = ({ isOpen, onClose }) => {
                 {requests.map(req => (
                   <div key={req._id} className="p-4 rounded-xl border border-gray-150 dark:border-gray-800 space-y-2 bg-gray-50 dark:bg-[#0f172a]/50">
                     <div className="flex justify-between items-center">
-                      <span className="font-bold text-sm text-gray-900 dark:text-white">{req.employee}</span>
-                      <span className="text-xs text-gray-500">{req.dateWorked}</span>
+                      <span className="font-bold text-sm text-gray-900 dark:text-white">{req.employeeId?.name || req.employee || 'Employee'}</span>
+                      <span className="text-xs text-gray-500">
+                        {req.dateWorked ? new Date(req.dateWorked).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}
+                      </span>
                     </div>
                     <p className="text-xs text-gray-600 dark:text-gray-400">{req.reason}</p>
                     <div className="flex justify-end gap-2 pt-2">
-                      <button onClick={() => handleAction(req._id, 'reject')} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-xs font-bold flex items-center gap-1">
-                        <XCircle size={14} /> Reject
-                      </button>
-                      <button onClick={() => handleAction(req._id, 'approve')} className="px-3 py-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-xs font-bold flex items-center gap-1">
-                        <Check size={14} /> Approve
-                      </button>
+                      {req.status === 'pending' ? (
+                        <>
+                          <button onClick={() => handleAction(req._id, 'reject')} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-xs font-bold flex items-center gap-1">
+                            <XCircle size={14} /> Reject
+                          </button>
+                          <button onClick={() => handleAction(req._id, 'approve')} className="px-3 py-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-xs font-bold flex items-center gap-1">
+                            <Check size={14} /> Approve
+                          </button>
+                        </>
+                      ) : (
+                        <span className={`px-2 py-1 text-xs font-bold rounded-lg capitalize ${
+                          req.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {req.status}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
