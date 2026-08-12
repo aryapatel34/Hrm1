@@ -41,6 +41,12 @@ router.put('/hr-approve/:id', protect, authorize('hr', 'admin'), hrApprove);
 // ❌ Unified Reject Route
 router.put('/reject/:id', protect, authorize('manager', 'hr', 'admin'), rejectLeave);
 
+// 🛡️ HR Override Route
+router.put('/override/:id', protect, authorize('hr', 'admin'), require('../controllers/leaveController').hrOverride);
+
+// 📜 Leave History / Transition Audit Route
+router.get('/history/:id', protect, require('../controllers/leaveController').getLeaveHistory);
+
 // 💼 HR/Admin Allocation
 router.post('/allocate', protect, authorize('hr', 'admin'), allocateLeave);
 

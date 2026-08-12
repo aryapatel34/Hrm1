@@ -11,7 +11,10 @@ exports.getEmployees = async (req, res) => {
 
     // Role-based access logic for retrieving employees
     if (role === 'manager') {
-      query.managerId = req.user.id;
+      query.$or = [
+        { managerId: req.user.id },
+        { reportingManager: req.user.id }
+      ];
     } else if (role === 'employee') {
       // Employees should only see themselves, or maybe they just use /me endpoint. If they hit this, return just their profile.
       query.userId = req.user.id;

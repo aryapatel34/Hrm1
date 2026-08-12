@@ -205,14 +205,36 @@ const HRDashboard = () => {
   };
 
   const handleRejectLeave = async (id) => {
+    const reason = window.prompt("Enter rejection reason:");
+    if (reason === null) return;
     try {
       const token = sessionStorage.getItem('token');
-      await axios.put(`/api/leaves/reject/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.put(`/api/leaves/reject/${id}`, { reason }, { headers: { Authorization: `Bearer ${token}` } });
       toast.success('Leave request rejected');
       fetchData(); // refresh data
     } catch (err) {
       console.error('Error rejecting leave:', err);
       toast.error(err.response?.data?.message || 'Failed to reject leave');
+      fetchData();
+    }
+  };
+
+  const handleOverrideLeave = async (id, currentStatus) => {
+    const targetStatus = currentStatus === 'approved' ? 'rejected' : 'approved';
+    const confirmMsg = `Are you sure you want to override the decision from ${currentStatus.toUpperCase()} to ${targetStatus.toUpperCase()}?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    const reason = window.prompt("Enter reason for override:");
+    if (reason === null) return;
+
+    try {
+      const token = sessionStorage.getItem('token');
+      await axios.put(`/api/leaves/override/${id}`, { targetStatus, reason }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Leave status overridden successfully');
+      fetchData(); // refresh data
+    } catch (err) {
+      console.error('Error overriding leave:', err);
+      toast.error(err.response?.data?.message || 'Failed to override leave');
       fetchData();
     }
   };
@@ -1017,28 +1039,44 @@ const HRDashboard = () => {
 
             {/* Action Buttons (Fixed at bottom) */}
             <div className="p-6 pt-4 border-t border-gray-100 dark:border-[#28251e] shrink-0 bg-gray-50/50 dark:bg-[#161311] rounded-b-3xl grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  handleRejectLeave(selectedLeaveApproval._id);
-                  setSelectedLeaveApproval(null);
-                }}
-                className="w-full py-3 px-4 rounded-xl bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-950/60 text-red-600 dark:text-red-400 font-bold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <X size={16} strokeWidth={2.5} />
-                Reject Leave
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  handleApproveLeave(selectedLeaveApproval._id);
-                  setSelectedLeaveApproval(null);
-                }}
-                className="w-full py-3 px-4 rounded-xl bg-[#00a76b] hover:bg-[#00915c] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-md shadow-[#00a76b]/20 cursor-pointer"
-              >
-                <Check size={16} strokeWidth={2.5} />
-                Approve Leave
-              </button>
+              {(!selectedLeaveApproval.status || selectedLeaveApproval.status === 'pending') ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleRejectLeave(selectedLeaveApproval._id);
+                      setSelectedLeaveApproval(null);
+                    }}
+                    className="w-full py-3 px-4 rounded-xl bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-950/60 text-red-600 dark:text-red-400 font-bold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <X size={16} strokeWidth={2.5} />
+                    Reject Leave
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleApproveLeave(selectedLeaveApproval._id);
+                      setSelectedLeaveApproval(null);
+                    }}
+                    className="w-full py-3 px-4 rounded-xl bg-[#00a76b] hover:bg-[#00915c] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-md shadow-[#00a76b]/20 cursor-pointer"
+                  >
+                    <Check size={16} strokeWidth={2.5} />
+                    Approve Leave
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleOverrideLeave(selectedLeaveApproval._id, selectedLeaveApproval.status);
+                    setSelectedLeaveApproval(null);
+                  }}
+                  className="col-span-2 w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-amber-500/20"
+                >
+                  <Sparkles size={16} />
+                  Override Decision ({selectedLeaveApproval.status === 'approved' ? 'Reject' : 'Approve'})
+                </button>
+              )}
             </div>
           </div>
         </div>,

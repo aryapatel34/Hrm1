@@ -2,6 +2,91 @@ const Leave = require('../models/Leave');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const { isLeaveDatePassed, autoRejectExpiredLeaves } = require('../utils/leaveUtils');
+const LeaveHistory = require('../models/LeaveHistory');
+const LeaveBalance = require('../models/LeaveBalance');
+
+const updateLeaveBalanceForUser = async (userId, date) => {
+  const m = date.getMonth() + 1;
+  const y = date.getFullYear();
+
+  const monthStart = new Date(y, m - 1, 1);
+  const monthEnd = new Date(y, m, 0, 23, 59, 59);
+
+  const approvedLeaves = await Leave.find({
+    user: userId,
+    status: 'approved',
+    startDate: { $gte: monthStart, $lte: monthEnd }
+  });
+
+  const totalUsed = approvedLeaves.reduce((sum, l) => sum + (l.totalDays || 1), 0);
+
+  let balance = await LeaveBalance.findOne({ employeeId: userId, month: m, year: y });
+  if (!balance) {
+    const prevDate = new Date(y, m - 2, 1);
+    const prevM = prevDate.getMonth() + 1;
+    const prevY = prevDate.getFullYear();
+    const prevBalance = await LeaveBalance.findOne({ employeeId: userId, month: prevM, year: prevY });
+    const carryForward = prevBalance ? prevBalance.remainingLeave : 0;
+
+    balance = new LeaveBalance({
+      employeeId: userId,
+      month: m,
+      year: y,
+      carryForward,
+      earnedLeave: 1.5
+    });
+  }
+
+  balance.usedLeave = totalUsed;
+  balance.remainingLeave = (balance.earnedLeave || 0) + (balance.sickLeave || 0) + (balance.casualLeave || 0) + (balance.compOff || 0) + (balance.otherLeaves || 0) + (balance.carryForward || 0) - totalUsed;
+  await balance.save();
+  return balance;
+};
+
+const createInAppAndEmailNotification = async (req, { userId, title, message, type, subject, emailHtml }) => {
+  try {
+    const Notification = require('../models/Notification');
+    const User = require('../models/User');
+    const sendEmail = require('../utils/sendEmail');
+
+    const notif = await Notification.create({
+      userId,
+      senderId: req.user.id,
+      senderName: req.user.name || 'System',
+      senderRole: req.user.role || 'system',
+      message: `${title}: ${message}`,
+      type: type || 'leave_status'
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${String(userId)}`).emit('new_notification', {
+        _id: notif._id,
+        message: notif.message,
+        type: notif.type,
+        read: false,
+        senderId: req.user.id,
+        senderName: req.user.name || 'System',
+        senderRole: req.user.role || 'system',
+        createdAt: notif.createdAt
+      });
+    }
+
+    const targetUser = await User.findById(userId);
+    if (targetUser && targetUser.email) {
+      await sendEmail({
+        email: targetUser.email,
+        subject: subject || title,
+        message: message,
+        html: emailHtml || `<p>${message}</p>`
+      }).catch(err => {
+        console.error(`[EMAIL ERROR] Failed to send email to ${targetUser.email}:`, err.message);
+      });
+    }
+  } catch (err) {
+    console.error('[NOTIFICATION ERROR] Failed to create or dispatch notification:', err.message);
+  }
+};
 
 // @desc    Apply for leave
 // @route   POST /api/leaves/apply
@@ -10,14 +95,29 @@ exports.applyLeave = async (req, res) => {
   try {
     const { leaveType, startDate, endDate, reason, totalDays } = req.body;
 
-    // Prevent applying for dates that have already passed
     if (isLeaveDatePassed(startDate, endDate)) {
       return res.status(400).json({ message: 'Cannot apply for leave for dates that have already passed.' });
     }
 
-    // Find employee's manager
     const employee = await User.findById(req.user.id);
     if (!employee) return res.status(404).json({ message: 'User not found' });
+
+    const startObj = new Date(startDate);
+    const m = startObj.getMonth() + 1;
+    const y = startObj.getFullYear();
+    
+    let balance = await LeaveBalance.findOne({ employeeId: req.user.id, month: m, year: y });
+    if (!balance) {
+      await updateLeaveBalanceForUser(req.user.id, startObj);
+      balance = await LeaveBalance.findOne({ employeeId: req.user.id, month: m, year: y });
+    }
+    
+    const remaining = balance ? balance.remainingLeave : 1.5;
+    if (remaining < (totalDays || 1)) {
+      return res.status(400).json({ 
+        message: `Insufficient leave balance. Available: ${remaining} day(s). Requested: ${totalDays || 1} day(s).` 
+      });
+    }
 
     const leave = await Leave.create({
       user: req.user.id,
@@ -30,6 +130,17 @@ exports.applyLeave = async (req, res) => {
       status: 'pending'
     });
 
+    const LeaveHistory = require('../models/LeaveHistory');
+    await LeaveHistory.create({
+      leaveId: leave._id,
+      actorId: req.user.id,
+      actorRole: req.user.role || 'employee',
+      action: 'Created',
+      oldStatus: null,
+      newStatus: 'pending',
+      reason: reason || ''
+    });
+
     await AuditLog.create({
       userId: employee._id,
       userName: employee.name || 'Unknown User',
@@ -39,6 +150,45 @@ exports.applyLeave = async (req, res) => {
       description: `${employee.name || 'User'} applied for ${totalDays || 1} day(s) of ${leaveType} leave.`,
       status: 'Success'
     });
+
+    if (employee.reportingManager) {
+      await createInAppAndEmailNotification(req, {
+        userId: employee.reportingManager,
+        title: 'New Leave Request',
+        message: `${employee.name} has submitted a leave request.`,
+        type: 'leave_created',
+        subject: 'New Leave Request Submitted',
+        emailHtml: `<p>Hello,</p>
+                    <p>A new leave request has been submitted by ${employee.name}.</p>
+                    <ul>
+                      <li><strong>Leave Type:</strong> ${leaveType}</li>
+                      <li><strong>From:</strong> ${new Date(startDate).toLocaleDateString('en-GB')}</li>
+                      <li><strong>To:</strong> ${new Date(endDate).toLocaleDateString('en-GB')}</li>
+                      <li><strong>Total Days:</strong> ${totalDays || 1}</li>
+                      <li><strong>Reason:</strong> ${reason}</li>
+                    </ul>`
+      });
+    }
+
+    const hrUsers = await User.find({ role: 'hr' }).select('_id');
+    for (const hr of hrUsers) {
+      await createInAppAndEmailNotification(req, {
+        userId: hr._id,
+        title: 'New Leave Request',
+        message: `${employee.name} has submitted a leave request.`,
+        type: 'leave_created',
+        subject: 'New Leave Request Submitted',
+        emailHtml: `<p>Hello,</p>
+                    <p>A new leave request has been submitted by ${employee.name}.</p>
+                    <ul>
+                      <li><strong>Leave Type:</strong> ${leaveType}</li>
+                      <li><strong>From:</strong> ${new Date(startDate).toLocaleDateString('en-GB')}</li>
+                      <li><strong>To:</strong> ${new Date(endDate).toLocaleDateString('en-GB')}</li>
+                      <li><strong>Total Days:</strong> ${totalDays || 1}</li>
+                      <li><strong>Reason:</strong> ${reason}</li>
+                    </ul>`
+      });
+    }
 
     const io = req.app.get('io');
     if (io) {
@@ -78,21 +228,25 @@ exports.managerApprove = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to approve this leave' });
     }
 
-    const io = req.app.get('io');
-
-    // Auto-reject if the leave date has already passed
-    if (isLeaveDatePassed(leave.startDate, leave.endDate)) {
-      leave.status = 'rejected';
-      leave.rejectionReason = 'Auto-rejected: Leave period expired (date passed without approval)';
-      await leave.save();
-      if (io) {
-        io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
-      }
-      return res.status(400).json({ message: 'Cannot approve leave request. The requested leave date has already passed.' });
+    if (leave.status === 'approved') {
+      return res.status(400).json({ message: 'Leave request is already approved' });
     }
 
+    const oldStatus = leave.status;
     leave.status = 'approved';
     await leave.save();
+
+    const LeaveHistory = require('../models/LeaveHistory');
+    await LeaveHistory.create({
+      leaveId: leave._id,
+      actorId: req.user.id,
+      actorRole: req.user.role || 'manager',
+      action: 'Approved',
+      oldStatus,
+      newStatus: 'approved'
+    });
+
+    await updateLeaveBalanceForUser(leave.user, new Date(leave.startDate));
 
     const approvingUser = await User.findById(req.user.id);
     const leaveUser = await User.findById(leave.user);
@@ -108,6 +262,27 @@ exports.managerApprove = async (req, res) => {
       });
     }
 
+    const formattedStart = new Date(leave.startDate).toLocaleDateString('en-GB');
+    const formattedEnd = new Date(leave.endDate).toLocaleDateString('en-GB');
+    await createInAppAndEmailNotification(req, {
+      userId: leave.user,
+      title: 'Leave Approved',
+      message: `Your leave request from ${formattedStart} to ${formattedEnd} has been approved.`,
+      type: 'leave_approved',
+      subject: 'Your Leave Request Has Been Approved',
+      emailHtml: `<p>Hello ${leaveUser?.name || 'Employee'},</p>
+                  <p>Your leave request has been approved.</p>
+                  <ul>
+                    <li><strong>Leave Type:</strong> ${leave.leaveType}</li>
+                    <li><strong>From:</strong> ${formattedStart}</li>
+                    <li><strong>To:</strong> ${formattedEnd}</li>
+                    <li><strong>Total Days:</strong> ${leave.totalDays}</li>
+                    <li><strong>Approved By:</strong> ${approvingUser?.name || 'Manager'}</li>
+                  </ul>
+                  <p>You can view your leave details from your HRM dashboard.</p>`
+    });
+
+    const io = req.app.get('io');
     if (io) {
       io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
     }
@@ -145,22 +320,26 @@ exports.hrApprove = async (req, res) => {
     const leave = await Leave.findById(req.params.id);
     if (!leave) return res.status(404).json({ message: 'Leave request not found' });
 
-    const io = req.app.get('io');
-
-    // Auto-reject if the leave date has already passed
-    if (isLeaveDatePassed(leave.startDate, leave.endDate)) {
-      leave.status = 'rejected';
-      leave.rejectionReason = 'Auto-rejected: Leave period expired (date passed without approval)';
-      await leave.save();
-      if (io) {
-        io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
-      }
-      return res.status(400).json({ message: 'Cannot approve leave request. The requested leave date has already passed.' });
+    if (leave.status === 'approved') {
+      return res.status(400).json({ message: 'Leave request is already approved' });
     }
 
+    const oldStatus = leave.status;
     leave.status = 'approved';
     leave.hrId = req.user.id;
     await leave.save();
+
+    const LeaveHistory = require('../models/LeaveHistory');
+    await LeaveHistory.create({
+      leaveId: leave._id,
+      actorId: req.user.id,
+      actorRole: req.user.role || 'hr',
+      action: 'Approved',
+      oldStatus,
+      newStatus: 'approved'
+    });
+
+    await updateLeaveBalanceForUser(leave.user, new Date(leave.startDate));
 
     const approvingUser = await User.findById(req.user.id);
     const leaveUser = await User.findById(leave.user);
@@ -176,6 +355,27 @@ exports.hrApprove = async (req, res) => {
       });
     }
 
+    const formattedStart = new Date(leave.startDate).toLocaleDateString('en-GB');
+    const formattedEnd = new Date(leave.endDate).toLocaleDateString('en-GB');
+    await createInAppAndEmailNotification(req, {
+      userId: leave.user,
+      title: 'Leave Approved',
+      message: `Your leave request from ${formattedStart} to ${formattedEnd} has been approved.`,
+      type: 'leave_approved',
+      subject: 'Your Leave Request Has Been Approved',
+      emailHtml: `<p>Hello ${leaveUser?.name || 'Employee'},</p>
+                  <p>Your leave request has been approved.</p>
+                  <ul>
+                    <li><strong>Leave Type:</strong> ${leave.leaveType}</li>
+                    <li><strong>From:</strong> ${formattedStart}</li>
+                    <li><strong>To:</strong> ${formattedEnd}</li>
+                    <li><strong>Total Days:</strong> ${leave.totalDays}</li>
+                    <li><strong>Approved By:</strong> ${approvingUser?.name || 'HR'}</li>
+                  </ul>
+                  <p>You can view your leave details from your HRM dashboard.</p>`
+    });
+
+    const io = req.app.get('io');
     if (io) {
       io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
     }
@@ -193,11 +393,65 @@ exports.rejectLeave = async (req, res) => {
     const leave = await Leave.findById(req.params.id);
     if (!leave) return res.status(404).json({ message: 'Leave request not found' });
 
-    leave.status = 'rejected';
-    if (req.body.reason || req.body.rejectionReason) {
-      leave.rejectionReason = req.body.reason || req.body.rejectionReason;
+    if (leave.status === 'rejected') {
+      return res.status(400).json({ message: 'Leave request is already rejected' });
     }
+
+    const oldStatus = leave.status;
+    leave.status = 'rejected';
+    
+    const reason = req.body.reason || req.body.rejectionReason || '';
+    leave.rejectionReason = reason;
     await leave.save();
+
+    const LeaveHistory = require('../models/LeaveHistory');
+    await LeaveHistory.create({
+      leaveId: leave._id,
+      actorId: req.user.id,
+      actorRole: req.user.role || 'approver',
+      action: 'Rejected',
+      oldStatus,
+      newStatus: 'rejected',
+      reason
+    });
+
+    await updateLeaveBalanceForUser(leave.user, new Date(leave.startDate));
+
+    const actorUser = await User.findById(req.user.id);
+    const leaveUser = await User.findById(leave.user);
+    if (actorUser && leaveUser) {
+      await AuditLog.create({
+        userId: actorUser._id,
+        userName: actorUser.name || 'User',
+        userRole: actorUser.role || 'approver',
+        action: 'Reject Leave',
+        module: 'Leave',
+        description: `${actorUser.name || 'User'} rejected ${leave.totalDays || 1} day(s) leave for ${leaveUser.name || 'User'}. Reason: ${reason}`,
+        status: 'Success'
+      });
+    }
+
+    const formattedStart = new Date(leave.startDate).toLocaleDateString('en-GB');
+    const formattedEnd = new Date(leave.endDate).toLocaleDateString('en-GB');
+    await createInAppAndEmailNotification(req, {
+      userId: leave.user,
+      title: 'Leave Rejected',
+      message: `Your leave request from ${formattedStart} to ${formattedEnd} has been rejected.`,
+      type: 'leave_rejected',
+      subject: 'Your Leave Request Has Been Rejected',
+      emailHtml: `<p>Hello ${leaveUser?.name || 'Employee'},</p>
+                  <p>Your leave request has been rejected.</p>
+                  <ul>
+                    <li><strong>Leave Type:</strong> ${leave.leaveType}</li>
+                    <li><strong>From:</strong> ${formattedStart}</li>
+                    <li><strong>To:</strong> ${formattedEnd}</li>
+                    <li><strong>Total Days:</strong> ${leave.totalDays}</li>
+                    <li><strong>Rejected By:</strong> ${actorUser?.name || 'Approver'}</li>
+                    <li><strong>Reason:</strong> ${reason}</li>
+                  </ul>
+                  <p>Please contact HR if you need further clarification.</p>`
+    });
+
     const io = req.app.get('io');
     if (io) {
       io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
@@ -300,7 +554,6 @@ exports.getAllLeaves = async (req, res) => {
 };
 
 const Holiday = require('../models/Holiday');
-const LeaveBalance = require('../models/LeaveBalance');
 
 exports.getManagerStats = async (req, res) => {
   try {
@@ -695,9 +948,26 @@ exports.exportTeamLeaves = async (req, res) => {
 // @access  Private/HR/Admin
 exports.allocateLeave = async (req, res) => {
   try {
-    const { userId, leaveType, days, action } = req.body;
+    const { userId, leaveType, days, action, reason } = req.body;
     const numDays = parseFloat(days);
-    
+
+    const LeaveAllocationHistory = require('../models/LeaveAllocationHistory');
+
+    let targetUserIds = [];
+    if (userId === 'managers') {
+      const managers = await User.find({ role: 'manager' });
+      targetUserIds = managers.map(u => u._id);
+    } else if (userId === 'employees') {
+      const employees = await User.find({ role: 'employee' });
+      targetUserIds = employees.map(u => u._id);
+    } else {
+      targetUserIds = [userId];
+    }
+
+    if (targetUserIds.length === 0) {
+      return res.status(400).json({ message: 'No target employees/managers found for allocation' });
+    }
+
     let balanceField = 'otherLeaves';
     if (leaveType === 'casual') balanceField = 'casualLeave';
     else if (leaveType === 'sick') balanceField = 'sickLeave';
@@ -706,27 +976,142 @@ exports.allocateLeave = async (req, res) => {
     const now = new Date();
     const month = now.getMonth() + 1;
     const year = now.getFullYear();
-    
-    const LeaveBalance = require('../models/LeaveBalance');
-    let balance = await LeaveBalance.findOne({ employeeId: userId, month, year });
-    
-    if (!balance) {
-      balance = new LeaveBalance({
-        employeeId: userId,
-        month,
-        year
+
+    for (const targetId of targetUserIds) {
+      let balance = await LeaveBalance.findOne({ employeeId: targetId, month, year });
+
+      if (!balance) {
+        balance = new LeaveBalance({
+          employeeId: targetId,
+          month,
+          year
+        });
+      }
+
+      const oldDays = balance[balanceField];
+      let newDays = oldDays;
+
+      if (action === 'add') {
+        newDays = oldDays + numDays;
+      } else if (action === 'deduct') {
+        newDays = oldDays - numDays;
+        if (newDays < 0) {
+          // In bulk mode, we can just cap at 0 or skip to avoid throwing validation errors
+          if (targetUserIds.length > 1) {
+            newDays = 0;
+          } else {
+            return res.status(400).json({ message: 'Cannot deduct more leaves than the current balance' });
+          }
+        }
+      }
+
+      balance[balanceField] = newDays;
+      balance.remainingLeave = (balance.earnedLeave || 0) + (balance.sickLeave || 0) + (balance.casualLeave || 0) + (balance.compOff || 0) + (balance.otherLeaves || 0) + (balance.carryForward || 0) - (balance.usedLeave || 0);
+
+      await balance.save();
+
+      await LeaveAllocationHistory.create({
+        employeeId: targetId,
+        leaveType,
+        oldAllocatedDays: oldDays,
+        newAllocatedDays: newDays,
+        changedBy: req.user.id,
+        reason: reason || 'HR Allocation Adjustment'
       });
     }
-    
-    if (action === 'add') {
-      balance[balanceField] += numDays;
-    } else if (action === 'deduct') {
-      balance[balanceField] -= numDays;
-      if (balance[balanceField] < 0) balance[balanceField] = 0;
+
+    res.json({ message: 'Leave allocated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.hrOverride = async (req, res) => {
+  try {
+    const { targetStatus, reason } = req.body;
+    if (!['approved', 'rejected'].includes(targetStatus)) {
+      return res.status(400).json({ message: 'Invalid target status. Must be approved or rejected.' });
     }
-    
-    await balance.save();
-    res.json({ message: 'Leave allocated successfully', balance });
+
+    const leave = await Leave.findById(req.params.id);
+    if (!leave) return res.status(404).json({ message: 'Leave request not found' });
+
+    if (leave.status === targetStatus) {
+      return res.status(400).json({ message: `Leave is already in ${targetStatus} status.` });
+    }
+
+    const oldStatus = leave.status;
+    leave.status = targetStatus;
+    if (targetStatus === 'rejected') {
+      leave.rejectionReason = reason || 'HR Override';
+    }
+    await leave.save();
+
+    const LeaveHistory = require('../models/LeaveHistory');
+    await LeaveHistory.create({
+      leaveId: leave._id,
+      actorId: req.user.id,
+      actorRole: req.user.role || 'hr',
+      action: 'Override',
+      oldStatus,
+      newStatus: targetStatus,
+      reason: reason || 'HR Override'
+    });
+
+    await updateLeaveBalanceForUser(leave.user, new Date(leave.startDate));
+
+    const actorUser = await User.findById(req.user.id);
+    const leaveUser = await User.findById(leave.user);
+    if (actorUser && leaveUser) {
+      await AuditLog.create({
+        userId: actorUser._id,
+        userName: actorUser.name || 'HR',
+        userRole: actorUser.role || 'hr',
+        action: 'Override Leave',
+        module: 'Leave',
+        description: `${actorUser.name || 'HR'} overrode leave status for ${leaveUser.name || 'User'} from ${oldStatus} to ${targetStatus}. Reason: ${reason}`,
+        status: 'Success'
+      });
+    }
+
+    const formattedStart = new Date(leave.startDate).toLocaleDateString('en-GB');
+    const formattedEnd = new Date(leave.endDate).toLocaleDateString('en-GB');
+    await createInAppAndEmailNotification(req, {
+      userId: leave.user,
+      title: 'Leave Status Overridden',
+      message: `Your leave request from ${formattedStart} to ${formattedEnd} has been changed to ${targetStatus} by HR.`,
+      type: 'leave_overridden',
+      subject: `Your Leave Request Has Been ${targetStatus === 'approved' ? 'Approved' : 'Rejected'} (Override)`,
+      emailHtml: `<p>Hello ${leaveUser?.name || 'Employee'},</p>
+                  <p>Your leave request has been overrode to <strong>${targetStatus}</strong> by HR.</p>
+                  <ul>
+                    <li><strong>Leave Type:</strong> ${leave.leaveType}</li>
+                    <li><strong>From:</strong> ${formattedStart}</li>
+                    <li><strong>To:</strong> ${formattedEnd}</li>
+                    <li><strong>Total Days:</strong> ${leave.totalDays}</li>
+                    <li><strong>Overridden By:</strong> ${actorUser?.name || 'HR'}</li>
+                    <li><strong>Reason:</strong> ${reason || 'HR Override'}</li>
+                  </ul>
+                  <p>You can view your updated leave balance on the dashboard.</p>`
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
+    }
+    res.json(leave);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getLeaveHistory = async (req, res) => {
+  try {
+    const LeaveHistory = require('../models/LeaveHistory');
+    const history = await LeaveHistory.find({ leaveId: req.params.id })
+      .populate('actorId', 'name role')
+      .sort({ createdAt: 1 });
+    res.json(history);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

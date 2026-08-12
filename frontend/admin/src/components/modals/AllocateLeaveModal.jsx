@@ -19,7 +19,11 @@ const AllocateLeaveModal = ({ isOpen, onClose }) => {
       axios.get('/api/employees', {
         headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
       }).then(res => {
-        setEmployees(res.data.employees || res.data || []);
+        const data = res.data;
+        const list = (data && typeof data === 'object') 
+          ? (data.employees || data.data || (Array.isArray(data) ? data : [])) 
+          : [];
+        setEmployees(list);
       }).catch(err => console.error(err));
     }
   }, [isOpen]);
@@ -43,70 +47,101 @@ const AllocateLeaveModal = ({ isOpen, onClose }) => {
     }
   };
 
+  console.log("LOG: employees array:", employees);
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-xl w-full max-w-md p-6 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+    <div className="fixed inset-0 z-[9999] flex justify-end bg-black/40 backdrop-blur-sm">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-[#1e293b] h-full w-full max-w-md p-6 relative shadow-2xl flex flex-col justify-between border-l border-gray-200 dark:border-gray-800">
+        <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
           <X size={20} />
         </button>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Allocate Leave</h2>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Select Employee</label>
-            <select 
-              required
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white"
-              value={formData.userId} onChange={e => setFormData({...formData, userId: e.target.value})}
-            >
-              <option value="">-- Select Employee --</option>
-              {employees.map(emp => (
-                <option key={emp._id} value={emp.userId?._id || emp._id}>
-                  {emp.userId?.name || emp.fullName || 'Unknown Employee'} ({emp.designation || 'Employee'})
+        <div className="flex-1 flex flex-col justify-between h-full pt-6">
+          <div className="overflow-y-auto pr-1 flex-1 space-y-4">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Allocate Leave</h2>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Select Employee</label>
+              <select 
+                required
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white"
+                value={formData.userId} onChange={e => setFormData({...formData, userId: e.target.value})}
+              >
+                <option value="">-- Select Employee --</option>
+                <option value="managers" style={{ fontWeight: 'bold' }}>
+                  -- Managers (All) --
                 </option>
-              ))}
-            </select>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Leave Type</label>
-              <select 
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white"
-                value={formData.leaveType} onChange={e => setFormData({...formData, leaveType: e.target.value})}
-              >
-                <option value="casual">Casual Leave</option>
-                <option value="sick">Sick Leave</option>
-                <option value="earned">Earned Leave</option>
+                {employees
+                  .filter(emp => {
+                    if (!emp) return false;
+                    const r = (emp.userId?.role || emp.role || '').toLowerCase();
+                    const d = (emp.designation || '').toLowerCase();
+                    return r === 'manager' || d.includes('manager');
+                  })
+                  .map(emp => (
+                    <option key={emp._id} value={emp.userId?._id || emp._id}>
+                      &nbsp;&nbsp;&nbsp;&nbsp;{emp.userId?.name || emp.fullName || 'Unknown'} ({emp.designation || 'Manager'})
+                    </option>
+                  ))
+                }
+                <option value="employees" style={{ fontWeight: 'bold' }}>
+                  -- Employees (All) --
+                </option>
+                {employees
+                  .filter(emp => {
+                    if (!emp) return false;
+                    const r = (emp.userId?.role || emp.role || '').toLowerCase();
+                    const d = (emp.designation || '').toLowerCase();
+                    return r !== 'manager' && !d.includes('manager');
+                  })
+                  .map(emp => (
+                    <option key={emp._id} value={emp.userId?._id || emp._id}>
+                      &nbsp;&nbsp;&nbsp;&nbsp;{emp.userId?.name || emp.fullName || 'Unknown'} ({emp.designation || 'Employee'})
+                    </option>
+                  ))
+                }
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Action</label>
-              <select 
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white"
-                value={formData.action} onChange={e => setFormData({...formData, action: e.target.value})}
-              >
-                <option value="add">Add</option>
-                <option value="deduct">Deduct</option>
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Leave Type</label>
+                <select 
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white"
+                  value={formData.leaveType} onChange={e => setFormData({...formData, leaveType: e.target.value})}
+                >
+                  <option value="casual">Casual Leave</option>
+                  <option value="sick">Sick Leave</option>
+                  <option value="earned">Earned Leave</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Action</label>
+                <select 
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white"
+                  value={formData.action} onChange={e => setFormData({...formData, action: e.target.value})}
+                >
+                  <option value="add">Add</option>
+                  <option value="deduct">Deduct</option>
+                </select>
+              </div>
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Number of Days</label>
-            <input 
-              required type="number" min="0.5" step="0.5"
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white"
-              value={formData.days} onChange={e => setFormData({...formData, days: e.target.value})} 
-            />
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Number of Days</label>
+              <input 
+                required type="number" min="0.5" step="0.5"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white"
+                value={formData.days} onChange={e => setFormData({...formData, days: e.target.value})} 
+              />
+            </div>
           </div>
           
-          <div className="pt-4 flex justify-end gap-3">
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-800 flex justify-end gap-3 mt-4">
             <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">Cancel</button>
             <button type="submit" disabled={loading} className="px-4 py-2 rounded-lg font-bold text-white bg-green-600 hover:bg-green-700">
               {loading ? 'Allocating...' : 'Allocate'}
             </button>
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>,
     document.body
   );
