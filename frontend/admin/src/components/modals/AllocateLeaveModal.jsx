@@ -49,8 +49,8 @@ const AllocateLeaveModal = ({ isOpen, onClose }) => {
 
   console.log("LOG: employees array:", employees);
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex justify-end bg-black/40 backdrop-blur-sm">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-[#1e293b] h-full w-full max-w-md p-6 relative shadow-2xl flex flex-col justify-between border-l border-gray-200 dark:border-gray-800">
+    <div className="fixed inset-0 z-[9999] flex justify-end bg-black/40 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-[#1e293b] h-full w-full max-w-sm p-6 relative shadow-2xl flex flex-col justify-between border-l border-gray-200 dark:border-gray-800">
         <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
           <X size={20} />
         </button>
@@ -66,39 +66,9 @@ const AllocateLeaveModal = ({ isOpen, onClose }) => {
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white"
                 value={formData.userId} onChange={e => setFormData({...formData, userId: e.target.value})}
               >
-                <option value="">-- Select Employee --</option>
-                <option value="managers" style={{ fontWeight: 'bold' }}>
-                  -- Managers (All) --
-                </option>
-                {employees
-                  .filter(emp => {
-                    if (!emp) return false;
-                    const r = (emp.userId?.role || emp.role || '').toLowerCase();
-                    const d = (emp.designation || '').toLowerCase();
-                    return r === 'manager' || d.includes('manager');
-                  })
-                  .map(emp => (
-                    <option key={emp._id} value={emp.userId?._id || emp._id}>
-                      &nbsp;&nbsp;&nbsp;&nbsp;{emp.userId?.name || emp.fullName || 'Unknown'} ({emp.designation || 'Manager'})
-                    </option>
-                  ))
-                }
-                <option value="employees" style={{ fontWeight: 'bold' }}>
-                  -- Employees (All) --
-                </option>
-                {employees
-                  .filter(emp => {
-                    if (!emp) return false;
-                    const r = (emp.userId?.role || emp.role || '').toLowerCase();
-                    const d = (emp.designation || '').toLowerCase();
-                    return r !== 'manager' && !d.includes('manager');
-                  })
-                  .map(emp => (
-                    <option key={emp._id} value={emp.userId?._id || emp._id}>
-                      &nbsp;&nbsp;&nbsp;&nbsp;{emp.userId?.name || emp.fullName || 'Unknown'} ({emp.designation || 'Employee'})
-                    </option>
-                  ))
-                }
+                <option value="">-- Select Target --</option>
+                <option value="employees">All Employees</option>
+                <option value="managers">All Managers</option>
               </select>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -111,6 +81,8 @@ const AllocateLeaveModal = ({ isOpen, onClose }) => {
                   <option value="casual">Casual Leave</option>
                   <option value="sick">Sick Leave</option>
                   <option value="earned">Earned Leave</option>
+                  <option value="compOff">Comp Off</option>
+                  <option value="optional">Optional Holiday</option>
                 </select>
               </div>
               <div>

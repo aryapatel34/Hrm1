@@ -26,14 +26,51 @@ const updateLeaveBalanceForUser = async (userId, date) => {
     const prevM = prevDate.getMonth() + 1;
     const prevY = prevDate.getFullYear();
     const prevBalance = await LeaveBalance.findOne({ employeeId: userId, month: prevM, year: prevY });
-    const carryForward = prevBalance ? prevBalance.remainingLeave : 0;
+
+    let unusedCasualLeave = 0;
+    let prevEarnedLeave = 0;
+    let prevSickLeave = 0;
+    let prevCompOff = 0;
+    let prevOtherLeaves = 0;
+    let prevCarryForward = 0;
+
+    if (prevBalance) {
+      unusedCasualLeave = prevBalance.casualLeave || 0;
+      prevEarnedLeave = prevBalance.earnedLeave || 0;
+      prevSickLeave = prevBalance.sickLeave || 0;
+      prevCompOff = prevBalance.compOff || 0;
+      prevOtherLeaves = prevBalance.otherLeaves || 0;
+      prevCarryForward = prevBalance.carryForward || 0;
+    }
+
+    const LeavePolicy = require('../models/LeavePolicy');
+    const [casualPolicy, earnedPolicy] = await Promise.all([
+      LeavePolicy.findOne({ name: /casual/i, status: 'Active' }),
+      LeavePolicy.findOne({ name: /earned/i, status: 'Active' })
+    ]);
+
+    let annualCasual = 20; // fallback if no policy
+    if (casualPolicy && typeof casualPolicy.annualAllowance === 'number') {
+      annualCasual = casualPolicy.annualAllowance;
+    }
+
+    let monthlyEarnedAccrual = 1.5; // fallback (18 days/year)
+    if (earnedPolicy && typeof earnedPolicy.annualAllowance === 'number') {
+      monthlyEarnedAccrual = parseFloat((earnedPolicy.annualAllowance / 12).toFixed(2));
+    }
+
+    const monthlyCasualAccrual = parseFloat((annualCasual / 12).toFixed(2));
 
     balance = new LeaveBalance({
       employeeId: userId,
       month: m,
       year: y,
-      carryForward,
-      earnedLeave: 1.5
+      earnedLeave: prevEarnedLeave + unusedCasualLeave + monthlyEarnedAccrual,
+      sickLeave: prevSickLeave,
+      casualLeave: monthlyCasualAccrual,
+      compOff: prevCompOff,
+      otherLeaves: prevOtherLeaves,
+      carryForward: prevCarryForward
     });
   }
 
@@ -972,12 +1009,14 @@ exports.allocateLeave = async (req, res) => {
     if (leaveType === 'casual') balanceField = 'casualLeave';
     else if (leaveType === 'sick') balanceField = 'sickLeave';
     else if (leaveType === 'earned') balanceField = 'earnedLeave';
+    else if (leaveType === 'compOff') balanceField = 'compOff';
+    else if (leaveType === 'other' || leaveType === 'optional') balanceField = 'otherLeaves';
 
     const now = new Date();
     const month = now.getMonth() + 1;
     const year = now.getFullYear();
 
-    for (const targetId of targetUserIds) {
+    const promises = targetUserIds.map(async (targetId) => {
       let balance = await LeaveBalance.findOne({ employeeId: targetId, month, year });
 
       if (!balance) {
@@ -988,7 +1027,7 @@ exports.allocateLeave = async (req, res) => {
         });
       }
 
-      const oldDays = balance[balanceField];
+      const oldDays = balance[balanceField] || 0;
       let newDays = oldDays;
 
       if (action === 'add') {
@@ -996,11 +1035,10 @@ exports.allocateLeave = async (req, res) => {
       } else if (action === 'deduct') {
         newDays = oldDays - numDays;
         if (newDays < 0) {
-          // In bulk mode, we can just cap at 0 or skip to avoid throwing validation errors
           if (targetUserIds.length > 1) {
             newDays = 0;
           } else {
-            return res.status(400).json({ message: 'Cannot deduct more leaves than the current balance' });
+            throw new Error('Cannot deduct more leaves than the current balance');
           }
         }
       }
@@ -1018,6 +1056,12 @@ exports.allocateLeave = async (req, res) => {
         changedBy: req.user.id,
         reason: reason || 'HR Allocation Adjustment'
       });
+    });
+
+    try {
+      await Promise.all(promises);
+    } catch (err) {
+      return res.status(400).json({ message: err.message });
     }
 
     res.json({ message: 'Leave allocated successfully' });

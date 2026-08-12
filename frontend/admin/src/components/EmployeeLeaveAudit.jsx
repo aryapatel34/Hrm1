@@ -37,18 +37,18 @@ const EmployeeLeaveAudit = () => {
         </button>
       </div>
 
-      <div className="flex gap-4 mb-6">
-        <div className="flex-1 p-4 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-col justify-center">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Audits Completed</span>
-          <span className="text-2xl font-black text-gray-900 dark:text-white tabular-nums">{auditLogs.filter(a => a.status === 'Completed').length}</span>
+      <div className="flex gap-4 mb-4">
+        <div className="flex-1 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-row justify-between items-center">
+          <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider leading-tight max-w-[70px]">Audits Completed</span>
+          <span className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{auditLogs.filter(a => a.status === 'Completed').length}</span>
         </div>
-        <div className="flex-1 p-4 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-col justify-center">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Pending Audits</span>
-          <span className="text-2xl font-black text-gray-900 dark:text-white tabular-nums">{auditLogs.filter(a => a.status === 'In Progress').length}</span>
+        <div className="flex-1 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-row justify-between items-center">
+          <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider leading-tight max-w-[70px]">Pending Audits</span>
+          <span className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{auditLogs.filter(a => a.status === 'In Progress').length}</span>
         </div>
-        <div className="flex-1 p-4 rounded-xl border border-red-100 bg-red-50 dark:bg-red-900/10 dark:border-red-900/20 flex flex-col justify-center">
-          <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">Issues Found</span>
-          <span className="text-2xl font-black text-red-600 tabular-nums">{issuesFound}</span>
+        <div className="flex-1 p-2.5 rounded-xl border border-red-100 bg-red-50 dark:bg-red-900/10 dark:border-red-900/20 flex flex-row justify-between items-center">
+          <span className="text-[9px] font-bold text-red-600 uppercase tracking-wider leading-tight max-w-[70px]">Issues Found</span>
+          <span className="text-xl font-black text-red-600 tabular-nums">{issuesFound}</span>
         </div>
       </div>
 

@@ -1,10 +1,22 @@
 const cron = require('node-cron');
 const TimeTrack = require('../models/TimeTrack');
 const { autoRejectExpiredLeaves } = require('../utils/leaveUtils');
+const { performBulkImport } = require('../controllers/holidayController');
 
 function initCronJobs() {
-  // Run on server startup to auto-reject any pending leaves whose dates have passed
+  // Run on server startup to auto-reject any pending leaves whose dates have passed & sync holidays
   autoRejectExpiredLeaves();
+  performBulkImport().catch(err => console.error('[CRON] Startup holiday sync failed:', err));
+
+  // Run every night at midnight to sync google holidays automatically
+  cron.schedule('0 0 * * *', async () => {
+    console.log('[CRON] Running midnight Google Public Holiday auto-sync...');
+    try {
+      await performBulkImport();
+    } catch (err) {
+      console.error('[CRON] Midnight holiday auto-sync failed:', err);
+    }
+  });
 
   // Run every hour
   cron.schedule('0 * * * *', async () => {

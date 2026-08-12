@@ -34,52 +34,52 @@ const LeaveEncashmentModal = ({ isOpen, onClose }) => {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-xl w-full max-w-3xl p-6 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+    <div className="fixed inset-0 z-[9999] flex justify-end bg-black/40 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white dark:bg-[#1e293b] h-full w-full max-w-sm p-6 relative shadow-2xl flex flex-col justify-between border-l border-gray-200 dark:border-gray-800">
+        <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
           <X size={20} />
         </button>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Leave Encashment Approvals</h2>
         
-        {loading ? (
-          <div className="py-10 text-center text-gray-500">Loading requests...</div>
-        ) : requests.length === 0 ? (
-          <div className="py-10 text-center text-gray-500 font-medium bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
-            No pending Encashment requests
-          </div>
-        ) : (
-          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-            <table className="w-full text-left text-sm text-gray-500 dark:text-gray-400">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400">
-                <tr>
-                  <th className="px-4 py-3">Employee</th>
-                  <th className="px-4 py-3">Leave Type</th>
-                  <th className="px-4 py-3">Days</th>
-                  <th className="px-4 py-3">Est. Amount</th>
-                  <th className="px-4 py-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody>
+        <div className="flex-1 flex flex-col justify-between h-full pt-6">
+          <div className="overflow-y-auto pr-1 flex-1 space-y-4">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Leave Encashment</h2>
+            
+            {loading ? (
+              <div className="py-10 text-center text-gray-500">Loading requests...</div>
+            ) : requests.length === 0 ? (
+              <div className="py-10 text-center text-gray-500 font-medium bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
+                No pending Encashment requests
+              </div>
+            ) : (
+              <div className="space-y-4">
                 {requests.map(req => (
-                  <tr key={req._id} className="bg-white border-b dark:bg-[#1e293b] dark:border-gray-700">
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{req.employee}</td>
-                    <td className="px-4 py-3">{req.leaveType}</td>
-                    <td className="px-4 py-3 font-bold">{req.days}</td>
-                    <td className="px-4 py-3 text-green-600 font-medium">{req.amount}</td>
-                    <td className="px-4 py-3 flex justify-end gap-2">
-                      <button onClick={() => handleAction(req._id, 'approve')} className="p-1.5 bg-green-100 text-green-600 rounded hover:bg-green-200 transition-colors" title="Approve">
-                        <Check size={16} />
+                  <div key={req._id} className="p-4 rounded-xl border border-gray-150 dark:border-gray-800 space-y-2 bg-gray-50 dark:bg-[#0f172a]/50">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-sm text-gray-900 dark:text-white">{req.employee}</span>
+                      <span className="text-green-600 font-bold text-sm">{req.amount}</span>
+                    </div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400 flex justify-between">
+                      <span>Type: {req.leaveType}</span>
+                      <span className="font-semibold">{req.days} Days</span>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button onClick={() => handleAction(req._id, 'reject')} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-xs font-bold flex items-center gap-1">
+                        <XCircle size={14} /> Reject
                       </button>
-                      <button onClick={() => handleAction(req._id, 'reject')} className="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors" title="Reject">
-                        <XCircle size={16} />
+                      <button onClick={() => handleAction(req._id, 'approve')} className="px-3 py-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-xs font-bold flex items-center gap-1">
+                        <Check size={14} /> Approve
                       </button>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            )}
           </div>
-        )}
+          
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-800 flex justify-end mt-4">
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 w-full">Close</button>
+          </div>
+        </div>
       </div>
     </div>,
     document.body

@@ -5,6 +5,7 @@ const { protect } = require('../middleware/authMiddleware'); // assuming standar
 
 router.get('/', protect, holidayController.getHolidays);
 router.post('/', protect, holidayController.createHoliday);
+router.post('/bulk-import', protect, holidayController.bulkImportHolidays);
 router.put('/:id', protect, holidayController.updateHoliday);
 router.delete('/:id', protect, holidayController.deleteHoliday);
 
