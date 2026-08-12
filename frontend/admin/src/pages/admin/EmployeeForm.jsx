@@ -674,7 +674,7 @@ const EmployeeForm = () => {
 
              <div className="space-y-2">
                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#848E9C]">Birthdate *</label>
-                <input type="date" required name="dob" disabled={isEdit} value={formData.dob} onChange={handleChange} className={`w-full px-4 py-3 bg-[#F5F5F5] border-2 rounded-xl font-bold text-sm ${isEdit ? 'opacity-60 cursor-not-allowed border-transparent' : (errors.dob ? 'border-[#F6465D] bg-white' : 'border-transparent focus:border-[#F0B90B] focus:bg-white')}`} />
+                <input type="date" required name="dob" value={formData.dob} onChange={handleChange} className={`w-full px-4 py-3 bg-[#F5F5F5] focus:bg-white border-2 ${errors.dob ? 'border-[#F6465D]' : 'border-transparent focus:border-[#F0B90B]'} rounded-xl font-bold text-sm`} />
                {errors.dob && <p className="text-[10px] text-[#F6465D] font-bold uppercase tracking-widest mt-1">{errors.dob}</p>}
              </div>
 

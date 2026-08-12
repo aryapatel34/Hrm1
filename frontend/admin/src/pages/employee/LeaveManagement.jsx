@@ -45,14 +45,14 @@ const LeaveManagement = () => {
     return () => observer.disconnect();
   }, []);
 
-  const QUOTAS = {
+  const [QUOTAS, setQuotas] = useState({
     sick: 10,
     earned: 20,
     casual: 12,
     emergency: 5,
     compOff: 3,
     optionalHoliday: 1
-  };
+  });
 
   useEffect(() => {
     fetchMyLeaves();
@@ -75,10 +75,14 @@ const LeaveManagement = () => {
   const fetchMyLeaves = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/leaves/my', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setLeaves(response.data);
+      const [leavesResponse, quotasResponse] = await Promise.all([
+        axios.get('/api/leaves/my', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get('/api/leaves/my-quotas', { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      setLeaves(leavesResponse.data);
+      if (quotasResponse.data) {
+        setQuotas(quotasResponse.data);
+      }
     } catch (err) {
       console.error('Fetch failed:', err);
     } finally {

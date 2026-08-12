@@ -230,6 +230,21 @@ exports.stopTracking = async (req, res) => {
     session.status = 'completed';
     session.isRunning = false;
 
+    // Sync with legacy Attendance model for HR dashboards
+    try {
+      const attendance = await Attendance.findOne({ user: id, date: session.date });
+      if (attendance && !attendance.checkOutTime) {
+        attendance.checkOutTime = now;
+        if (attendance.checkInTime) {
+          const diffMs = now - new Date(attendance.checkInTime);
+          attendance.totalHours = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
+        }
+        await attendance.save();
+      }
+    } catch (attErr) {
+      console.error('[SYNC ATTENDANCE ERROR]', attErr);
+    }
+
     const lastIdx = session.sessions.length - 1;
     if (lastIdx >= 0) {
       if (!session.sessions[lastIdx].pause && !session.sessions[lastIdx].end) {

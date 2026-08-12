@@ -221,16 +221,21 @@ const HRDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[500px] text-[#939084] bg-[#F8F9FB]">
-        <Activity className="animate-pulse mb-4 text-[#00a76b]" size={48} />
-        <p className="font-semibold text-lg animate-pulse">Loading Dashboard...</p>
+      <div className="flex flex-col items-center justify-center min-h-[500px] bg-[#F8F9FB] dark:bg-[#110e0c] w-full h-full">
+        <div className="relative flex justify-center items-center h-20 w-20">
+           <div className="absolute animate-ping w-16 h-16 rounded-full bg-[#00a76b] opacity-20"></div>
+           <Activity className="animate-bounce text-[#00a76b] relative z-10" size={42} />
+        </div>
+        <p className="font-bold text-xl text-gray-800 dark:text-gray-200 mt-2 tracking-wide">
+          Loading Dashboard...
+        </p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[500px] text-red-500 bg-[#F8F9FB]">
+      <div className="flex flex-col items-center justify-center min-h-[500px] text-red-500 bg-[#F8F9FB] dark:bg-transparent">
         <ShieldAlert size={48} className="mb-4" />
         <p className="font-semibold text-lg">{error}</p>
         <button onClick={fetchData} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg">Retry</button>
@@ -263,7 +268,7 @@ const HRDashboard = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12 font-['Inter',sans-serif] text-gray-800">
+    <div className="space-y-6 pb-2 font-['Inter',sans-serif] text-gray-800">
 
       {/* 1. Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -353,9 +358,9 @@ const HRDashboard = () => {
                 </div>
               </div>
               <div className="flex-1 flex flex-col justify-end">
-                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 leading-tight">{stat.label}</p>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 leading-tight">{stat.label}</p>
                 <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none">{stat.val}</h3>
-                <p className={`text-xs mt-1.5 font-medium ${stat.subtext.includes('+') ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                <p className={`text-sm mt-1.5 font-medium ${stat.subtext.includes('+') ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
                   {stat.subtext}
                 </p>
               </div>
@@ -368,8 +373,8 @@ const HRDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Attendance */}
         <Card className="lg:col-span-1 p-4 sm:p-5">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-gray-900 dark:text-white whitespace-nowrap">Attendance Overview</h3>
+          <div className="flex flex-wrap justify-between items-center mb-8 gap-6">
+            <h3 className="font-bold text-gray-900 dark:text-white whitespace-nowrap tracking-wide">Attendance Overview</h3>
             <CustomDropdown
               value={attPeriod}
               onChange={setAttPeriod}
@@ -381,7 +386,7 @@ const HRDashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={charts.attendanceOverview} margin={{ top: 25, right: 20, left: 0, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} dy={15} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600, letterSpacing: '1px' }} dy={15} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} tickMargin={12} allowDecimals={false} />
                   <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.5)' }} />
                   {charts.attendanceOverview.some(d => d.present > 0) && <Line type="monotone" dataKey="present" stroke="#00a76b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />}
@@ -401,10 +406,10 @@ const HRDashboard = () => {
           <div className="flex flex-col items-center justify-center">
             {hrRoleDistribution.length > 0 ? (
               <>
-                <div className="h-48 w-full relative">
+                <div className="h-56 w-full relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={hrRoleDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={2} dataKey="value">
+                      <Pie data={hrRoleDistribution} cx="50%" cy="50%" innerRadius={75} outerRadius={105} paddingAngle={2} dataKey="value">
                         {hrRoleDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                       </Pie>
                       <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
@@ -436,10 +441,10 @@ const HRDashboard = () => {
           <div className="flex flex-col items-center justify-center">
             {charts.genderDistribution.length > 0 ? (
               <>
-                <div className="h-48 w-full relative">
+                <div className="h-56 w-full relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={charts.genderDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={2} dataKey="value">
+                      <Pie data={charts.genderDistribution} cx="50%" cy="50%" innerRadius={75} outerRadius={105} paddingAngle={2} dataKey="value">
                         {charts.genderDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={['#3b82f6', '#f43f5e', '#f59e0b'][index % 3]} />)}
                       </Pie>
                       <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
@@ -468,8 +473,8 @@ const HRDashboard = () => {
 
       {/* 4. Third Row (Leave, Payroll, Recruitment) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="p-3 sm:p-4">
-          <div className="flex justify-between items-center mb-3">
+        <Card className="p-6">
+          <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-gray-900 dark:text-white">Leave Overview</h3>
             <CustomDropdown
               value={leavePeriod}
@@ -485,30 +490,21 @@ const HRDashboard = () => {
             <div className="p-2.5 bg-green-50 dark:bg-green-950/30 border border-transparent dark:border-green-900/30 rounded-xl">
               <p className="text-xs font-bold text-green-700 dark:text-green-300 mb-1">Approved</p>
               <p className="text-2xl font-black text-green-800 dark:text-green-200">{currentLeaveOverview.approved || 0}</p>
-              <p className="text-sm font-semibold text-green-600 dark:text-green-400">
-                {currentLeaveOverview.total ? Math.round((currentLeaveOverview.approved / currentLeaveOverview.total) * 100) : 0}%
-              </p>
             </div>
             <div className="p-2.5 bg-red-50 dark:bg-red-950/30 border border-transparent dark:border-red-900/30 rounded-xl">
               <p className="text-xs font-bold text-red-700 dark:text-red-300 mb-1">Rejected</p>
               <p className="text-2xl font-black text-red-800 dark:text-red-200">{currentLeaveOverview.rejected || 0}</p>
-              <p className="text-sm font-semibold text-red-600 dark:text-red-400">
-                {currentLeaveOverview.total ? Math.round((currentLeaveOverview.rejected / currentLeaveOverview.total) * 100) : 0}%
-              </p>
             </div>
             <div className="p-2.5 bg-orange-50 dark:bg-orange-950/30 border border-transparent dark:border-orange-900/30 rounded-xl">
               <p className="text-xs font-bold text-orange-700 dark:text-orange-300 mb-1">Cancelled</p>
               <p className="text-2xl font-black text-orange-800 dark:text-orange-200">{currentLeaveOverview.cancelled || 0}</p>
-              <p className="text-sm font-semibold text-orange-600 dark:text-orange-400">
-                {currentLeaveOverview.total ? Math.round((currentLeaveOverview.cancelled / currentLeaveOverview.total) * 100) : 0}%
-              </p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-3 sm:p-4 flex flex-col justify-between">
+        <Card className="p-6 flex flex-col justify-between">
           <div>
-            <div className="flex justify-between items-center mb-3">
+            <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-gray-900 dark:text-white">Payroll Summary</h3>
               <CustomDropdown
                 value={payrollPeriod}
@@ -570,8 +566,8 @@ const HRDashboard = () => {
       </div>
 
       {/* 5. Fourth Row (Pending Approvals, Quick Actions) */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Card className="p-6 xl:col-span-1 flex flex-col h-[420px]">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <Card className="p-6 xl:col-span-2 flex flex-col h-[420px]">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-gray-900 dark:text-white">Pending Approvals</h3>
             <button onClick={() => navigate('/hr/leave')} className="text-xs font-bold text-[#00a76b] hover:underline cursor-pointer">View All</button>
@@ -895,7 +891,7 @@ const HRDashboard = () => {
             { id: 'absenteeism', label: 'Absenteeism Rate', val: '2.6%', trend: 'down', trendVal: '0.8%', color: '#f59e0b', trendColor: 'text-[#f59e0b]', data: [{ v: 3.2 }, { v: 3.0 }, { v: 3.1 }, { v: 2.8 }, { v: 2.9 }, { v: 2.5 }, { v: 2.7 }, { v: 2.9 }] },
             { id: 'training', label: 'Training Completion Rate', val: '76%', trend: 'up', trendVal: '6%', color: '#14b8a6', trendColor: 'text-[#14b8a6]', data: [{ v: 65 }, { v: 68 }, { v: 66 }, { v: 70 }, { v: 70 }, { v: 74 }, { v: 73 }, { v: 76 }] },
           ].map((metric, i) => (
-            <div key={i} className="p-4 border border-gray-100 dark:border-[#2b2722] rounded-xl bg-white dark:bg-[#1a1714] shadow-sm relative overflow-hidden flex flex-col h-36">
+            <div key={i} className="group p-4 border border-gray-100 dark:border-[#2b2722] rounded-xl bg-white dark:bg-[#1a1714] shadow-sm relative overflow-hidden flex flex-col h-36 hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-pointer">
               <p className="text-[11px] font-bold text-gray-700 dark:text-gray-300 tracking-tight mb-2 truncate">{metric.label}</p>
               <h4 className="text-2xl font-black text-gray-900 dark:text-white">{metric.val}</h4>
               <p className={`text-[10px] font-bold mt-1 flex items-center gap-1 ${metric.trendColor}`}>

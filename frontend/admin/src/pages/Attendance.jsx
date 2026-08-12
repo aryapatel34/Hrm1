@@ -203,6 +203,32 @@ const Attendance = () => {
   // ── Filtered & Sorted ──
   const filteredRecords = useMemo(() => {
     let filtered = [...records];
+
+    const today = new Date();
+    // Helper to get YYYY-MM-DD in local time
+    const getLocalYYYYMMDD = (d) => {
+      const offset = d.getTimezoneOffset() * 60000;
+      return new Date(d.getTime() - offset).toISOString().split('T')[0];
+    };
+
+    if (viewMode === 'daily') {
+      const tStr = getLocalYYYYMMDD(today);
+      filtered = filtered.filter(r => r.date === tStr);
+    } else if (viewMode === 'weekly') {
+      const day = today.getDay() || 7; 
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - day + 1);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      
+      const startStr = getLocalYYYYMMDD(startOfWeek);
+      const endStr = getLocalYYYYMMDD(endOfWeek);
+      filtered = filtered.filter(r => r.date >= startStr && r.date <= endStr);
+    } else if (viewMode === 'monthly') {
+      const monthPrefix = getLocalYYYYMMDD(today).slice(0, 7); // YYYY-MM
+      filtered = filtered.filter(r => (r.date || '').startsWith(monthPrefix));
+    }
+
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(r =>
@@ -227,13 +253,13 @@ const Attendance = () => {
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return filtered;
-  }, [records, searchQuery, statusFilter, dateFilter, sortField, sortDir]);
+  }, [records, searchQuery, statusFilter, dateFilter, sortField, sortDir, viewMode]);
 
   const totalPages = Math.ceil(filteredRecords.length / pageSize);
   const paginatedRecords = filteredRecords.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Reset page on filter change
-  useEffect(() => { setCurrentPage(1); }, [searchQuery, statusFilter, dateFilter]);
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, statusFilter, dateFilter, viewMode]);
 
   const handleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -271,10 +297,39 @@ const Attendance = () => {
   // Export CSV
   const exportCSV = () => {
     const headers = ['Date', 'Employee', 'Status', 'Clock In', 'Clock Out', 'Working Hours'];
-    const rows = filteredRecords.map(r => [
-      r.date, r.user?.name || 'N/A', r.status, r.clockIn || '--', r.clockOut || '--', getWorkingHours(r.clockIn, r.clockOut)
-    ]);
-    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+    
+    const formatTimeHelper = (timeStr, dateVal) => {
+      if (timeStr) return timeStr;
+      if (dateVal) {
+        try { return new Date(dateVal).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }); } 
+        catch (e) { return '--'; }
+      }
+      return '--';
+    };
+
+    const rows = filteredRecords.map(r => {
+      const cIn = formatTimeHelper(r.clockIn || r.clock_in, r.checkInTime);
+      const cOut = formatTimeHelper(r.clockOut || r.clock_out, r.checkOutTime);
+      const wHours = getWorkingHours(cIn !== '--' ? cIn : null, cOut !== '--' ? cOut : null);
+      
+      return [
+        r.date, 
+        r.user?.name || 'N/A', 
+        r.status, 
+        cIn, 
+        cOut, 
+        wHours
+      ];
+    });
+
+    const formatCSVField = (field) => {
+      const str = String(field || '');
+      return str.includes(',') || str.includes('"') || str.includes('\n') 
+        ? `"${str.replace(/"/g, '""')}"` 
+        : str;
+    };
+
+    const csv = [headers, ...rows].map(row => row.map(formatCSVField).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -395,7 +450,7 @@ const Attendance = () => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#143029' : '#eceae7'} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#829e92' : '#9CA3AF', fontSize: 11, fontWeight: 600 }} dy={6} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: isDark ? '#829e92' : '#9CA3AF', fontSize: 11, fontWeight: 500 }} dx={-5} />
-                <Tooltip content={<ChartTooltip isDark={isDark} />} cursor={{ fill: isDark ? '#112e27' : '#F3F4F6', opacity: 0.4 }} />
+                <Tooltip content={<ChartTooltip isDark={isDark} />} cursor={false} />
                 <Legend verticalAlign="top" align="right" iconSize={8} iconType="circle"
                   wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', paddingBottom: '10px' }}
                   formatter={(v) => <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>{v}</span>} />
@@ -639,18 +694,38 @@ const Attendance = () => {
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
                         <LogIn size={13} className="text-emerald-500" />
-                        {record.clockIn || '--'}
+                        {(() => {
+                          if (record.clockIn) return record.clockIn;
+                          if (record.clock_in) return record.clock_in;
+                          if (record.checkInTime) {
+                            try { return new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }); }
+                            catch (e) { return '--'; }
+                          }
+                          return '--';
+                        })()}
                       </div>
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
                         <LogOut size={13} className="text-red-400" />
-                        {record.clockOut || '--'}
+                        {(() => {
+                          if (record.clockOut) return record.clockOut;
+                          if (record.clock_out) return record.clock_out;
+                          if (record.checkOutTime) {
+                            try { return new Date(record.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }); }
+                            catch (e) { return '--'; }
+                          }
+                          return '--';
+                        })()}
                       </div>
                     </td>
                     <td className="px-4 py-3.5">
                       <span className="text-sm font-bold text-slate-800 dark:text-white">
-                        {getWorkingHours(record.clockIn, record.clockOut)}
+                        {(() => {
+                          const cIn = record.clockIn || record.clock_in || (record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : null);
+                          const cOut = record.clockOut || record.clock_out || (record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : null);
+                          return getWorkingHours(cIn, cOut);
+                        })()}
                       </span>
                     </td>
                   </tr>

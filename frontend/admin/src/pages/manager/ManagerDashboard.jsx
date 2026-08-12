@@ -732,7 +732,20 @@ const ManagerDashboard = () => {
                   <Pie data={workloadData} innerRadius={45} outerRadius={75} paddingAngle={2} dataKey="value" stroke="none">
                     {workloadData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 15px rgba(0,0,0,0.4)' }} itemStyle={{ color: '#e5e7eb' }} labelStyle={{ color: '#ffffff', fontWeight: 'bold' }} />
+                  <Tooltip 
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div style={{ backgroundColor: data.color, color: '#fff', padding: '8px 12px', borderRadius: '8px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
+                            <p className="text-sm font-bold m-0 leading-none">{data.name}</p>
+                            <p className="text-xs font-semibold m-0 mt-1 leading-none">{data.value}%</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>

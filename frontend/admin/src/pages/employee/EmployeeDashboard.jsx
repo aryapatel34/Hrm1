@@ -374,7 +374,17 @@ const EmployeeDashboard = () => {
 
 
   if (loading) {
-    return <div className="p-8 text-center text-[#939084]">Loading Dashboard...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[500px] bg-[#F8F9FB] dark:bg-[#110e0c] w-full h-full">
+        <div className="relative flex justify-center items-center h-20 w-20">
+           <div className="absolute animate-ping w-16 h-16 rounded-full bg-[#00a76b] opacity-20"></div>
+           <Activity className="animate-bounce text-[#00a76b] relative z-10" size={42} />
+        </div>
+        <p className="font-bold text-xl text-gray-800 dark:text-gray-200 mt-2 tracking-wide">
+          Loading Dashboard...
+        </p>
+      </div>
+    );
   }
 
   return (

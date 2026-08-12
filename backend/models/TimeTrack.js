@@ -92,10 +92,10 @@ const timeTrackSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Index for fast lookups
-timeTrackSchema.index({ employeeId: 1, date: 1 });
+timeTrackSchema.index({ employeeId: 1, date: 1, createdAt: -1 });
 timeTrackSchema.index({ managerId: 1, date: 1 });
-timeTrackSchema.index({ employeeRole: 1, date: 1 });
-timeTrackSchema.index({ date: -1 });
+timeTrackSchema.index({ employeeRole: 1, date: -1, createdAt: -1 });
+timeTrackSchema.index({ date: -1, createdAt: -1 });
 timeTrackSchema.index({ status: 1 });
 
 module.exports = mongoose.model('TimeTrack', timeTrackSchema);

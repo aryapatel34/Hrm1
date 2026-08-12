@@ -252,6 +252,38 @@ exports.getMyLeaves = async (req, res) => {
   }
 };
 
+// @desc    Get my leave quotas dynamically
+// @route   GET /api/leaves/my-quotas
+// @access  Private/Employee
+exports.getMyLeaveQuotas = async (req, res) => {
+  try {
+    const LeaveBalance = require('../models/LeaveBalance');
+    const balances = await LeaveBalance.find({ employeeId: req.user.id });
+    
+    let quotas = {
+      sick: 10,
+      earned: 20,
+      casual: 12,
+      emergency: 5,
+      compOff: 3,
+      optionalHoliday: 1,
+      otherLeaves: 0
+    };
+
+    balances.forEach(b => {
+      if (b.sickLeave) quotas.sick += b.sickLeave;
+      if (b.casualLeave) quotas.casual += b.casualLeave;
+      if (b.earnedLeave && b.earnedLeave !== 1.5) quotas.earned += (b.earnedLeave - 1.5);
+      if (b.compOff) quotas.compOff += b.compOff;
+      if (b.otherLeaves) quotas.otherLeaves += b.otherLeaves;
+    });
+
+    res.json(quotas);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Get all leaves (Admin)
 // @route   GET /api/leaves
 // @access  Private/Admin

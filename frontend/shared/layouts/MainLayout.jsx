@@ -741,7 +741,9 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
 
             {/* Role-based Search bar in the center-left (hidden on mobile) */}
             <RoleSearchBar activeRole={activeRole} />
+          </div>
 
+          <div className="ml-auto flex items-center h-full gap-2 md:gap-4">
             {/* Quick Action button */}
             <div className="relative" ref={quickActionRef}>
               <button
@@ -813,9 +815,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
                 </div>
               )}
             </div>
-          </div>
 
-          <div className="ml-auto flex items-center h-full gap-2 md:gap-4">
             {/* ⏱️ GLOBAL INACTIVITY TRACKER */}
             {isPausedByIdle && (
               <button
@@ -854,10 +854,16 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
               </button>
               {isLanguageOpen && (
                 <div className="absolute top-[45px] right-0 w-36 bg-white dark:bg-[#0c1512] border border-[#eceae3] dark:border-[#1a2d29] rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden z-[110] p-1 flex flex-col">
-                  {['English', 'Gujarati', 'Hindi'].map(lang => (
-                    <button
-                      key={lang}
-                      onClick={() => {
+                  {[
+                    { code: 'English', text: 'English' },
+                    { code: 'Gujarati', text: 'ગુજરાતી' },
+                    { code: 'Hindi', text: 'हिन्दी' }
+                  ].map(langObj => {
+                    const lang = langObj.code;
+                    return (
+                      <button
+                        key={lang}
+                        onClick={() => {
                         setCurrentLang(lang);
                         localStorage.setItem('appLanguage', lang);
                         setIsLanguageOpen(false);
@@ -909,9 +915,9 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
                       }}
                       className={`w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold rounded-xl transition-colors border-none bg-transparent cursor-pointer ${currentLang === lang ? 'text-[#00a76b]' : 'text-gray-700 dark:text-slate-300'}`}
                     >
-                      {lang}
+                      {langObj.text}
                     </button>
-                  ))}
+                  )})}
                 </div>
               )}
             </div>

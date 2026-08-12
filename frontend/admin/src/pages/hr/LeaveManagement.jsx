@@ -140,13 +140,10 @@ const Leaves = () => {
               </div>
               <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">{stat.label}</span>
             </div>
-            <div className="flex items-baseline gap-2 mb-4">
+            <div className="flex items-baseline gap-2">
               <h3 className="text-3xl font-black text-gray-900 dark:text-white tabular-nums">{stat.val}</h3>
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{stat.sub}</p>
             </div>
-            <button className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 hover:gap-2 transition-all">
-              {stat.link} <ArrowRight size={14} />
-            </button>
           </div>
         ))}
       </div>
