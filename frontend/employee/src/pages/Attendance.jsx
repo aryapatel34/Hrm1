@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import {
   Calendar as CalendarIcon, Clock, Search, Filter, Download,
-  CheckCircle, XCircle, RefreshCw, Play, Square, FileClock, X
+  CheckCircle, XCircle, RefreshCw, Play, Square, FileClock, X, Sun
 } from 'lucide-react';
 
 // Custom tooltip for Weekly chart
@@ -50,6 +50,7 @@ const Attendance = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [logs, setLogs] = useState([]);
   const [weeklyChartData, setWeeklyChartData] = useState({ this_week: [], last_week: [] });
+  const [yearlyStats, setYearlyStats] = useState(null);
 
   // Live Timer/Session State
   const [session, setSession] = useState(null);
@@ -109,12 +110,24 @@ const Attendance = () => {
     }
   };
 
+  const fetchYearlyStats = async () => {
+    try {
+      const res = await axios.get('/api/attendance/me/yearly-stats', {
+        headers: { Authorization: `Bearer ${token()}` }
+      });
+      setYearlyStats(res.data);
+    } catch (err) {
+      console.error('Error fetching yearly stats:', err);
+    }
+  };
+
   const loadData = async (showSkeleton = true) => {
     if (showSkeleton) setLoading(true);
     await Promise.allSettled([
       fetchAttendanceLogs(),
       fetchWeeklyChart(),
-      fetchSessionStatus()
+      fetchSessionStatus(),
+      fetchYearlyStats()
     ]);
     setLoading(false);
   };
@@ -347,38 +360,37 @@ const Attendance = () => {
       </div>
 
       {/* ── KPI METRIC CARDS ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           {
-            label: 'Present Today',
-            value: kpiStats.presentToday,
-            change: '+2%',
-            isPositive: true,
+            label: 'Present (Year)',
+            value: yearlyStats?.present || 0,
             icon: <CheckCircle size={20} className="text-[#10B981]" />,
             bg: 'bg-emerald-50 dark:bg-emerald-950/20'
           },
           {
-            label: 'Absent Today',
-            value: kpiStats.absentToday,
-            change: '-1%',
-            isPositive: false,
+            label: 'Late (Year)',
+            value: yearlyStats?.late || 0,
+            icon: <Clock size={20} className="text-amber-500" />,
+            bg: 'bg-amber-50 dark:bg-amber-950/20'
+          },
+          {
+            label: 'Absent (Year)',
+            value: yearlyStats?.absent || 0,
             icon: <XCircle size={20} className="text-red-500" />,
             bg: 'bg-red-50 dark:bg-red-950/20'
           },
           {
-            label: 'On Leave',
-            value: kpiStats.onLeave,
-            icon: <CalendarIcon size={20} className="text-blue-500" />,
+            label: 'Half Day (Year)',
+            value: yearlyStats?.halfDay || 0,
+            icon: <Sun size={20} className="text-blue-500" />,
             bg: 'bg-blue-50 dark:bg-blue-950/20'
           },
           {
-            label: 'Avg. Hours / Week',
-            value: kpiStats.avgWeeklyHours,
-            change: '+1.2%',
-            isPositive: true,
-            icon: <Clock size={20} className="text-teal-500" />,
-            bg: 'bg-teal-50 dark:bg-teal-950/20',
-            progress: 82
+            label: 'Leave (Year)',
+            value: yearlyStats?.leave || 0,
+            icon: <CalendarIcon size={20} className="text-purple-500" />,
+            bg: 'bg-purple-50 dark:bg-purple-950/20'
           }
         ].map((card, i) => (
           <div
@@ -389,15 +401,6 @@ const Attendance = () => {
               <div className={`p-2.5 rounded-xl ${card.bg}`}>
                 {card.icon}
               </div>
-              {card.change && (
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  card.isPositive
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-[#10B981]'
-                    : 'bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-400'
-                }`}>
-                  {card.isPositive ? '↗' : '↘'} {card.change}
-                </span>
-              )}
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{card.label}</p>

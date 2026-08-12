@@ -8,7 +8,7 @@ import {
   Sun, Moon, Coffee, MoreVertical
 } from 'lucide-react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, AreaChart, Area, PieChart, Pie, Cell
 } from 'recharts';
 
@@ -68,14 +68,6 @@ const SAMPLE_RECORDS = (() => {
   return records;
 })();
 
-const WEEKLY_CHART_DATA = [
-  { name: 'Mon', Present: 142, Late: 8, Absent: 5, Leave: 3 },
-  { name: 'Tue', Present: 148, Late: 5, Absent: 3, Leave: 2 },
-  { name: 'Wed', Present: 150, Late: 4, Absent: 2, Leave: 2 },
-  { name: 'Thu', Present: 145, Late: 6, Absent: 4, Leave: 3 },
-  { name: 'Fri', Present: 139, Late: 9, Absent: 7, Leave: 3 },
-  { name: 'Sat', Present: 62, Late: 2, Absent: 1, Leave: 0 },
-];
 
 const MONTHLY_TREND = [
   { month: 'Jan', rate: 94 }, { month: 'Feb', rate: 92 }, { month: 'Mar', rate: 95 },
@@ -133,11 +125,20 @@ const ChartTooltip = ({ active, payload, label, isDark }) => {
 };
 
 // ────────────────────────────── MAIN COMPONENT ──────────────────────────────
+const getLocalYYYYMMDD = (d) => {
+  const offset = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - offset).toISOString().split('T')[0];
+};
+
 const Attendance = () => {
   const [records, setRecords] = useState([]);
+  const [weeklyChartData, setWeeklyChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const [yearlyStats, setYearlyStats] = useState(null);
+  const userRole = sessionStorage.getItem('role') || 'employee';
+  const [viewContext, setViewContext] = useState(userRole === 'employee' ? 'employee' : 'team');
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -167,14 +168,33 @@ const Attendance = () => {
     setError(null);
     const token = sessionStorage.getItem('token');
     try {
-      const res = await axios.get('/api/attendance', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.get(
+        viewContext === 'employee' ? '/api/attendance?scope=personal' : '/api/attendance', 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const summaryRes = await axios.get(
+        viewContext === 'employee' ? '/api/attendance/summary/weekly?scope=personal' : '/api/attendance/summary/weekly', 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setWeeklyChartData(summaryRes.data.this_week || []);
+      
       const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
       if (data.length > 0) {
         setRecords(data);
       } else {
         setRecords(SAMPLE_RECORDS);
+      }
+
+      if (viewContext === 'employee') {
+        try {
+          const yearlyRes = await axios.get('/api/attendance/me/yearly-stats', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setYearlyStats(yearlyRes.data);
+        } catch(e) {
+          console.error('Error fetching yearly stats:', e);
+        }
       }
     } catch (err) {
       console.warn('Using sample data:', err.message);
@@ -182,34 +202,34 @@ const Attendance = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [viewContext]);
 
   useEffect(() => { fetchAttendance(); }, [fetchAttendance]);
 
   // ── Summary Cards ──
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalYYYYMMDD(new Date());
+  
   const todayRecords = useMemo(() => records.filter(r => r.date === todayStr), [records, todayStr]);
+  const todaySummaryFromBackend = useMemo(() => weeklyChartData.find(d => d.date === todayStr), [weeklyChartData, todayStr]);
+
   const summaryStats = useMemo(() => {
     const present = todayRecords.filter(r => r.status === 'Present').length;
     const late = todayRecords.filter(r => r.status === 'Late').length;
-    const absent = todayRecords.filter(r => r.status === 'Absent').length;
     const halfDay = todayRecords.filter(r => r.status === 'Half Day').length;
-    const leave = todayRecords.filter(r => r.status === 'Leave').length;
-    const total = todayRecords.length || 1;
+    
+    const absent = todaySummaryFromBackend ? todaySummaryFromBackend.Absent : 0;
+    const leave = todaySummaryFromBackend ? todaySummaryFromBackend.Leave : 0;
+    
+    const total = present + late + halfDay + absent + leave || 1;
     const pct = Math.round(((present + late + halfDay) / total) * 100);
-    return { present, late, absent, halfDay, leave, total: todayRecords.length, pct };
-  }, [todayRecords]);
+    return { present, late, absent, halfDay, leave, total, pct };
+  }, [todayRecords, todaySummaryFromBackend]);
 
   // ── Filtered & Sorted ──
   const filteredRecords = useMemo(() => {
     let filtered = [...records];
 
     const today = new Date();
-    // Helper to get YYYY-MM-DD in local time
-    const getLocalYYYYMMDD = (d) => {
-      const offset = d.getTimezoneOffset() * 60000;
-      return new Date(d.getTime() - offset).toISOString().split('T')[0];
-    };
 
     if (viewMode === 'daily') {
       const tStr = getLocalYYYYMMDD(today);
@@ -286,13 +306,24 @@ const Attendance = () => {
   }, [calendarMonth, records]);
 
   // ── Pie Data ──
-  const pieData = useMemo(() => [
-    { name: 'Present', value: summaryStats.present },
-    { name: 'Late', value: summaryStats.late },
-    { name: 'Absent', value: summaryStats.absent },
-    { name: 'Half Day', value: summaryStats.halfDay },
-    { name: 'Leave', value: summaryStats.leave },
-  ].filter(d => d.value > 0), [summaryStats]);
+  const pieData = useMemo(() => {
+    if (viewContext === 'employee' && yearlyStats) {
+      return [
+        { name: 'Present', value: yearlyStats.present || 0, fill: '#10b981' },
+        { name: 'Late', value: yearlyStats.late || 0, fill: '#f59e0b' },
+        { name: 'Absent', value: yearlyStats.absent || 0, fill: '#ef4444' },
+        { name: 'Half Day', value: yearlyStats.halfDay || 0, fill: '#3b82f6' },
+        { name: 'Leave', value: yearlyStats.leave || 0, fill: '#8b5cf6' },
+      ].filter(d => d.value > 0);
+    }
+    return [
+      { name: 'Present', value: summaryStats.present, fill: '#10b981' },
+      { name: 'Late', value: summaryStats.late, fill: '#f59e0b' },
+      { name: 'Absent', value: summaryStats.absent, fill: '#ef4444' },
+      { name: 'Half Day', value: summaryStats.halfDay, fill: '#3b82f6' },
+      { name: 'Leave', value: summaryStats.leave, fill: '#8b5cf6' },
+    ].filter(d => d.value > 0);
+  }, [summaryStats, yearlyStats, viewContext]);
 
   // Export CSV
   const exportCSV = () => {
@@ -366,6 +397,22 @@ const Attendance = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {userRole !== 'employee' && (
+            <div className="flex items-center bg-slate-100 dark:bg-[#133029] p-1 rounded-xl mr-2">
+              <button
+                onClick={() => setViewContext('employee')}
+                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${viewContext === 'employee' ? 'bg-white dark:bg-[#0a1f1a] text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+              >
+                Employee
+              </button>
+              <button
+                onClick={() => setViewContext('team')}
+                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${viewContext === 'team' ? 'bg-white dark:bg-[#0a1f1a] text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+              >
+                My Team
+              </button>
+            </div>
+          )}
           <button
             onClick={fetchAttendance}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] text-sm font-bold text-slate-600 dark:text-slate-300 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all"
@@ -384,15 +431,21 @@ const Attendance = () => {
       </div>
 
       {/* ── SUMMARY CARDS ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        {[
+      <div className={`grid grid-cols-2 sm:grid-cols-3 gap-4 ${viewContext === 'employee' ? 'lg:grid-cols-5' : 'lg:grid-cols-6'}`}>
+        {(viewContext === 'employee' ? [
+          { label: 'Present (Year)', value: yearlyStats?.present || 0, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30' },
+          { label: 'Late (Year)', value: yearlyStats?.late || 0, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/30' },
+          { label: 'Absent (Year)', value: yearlyStats?.absent || 0, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-red-50 dark:bg-red-950/30' },
+          { label: 'Half Day (Year)', value: yearlyStats?.halfDay || 0, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30' },
+          { label: 'Leave (Year)', value: yearlyStats?.leave || 0, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30' },
+        ] : [
           { label: 'Total Today', value: summaryStats.total, icon: Users, color: 'text-slate-700 dark:text-white', bgIcon: 'bg-slate-100 dark:bg-slate-800/40' },
           { label: 'Present', value: summaryStats.present, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30', trend: '+3%' },
           { label: 'Late', value: summaryStats.late, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/30' },
           { label: 'Absent', value: summaryStats.absent, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-red-50 dark:bg-red-950/30' },
           { label: 'Half Day', value: summaryStats.halfDay, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30' },
           { label: 'On Leave', value: summaryStats.leave, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30' },
-        ].map((card, i) => (
+        ]).map((card, i) => (
           <Card key={i}>
             <div className="flex items-center justify-between mb-3">
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${card.bgIcon}`}>
@@ -410,34 +463,36 @@ const Attendance = () => {
         ))}
       </div>
 
-      {/* ── ATTENDANCE RATE BANNER ── */}
-      <Card className="!p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <TrendingUp size={24} className="text-white" />
+      {/* ── ATTENDANCE RATE BANNER (Hidden for employee since it's company-wide) ── */}
+      {viewContext !== 'employee' && (
+        <Card className="!p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <TrendingUp size={24} className="text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-500 dark:text-[#829e92]">Today's Attendance Rate</p>
+              <h2 className="text-[18px] font-black text-slate-900 dark:text-white tracking-tight">{summaryStats.pct}%</h2>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-bold text-slate-500 dark:text-[#829e92]">Today's Attendance Rate</p>
-            <h2 className="text-[18px] font-black text-slate-900 dark:text-white tracking-tight">{summaryStats.pct}%</h2>
+          <div className="flex items-center gap-6">
+            <div className="text-center">
+              <p className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{summaryStats.present + summaryStats.late + summaryStats.halfDay}</p>
+              <p className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">Working</p>
+            </div>
+            <div className="w-px h-8 bg-slate-200 dark:bg-[#133029]" />
+            <div className="text-center">
+              <p className="text-lg font-extrabold text-red-500 dark:text-red-400">{summaryStats.absent}</p>
+              <p className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">Absent</p>
+            </div>
+            <div className="w-px h-8 bg-slate-200 dark:bg-[#133029]" />
+            <div className="text-center">
+              <p className="text-lg font-extrabold text-purple-500 dark:text-purple-400">{summaryStats.leave}</p>
+              <p className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">Leave</p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-6">
-          <div className="text-center">
-            <p className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{summaryStats.present + summaryStats.late + summaryStats.halfDay}</p>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">Working</p>
-          </div>
-          <div className="w-px h-8 bg-slate-200 dark:bg-[#133029]" />
-          <div className="text-center">
-            <p className="text-lg font-extrabold text-red-500 dark:text-red-400">{summaryStats.absent}</p>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">Absent</p>
-          </div>
-          <div className="w-px h-8 bg-slate-200 dark:bg-[#133029]" />
-          <div className="text-center">
-            <p className="text-lg font-extrabold text-purple-500 dark:text-purple-400">{summaryStats.leave}</p>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">Leave</p>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {/* ── CHARTS GRID ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -446,19 +501,35 @@ const Attendance = () => {
           <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-white mb-4 tracking-tight">Weekly Attendance</h3>
           <div className="w-full h-[280px] select-none">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart key={isDark ? 'd' : 'l'} data={WEEKLY_CHART_DATA} margin={{ top: 5, right: 5, left: -25, bottom: 0 }} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#143029' : '#eceae7'} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#829e92' : '#9CA3AF', fontSize: 11, fontWeight: 600 }} dy={6} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: isDark ? '#829e92' : '#9CA3AF', fontSize: 11, fontWeight: 500 }} dx={-5} />
-                <Tooltip content={<ChartTooltip isDark={isDark} />} cursor={false} />
-                <Legend verticalAlign="top" align="right" iconSize={8} iconType="circle"
-                  wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', paddingBottom: '10px' }}
-                  formatter={(v) => <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>{v}</span>} />
-                <Bar dataKey="Present" fill="#10b981" radius={[3, 3, 0, 0]} barSize={10} />
-                <Bar dataKey="Late" fill="#f59e0b" radius={[3, 3, 0, 0]} barSize={10} />
-                <Bar dataKey="Absent" fill="#ef4444" radius={[3, 3, 0, 0]} barSize={10} />
-                <Bar dataKey="Leave" fill="#8b5cf6" radius={[3, 3, 0, 0]} barSize={10} />
-              </BarChart>
+              {viewContext === 'employee' ? (
+                <LineChart key={isDark ? 'd' : 'l'} data={weeklyChartData} margin={{ top: 15, right: 15, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#143029' : '#eceae7'} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#829e92' : '#9CA3AF', fontSize: 11, fontWeight: 600 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: isDark ? '#829e92' : '#9CA3AF', fontSize: 11, fontWeight: 500 }} dx={-5} />
+                  <Tooltip content={<ChartTooltip isDark={isDark} />} cursor={false} />
+                  <Legend verticalAlign="top" align="right" iconSize={8} iconType="circle"
+                    wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', paddingBottom: '15px' }}
+                    formatter={(v) => <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>{v}</span>} />
+                  <Line type="monotone" dataKey="Present" stroke="#10b981" strokeWidth={3} dot={{ r: 5, strokeWidth: 2, fill: isDark ? '#0a1f1a' : '#fff' }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="Late" stroke="#f59e0b" strokeWidth={3} dot={{ r: 5, strokeWidth: 2, fill: isDark ? '#0a1f1a' : '#fff' }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="Absent" stroke="#ef4444" strokeWidth={3} dot={{ r: 5, strokeWidth: 2, fill: isDark ? '#0a1f1a' : '#fff' }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="Leave" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 5, strokeWidth: 2, fill: isDark ? '#0a1f1a' : '#fff' }} activeDot={{ r: 6 }} />
+                </LineChart>
+              ) : (
+                <BarChart key={isDark ? 'd' : 'l'} data={weeklyChartData} margin={{ top: 15, right: 15, left: -25, bottom: 0 }} barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#143029' : '#eceae7'} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#829e92' : '#9CA3AF', fontSize: 11, fontWeight: 600 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: isDark ? '#829e92' : '#9CA3AF', fontSize: 11, fontWeight: 500 }} dx={-5} />
+                  <Tooltip content={<ChartTooltip isDark={isDark} />} cursor={false} />
+                  <Legend verticalAlign="top" align="right" iconSize={8} iconType="circle"
+                    wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', paddingBottom: '15px' }}
+                    formatter={(v) => <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>{v}</span>} />
+                  <Bar dataKey="Present" fill="#10b981" radius={[3, 3, 0, 0]} barSize={10} />
+                  <Bar dataKey="Late" fill="#f59e0b" radius={[3, 3, 0, 0]} barSize={10} />
+                  <Bar dataKey="Absent" fill="#ef4444" radius={[3, 3, 0, 0]} barSize={10} />
+                  <Bar dataKey="Leave" fill="#8b5cf6" radius={[3, 3, 0, 0]} barSize={10} />
+                </BarChart>
+              )}
             </ResponsiveContainer>
           </div>
         </Card>
@@ -467,14 +538,14 @@ const Attendance = () => {
         <div className="col-span-12 lg:col-span-5 flex flex-col gap-6">
           {/* Status Breakdown Pie */}
           <Card>
-            <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-white mb-3 tracking-tight">Today's Breakdown</h3>
+            <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-white mb-3 tracking-tight">{viewContext === 'employee' ? 'Yearly Breakdown' : "Today's Breakdown"}</h3>
             <div className="flex items-center gap-4">
               <div className="w-[130px] h-[130px] shrink-0 relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={pieData.length ? pieData : [{ name: 'No Data', value: 1 }]} cx="50%" cy="50%" innerRadius={40} outerRadius={58} paddingAngle={3} dataKey="value">
-                      {(pieData.length ? pieData : [{ name: 'No Data', value: 1 }]).map((_, idx) => (
-                        <Cell key={idx} fill={pieData.length ? PIE_COLORS[idx % PIE_COLORS.length] : '#e2e8f0'} />
+                      {(pieData.length ? pieData : [{ name: 'No Data', value: 1 }]).map((item, idx) => (
+                        <Cell key={idx} fill={pieData.length ? item.fill : '#e2e8f0'} />
                       ))}
                     </Pie>
                     <Tooltip contentStyle={{ backgroundColor: isDark ? '#0a1f1a' : '#fff', borderColor: isDark ? '#133029' : '#eceae7', borderRadius: '8px', fontSize: '11px' }}
@@ -482,13 +553,31 @@ const Attendance = () => {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute text-center">
-                  <span className="block text-lg font-black text-slate-800 dark:text-white leading-none">{summaryStats.pct}%</span>
+                  <span className="block text-lg font-black text-slate-800 dark:text-white leading-none">
+                    {viewContext === 'employee' ? (
+                      yearlyStats ? Math.round(((yearlyStats.present + yearlyStats.late + yearlyStats.halfDay) / ((yearlyStats.present + yearlyStats.late + yearlyStats.halfDay + yearlyStats.absent + yearlyStats.leave) || 1)) * 100) : 0
+                    ) : summaryStats.pct}%
+                  </span>
                   <span className="text-[8px] uppercase font-bold tracking-widest text-slate-400 dark:text-[#829e92]">Rate</span>
                 </div>
               </div>
               <div className="flex-1 space-y-2">
                 {Object.entries(STATUS_COLORS).map(([status, colors]) => {
-                  const count = todayRecords.filter(r => r.status === status).length;
+                  let count = 0;
+                  if (viewContext === 'employee' && yearlyStats) {
+                    if (status === 'Present') count = yearlyStats.present || 0;
+                    if (status === 'Late') count = yearlyStats.late || 0;
+                    if (status === 'Absent') count = yearlyStats.absent || 0;
+                    if (status === 'Half Day') count = yearlyStats.halfDay || 0;
+                    if (status === 'Leave') count = yearlyStats.leave || 0;
+                  } else {
+                    if (status === 'Present') count = summaryStats.present;
+                    if (status === 'Late') count = summaryStats.late;
+                    if (status === 'Absent') count = summaryStats.absent;
+                    if (status === 'Half Day') count = summaryStats.halfDay;
+                    if (status === 'Leave') count = summaryStats.leave;
+                  }
+
                   return (
                     <div key={status} className="flex items-center justify-between text-xs font-semibold">
                       <div className="flex items-center gap-2">
