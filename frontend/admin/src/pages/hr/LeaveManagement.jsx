@@ -17,7 +17,7 @@ import EmployeeLeaveManagement from '../employee/LeaveManagement';
 // Modals
 import CreatePolicyModal from '../../components/modals/CreatePolicyModal';
 import AllocateLeaveModal from '../../components/modals/AllocateLeaveModal';
-import BulkAllocationModal from '../../components/modals/BulkAllocationModal';
+import OnDutyApprovalModal from '../../components/modals/OnDutyApprovalModal';
 import AddHolidayModal from '../../components/modals/AddHolidayModal';
 import CompOffApprovalModal from '../../components/modals/CompOffApprovalModal';
 import LeaveEncashmentModal from '../../components/modals/LeaveEncashmentModal';
@@ -200,9 +200,9 @@ const Leaves = () => {
           {[
             { label: 'Create Policy', icon: FileText, color: 'text-purple-500', onClick: () => setActiveModal('createPolicy') },
             { label: 'Allocate Leave', icon: ArrowRight, color: 'text-green-500', onClick: () => setActiveModal('allocateLeave') },
-            { label: 'Bulk Allocation', icon: Upload, color: 'text-blue-500', onClick: () => setActiveModal('bulkAllocation') },
+            { label: 'On Duty Requests', icon: Calendar, color: 'text-blue-500', onClick: () => setActiveModal('onDutyApproval') },
             { label: 'Add Holiday', icon: Calendar, color: 'text-pink-500', onClick: () => setActiveModal('addHoliday') },
-            { label: 'Comp-Off Approval', icon: HandCoins, color: 'text-emerald-500', onClick: () => setActiveModal('compOff') },
+            { label: 'Compensatory Off approval', icon: HandCoins, color: 'text-emerald-500', onClick: () => setActiveModal('compOff') },
             { label: 'Leave Encashment', icon: DollarSign, color: 'text-red-500', onClick: () => setActiveModal('leaveEncashment') },
             { label: 'Download Report', icon: Upload, color: 'text-indigo-500', isRotate: true, onClick: handleDownloadReport }
           ].map((action, i) => (
@@ -219,7 +219,7 @@ const Leaves = () => {
       {/* Modals */}
       <CreatePolicyModal isOpen={activeModal === 'createPolicy'} onClose={() => setActiveModal(null)} onSuccess={() => {}} />
       <AllocateLeaveModal isOpen={activeModal === 'allocateLeave'} onClose={() => setActiveModal(null)} />
-      <BulkAllocationModal isOpen={activeModal === 'bulkAllocation'} onClose={() => setActiveModal(null)} />
+      <OnDutyApprovalModal isOpen={activeModal === 'onDutyApproval'} onClose={() => setActiveModal(null)} />
       <AddHolidayModal isOpen={activeModal === 'addHoliday'} onClose={() => setActiveModal(null)} onSuccess={triggerRefresh} />
       <CompOffApprovalModal isOpen={activeModal === 'compOff'} onClose={() => setActiveModal(null)} />
       <LeaveEncashmentModal isOpen={activeModal === 'leaveEncashment'} onClose={() => setActiveModal(null)} />

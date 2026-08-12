@@ -19,6 +19,7 @@ const userRoutes = require('./routes/userRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const screenshotRoutes = require('./routes/screenshotRoutes');
 const jobRoutes = require('./routes/jobRoutes');
+const compOffRoutes = require('./routes/compOffRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 const searchRoutes = require('./routes/searchRoutes');
 const path = require('path');
@@ -169,6 +170,7 @@ app.use('/api/managers', managerRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api/comp-off', compOffRoutes);
 app.use('/api/audit-logs', require('./routes/auditLogRoutes'));
 app.use('/api/search', searchRoutes);
 app.use('/api/events', require('./routes/eventRoutes'));
@@ -176,6 +178,7 @@ app.use('/api/hr-dashboard', require('./routes/hrDashboardRoutes'));
 app.use('/api/desktop-app', require('./routes/desktopAppRoutes'));
 app.use('/api/leave-policies', require('./routes/leavePolicyRoutes'));
 app.use('/api/holidays', require('./routes/holidayRoutes'));
+app.use('/api/on-duty', require('./routes/onDutyRoutes'));
 
 
 // Health check

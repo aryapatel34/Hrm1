@@ -7,15 +7,25 @@ import {
   ArrowRight, User, FileText, ChevronLeft, ChevronRight, MoreHorizontal, CalendarDays
 } from 'lucide-react';
 import { io } from 'socket.io-client';
+import OnDutyRequestModal from '../../components/modals/OnDutyRequestModal';
+import MyOnDutyRequestsModal from '../../components/modals/MyOnDutyRequestsModal';
+import CompOffRequestModal from '../../components/modals/CompOffRequestModal';
+import MyCompOffRequestsModal from '../../components/modals/MyCompOffRequestsModal';
 
 const LeaveManagement = () => {
   const navigate = useNavigate();
   const [leaves, setLeaves] = useState([]);
   const [holidays, setHolidays] = useState([]);
+  const [compOffs, setCompOffs] = useState([]);
+  const [onDutys, setOnDutys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [isOnDutyModalOpen, setIsOnDutyModalOpen] = useState(false);
+  const [isMyOnDutyModalOpen, setIsMyOnDutyModalOpen] = useState(false);
+  const [isCompOffModalOpen, setIsCompOffModalOpen] = useState(false);
+  const [isMyCompOffModalOpen, setIsMyCompOffModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     leaveType: '',
@@ -76,10 +86,12 @@ const LeaveManagement = () => {
   const fetchMyLeaves = async () => {
     try {
       setLoading(true);
-      const [leavesResponse, quotasResponse, holidaysResponse] = await Promise.all([
+      const [leavesResponse, quotasResponse, holidaysResponse, compOffResponse, onDutyResponse] = await Promise.all([
         axios.get('/api/leaves/my', { headers: { Authorization: `Bearer ${token}` } }),
         axios.get('/api/leaves/my-quotas', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get('/api/holidays', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
+        axios.get('/api/holidays', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
+        axios.get('/api/comp-off/my', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
+        axios.get('/api/on-duty/my', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
       ]);
       setLeaves(leavesResponse.data);
       if (quotasResponse.data) {
@@ -88,6 +100,8 @@ const LeaveManagement = () => {
       if (holidaysResponse.data && Array.isArray(holidaysResponse.data)) {
         setHolidays(holidaysResponse.data);
       }
+      setCompOffs(compOffResponse.data || []);
+      setOnDutys(onDutyResponse.data || []);
     } catch (err) {
       console.error('Fetch failed:', err);
     } finally {
@@ -227,9 +241,23 @@ const LeaveManagement = () => {
       {/* 1. Header Section */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Leave Manage</h1>
-        <button onClick={() => setIsRequestModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap">
-          <Plus size={16} /> Apply for Leave
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+            <button onClick={() => setIsCompOffModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors">
+              <Plus size={14} /> Comp-Off
+            </button>
+          </div>
+          
+          <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+            <button onClick={() => setIsOnDutyModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors">
+              <Plus size={14} /> On Duty
+            </button>
+          </div>
+
+          <button onClick={() => setIsRequestModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap ml-2">
+            <Plus size={16} /> Apply for Leave
+          </button>
+        </div>
       </div>
 
       {/* 2. Summary Cards Row */}
@@ -246,7 +274,7 @@ const LeaveManagement = () => {
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${card.bg}`}>
                 <card.icon size={20} className={card.color} />
               </div>
-              <h3 className="text-[9px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{card.title}</h3>
+              <h3 className="text-[9px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap truncate">{card.title}</h3>
             </div>
             <div className="mb-4 flex items-center">
               <span className="text-2xl font-extrabold text-gray-900 dark:text-white mr-2">{card.value}</span>
@@ -571,6 +599,89 @@ const LeaveManagement = () => {
 
       </div>
 
+      {/* 6. Two-Column Section: Comp-Off & On Duty Requests */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-8">
+        
+        {/* My Comp-Off Requests */}
+        <div className="bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">My Comp-Off Requests</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead className="text-[10px] text-gray-500 uppercase border-b border-gray-100 dark:border-gray-800">
+                <tr>
+                  <th className="py-3 px-4 font-semibold">Date Worked</th>
+                  <th className="py-3 px-4 font-semibold">Reason</th>
+                  <th className="py-3 px-4 font-semibold text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {compOffs.length > 0 ? (
+                  compOffs.slice(0, 5).map((req, idx) => (
+                    <tr key={idx} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-[#162722] transition-colors">
+                      <td className="py-4 px-4 font-bold text-gray-900 dark:text-gray-200">
+                        {new Date(req.dateWorked).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td className="py-4 px-4 text-gray-500 max-w-[150px] truncate">{req.reason}</td>
+                      <td className="py-4 px-4 text-center">
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${getStatusColor(req.status)} capitalize`}>{req.status}</span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="3" className="text-center py-6 text-gray-500 font-medium">No Comp-Off requests</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* My On Duty Requests */}
+        <div className="bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">My On Duty Requests</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead className="text-[10px] text-gray-500 uppercase border-b border-gray-100 dark:border-gray-800">
+                <tr>
+                  <th className="py-3 px-4 font-semibold">Date</th>
+                  <th className="py-3 px-4 font-semibold">Time / Type</th>
+                  <th className="py-3 px-4 font-semibold">Reason</th>
+                  <th className="py-3 px-4 font-semibold text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {onDutys.length > 0 ? (
+                  onDutys.slice(0, 5).map((req, idx) => (
+                    <tr key={idx} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-[#162722] transition-colors">
+                      <td className="py-4 px-4 font-bold text-gray-900 dark:text-gray-200 min-w-[120px]">
+                        {new Date(req.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {req.startDate !== req.endDate && ` - ${new Date(req.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                      </td>
+                      <td className="py-4 px-4 font-medium text-gray-700 dark:text-gray-300">
+                        {req.isFullDay ? 'Full Day' : `${req.fromTime} - ${req.toTime}`}
+                      </td>
+                      <td className="py-4 px-4 text-gray-500 max-w-[150px] truncate">{req.reason}</td>
+                      <td className="py-4 px-4 text-center">
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${getStatusColor(req.status)} capitalize`}>{req.status}</span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="text-center py-6 text-gray-500 font-medium">No On Duty requests</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       {/* REQUEST LEAVE MODAL (Keeping the same form logic, just updating UI styles) */}
       {isRequestModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={(e) => { if (e.target === e.currentTarget) setIsRequestModalOpen(false) }}>
@@ -693,6 +804,13 @@ const LeaveManagement = () => {
           </div>
         </div>
       )}
+      {/* On Duty Modal */}
+      <OnDutyRequestModal isOpen={isOnDutyModalOpen} onClose={() => setIsOnDutyModalOpen(false)} />
+      <MyOnDutyRequestsModal isOpen={isMyOnDutyModalOpen} onClose={() => setIsMyOnDutyModalOpen(false)} />
+      
+      {/* Comp-Off Modals */}
+      <CompOffRequestModal isOpen={isCompOffModalOpen} onClose={() => setIsCompOffModalOpen(false)} />
+      <MyCompOffRequestsModal isOpen={isMyCompOffModalOpen} onClose={() => setIsMyCompOffModalOpen(false)} />
     </div>
   );
 };
