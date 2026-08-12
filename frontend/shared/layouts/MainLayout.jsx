@@ -74,90 +74,14 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
   const triggerRef = React.useRef(null);
   const dropdownRef = React.useRef(null);
   const quickActionRef = React.useRef(null);
-  const languageRef = React.useRef(null);
 
   const [isQuickActionOpen, setIsQuickActionOpen] = useState(false);
-  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
-  const [currentLang, setCurrentLang] = useState(() => {
-    return localStorage.getItem('appLanguage') || 'English';
-  });
 
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 🌐 Enforce zero-offset so Google Translate does not shift or cut the navbar
-    const fixTranslateOffset = () => {
-      if (document.body.style.top && document.body.style.top !== '0px') {
-        document.body.style.top = '0px';
-      }
-      if (document.body.style.marginTop && document.body.style.marginTop !== '0px') {
-        document.body.style.marginTop = '0px';
-      }
-      if (document.body.style.position === 'relative') {
-        document.body.style.position = 'static';
-      }
-      if (document.documentElement.style.top && document.documentElement.style.top !== '0px') {
-        document.documentElement.style.top = '0px';
-      }
-    };
-
-    const observer = new MutationObserver(fixTranslateOffset);
-    observer.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'] });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
-    fixTranslateOffset();
-
-    const savedLang = localStorage.getItem('appLanguage');
-    if (savedLang && savedLang !== 'English' && savedLang !== 'en') {
-      const langMap = {
-        'English': 'en', 'en': 'en',
-        'Gujarati': 'gu', 'ગુજરાતી': 'gu', 'gu': 'gu',
-        'Hindi': 'hi', 'हिंदी': 'hi', 'hi': 'hi'
-      };
-      const translateTo = langMap[savedLang] || 'en';
-
-      const triggerTranslation = (langCode) => {
-        const select = document.querySelector('.goog-te-combo');
-        if (select) {
-          select.value = langCode;
-          select.dispatchEvent(new Event('change'));
-          fixTranslateOffset();
-        } else {
-          setTimeout(() => triggerTranslation(langCode), 500);
-        }
-      };
-
-      if (!document.getElementById('google-translate-script')) {
-        const script = document.createElement('script');
-        script.id = 'google-translate-script';
-        script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-        document.body.appendChild(script);
-
-        window.googleTranslateElementInit = () => {
-          new window.google.translate.TranslateElement({ pageLanguage: 'en', autoDisplay: false }, 'google_translate_element');
-        };
-
-        const style = document.createElement('style');
-        style.innerHTML = `
-          .goog-te-banner-frame, .goog-te-banner-frame.skiptranslate, iframe.goog-te-banner-frame,
-          .VIpgJd-ZVi9od-OR94Gd, .VIpgJd-ZVi9od-OR94Gd-header, .VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
-          .skiptranslate, #google_translate_element, #goog-gt-tt {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            position: absolute !important;
-            top: -9999px !important;
-            left: -9999px !important;
-          }
-          html, body { top: 0px !important; margin-top: 0px !important; padding-top: 0px !important; }
-        `;
-        document.head.appendChild(style);
-
-        setTimeout(() => triggerTranslation(translateTo), 1000);
-      }
-    }
-
-    return () => observer.disconnect();
+    // Reserved for location.pathname based side effects
   }, [location.pathname]);
 
   const toggleTheme = () => {
@@ -244,9 +168,6 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
 
       if (quickActionRef.current && !quickActionRef.current.contains(event.target)) {
         setIsQuickActionOpen(false);
-      }
-      if (languageRef.current && !languageRef.current.contains(event.target)) {
-        setIsLanguageOpen(false);
       }
       if (chatRef.current && !chatRef.current.contains(event.target)) {
         setIsChatPopupOpen(false);
@@ -841,86 +762,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
               </div>
             )}
 
-            {/* Google Translate Hidden Element */}
-            <div id="google_translate_element" style={{ display: 'none' }}></div>
-
-            {/* Language Selector */}
-            <div className="relative" ref={languageRef}>
-              <button
-                onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-                className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-800 dark:text-slate-400 dark:hover:text-white transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer"
-              >
-                <Globe size={18} />
-              </button>
-              {isLanguageOpen && (
-                <div className="absolute top-[45px] right-0 w-36 bg-white dark:bg-[#0c1512] border border-[#eceae3] dark:border-[#1a2d29] rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden z-[110] p-1 flex flex-col">
-                  {[
-                    { code: 'English', text: 'English' },
-                    { code: 'Gujarati', text: 'ગુજરાતી' },
-                    { code: 'Hindi', text: 'हिन्दी' }
-                  ].map(langObj => {
-                    const lang = langObj.code;
-                    return (
-                      <button
-                        key={lang}
-                        onClick={() => {
-                        setCurrentLang(lang);
-                        localStorage.setItem('appLanguage', lang);
-                        setIsLanguageOpen(false);
-
-                        const langMap = { 'English': 'en', 'Gujarati': 'gu', 'Hindi': 'hi' };
-                        const translateTo = langMap[lang];
-
-                        const triggerTranslation = (langCode) => {
-                          const select = document.querySelector('.goog-te-combo');
-                          if (select) {
-                            select.value = langCode;
-                            select.dispatchEvent(new Event('change'));
-                            toast.success(`Language set to ${lang}`);
-                          } else {
-                            setTimeout(() => triggerTranslation(langCode), 500);
-                          }
-                        };
-
-                        if (!document.getElementById('google-translate-script')) {
-                          const script = document.createElement('script');
-                          script.id = 'google-translate-script';
-                          script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-                          document.body.appendChild(script);
-
-                          window.googleTranslateElementInit = () => {
-                            new window.google.translate.TranslateElement({ pageLanguage: 'en', autoDisplay: false }, 'google_translate_element');
-                          };
-
-                          const style = document.createElement('style');
-                          style.innerHTML = `
-                            .goog-te-banner-frame, .goog-te-banner-frame.skiptranslate, iframe.goog-te-banner-frame,
-                            .VIpgJd-ZVi9od-OR94Gd, .VIpgJd-ZVi9od-OR94Gd-header, .VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
-                            .skiptranslate, #google_translate_element, #goog-gt-tt {
-                              display: none !important;
-                              visibility: hidden !important;
-                              height: 0 !important;
-                              position: absolute !important;
-                              top: -9999px !important;
-                              left: -9999px !important;
-                            }
-                            html, body { top: 0px !important; margin-top: 0px !important; padding-top: 0px !important; }
-                          `;
-                          document.head.appendChild(style);
-
-                          setTimeout(() => triggerTranslation(translateTo), 1000);
-                        } else {
-                          triggerTranslation(translateTo);
-                        }
-                      }}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-[#162722] text-xs font-bold rounded-xl transition-colors border-none bg-transparent cursor-pointer ${currentLang === lang ? 'text-[#00a76b]' : 'text-gray-700 dark:text-slate-300'}`}
-                    >
-                      {langObj.text}
-                    </button>
-                  )})}
-                </div>
-              )}
-            </div>
+            {/* Language Selector Removed */}
 
             <button
               onClick={toggleTheme}

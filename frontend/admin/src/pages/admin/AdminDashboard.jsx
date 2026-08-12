@@ -555,8 +555,8 @@ return (
     </div>
 
     {/* 5. Fourth Row (Quick Actions, Pending Approvals) */}
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-      <Card className="p-6 xl:col-span-1">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <Card className="p-6">
         <h3 className="font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
         <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
           {[
@@ -626,8 +626,8 @@ return (
               onClick={() => navigate(action.path)}
               className={`flex flex-col items-center justify-center p-4 border border-gray-100 dark:border-[#2b2722] bg-white dark:bg-[#1a1714] rounded-xl ${action.hoverBorder} ${action.hoverBg} transition-all group cursor-pointer shadow-xs hover:shadow-md`}
             >
-              <div className={`p-3 rounded-xl mb-3 ${action.bg} ${action.color} group-hover:scale-110 transition-transform`}>
-                <action.icon size={22} />
+              <div className={`p-2 rounded-xl mb-3 ${action.bg} ${action.color} group-hover:scale-110 transition-transform`}>
+                <action.icon size={18} />
               </div>
               <span className={`text-[11px] font-bold text-gray-600 dark:text-gray-300 ${action.hoverText} text-center uppercase tracking-wider transition-colors`}>{action.label}</span>
             </button>
@@ -635,7 +635,7 @@ return (
         </div>
       </Card>
 
-      <Card className="p-6 xl:col-span-2 flex flex-col">
+      <Card className="p-6 flex flex-col">
         <div className="flex justify-between items-center mb-6">
           <h3 className="font-bold text-gray-900 dark:text-white">Pending Approvals</h3>
           <button onClick={() => navigate(`/${pathRole}/leave`)} className="text-xs font-bold text-[#00a76b] hover:underline cursor-pointer">View All</button>

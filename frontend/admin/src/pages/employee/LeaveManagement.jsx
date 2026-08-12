@@ -11,6 +11,7 @@ import { io } from 'socket.io-client';
 const LeaveManagement = () => {
   const navigate = useNavigate();
   const [leaves, setLeaves] = useState([]);
+  const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -75,13 +76,17 @@ const LeaveManagement = () => {
   const fetchMyLeaves = async () => {
     try {
       setLoading(true);
-      const [leavesResponse, quotasResponse] = await Promise.all([
+      const [leavesResponse, quotasResponse, holidaysResponse] = await Promise.all([
         axios.get('/api/leaves/my', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get('/api/leaves/my-quotas', { headers: { Authorization: `Bearer ${token}` } })
+        axios.get('/api/leaves/my-quotas', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get('/api/holidays', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
       ]);
       setLeaves(leavesResponse.data);
       if (quotasResponse.data) {
         setQuotas(quotasResponse.data);
+      }
+      if (holidaysResponse.data && Array.isArray(holidaysResponse.data)) {
+        setHolidays(holidaysResponse.data);
       }
     } catch (err) {
       console.error('Fetch failed:', err);
@@ -158,13 +163,7 @@ const LeaveManagement = () => {
     return 'Good Evening';
   };
 
-  const MOCK_HOLIDAYS = [
-    { date: '15 Aug 2026', day: 'Friday', name: 'Independence Day' },
-    { date: '05 Sep 2026', day: 'Saturday', name: 'Eid-e-Milad' },
-    { date: '02 Oct 2026', day: 'Friday', name: 'Gandhi Jayanti' },
-    { date: '31 Oct 2026', day: 'Saturday', name: 'Diwali' },
-    { date: '25 Dec 2026', day: 'Friday', name: 'Christmas Day' },
-  ];
+
 
   // Calendar logic
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -194,7 +193,7 @@ const LeaveManagement = () => {
     if (dateObj.getDay() === 0) return 'weekly-off'; // Sunday
 
     // Check if holiday
-    const isHoliday = MOCK_HOLIDAYS.some(h => new Date(h.date).getDate() === day.date && new Date(h.date).getMonth() === currentMonth);
+    const isHoliday = holidays.some(h => new Date(h.date).getDate() === day.date && new Date(h.date).getMonth() === currentMonth);
     if (isHoliday) return 'holiday';
 
     // Check leaves
@@ -475,13 +474,13 @@ const LeaveManagement = () => {
       </div>
 
       {/* 5. Two-Column Section: Requests & Holidays */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
         {/* My Leave Requests */}
-        <div className="xl:col-span-2 bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
+        <div className="bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-base font-bold text-gray-900 dark:text-white">My Leave Requests</h2>
-            <button className="text-xs font-bold text-blue-600 border border-blue-200 px-4 py-1.5 rounded-lg hover:bg-blue-50">View All Requests</button>
+            <button onClick={() => setActiveTab('All')} className="text-xs font-bold text-blue-600 border border-blue-200 px-4 py-1.5 rounded-lg hover:bg-blue-50">View All Requests</button>
           </div>
 
           <div className="flex gap-6 border-b border-gray-100 dark:border-gray-800 mb-4 overflow-x-auto">
@@ -544,22 +543,29 @@ const LeaveManagement = () => {
             <button onClick={() => navigate(`/${user.role || 'employee'}/holidays`)} className="text-xs font-bold text-blue-600">View Calendar</button>
           </div>
           <div className="space-y-4">
-            {MOCK_HOLIDAYS.map((h, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-800 rounded-lg hover:shadow-sm transition-shadow">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center shrink-0">
-                    <Calendar size={20} />
+            {holidays.length > 0 ? holidays.filter(h => new Date(h.date) >= new Date()).slice(0, 5).map((h, idx) => {
+              const hDate = new Date(h.date);
+              const dateStr = hDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+              const dayStr = hDate.toLocaleDateString('en-GB', { weekday: 'long' });
+              return (
+                <div key={idx} className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-800 rounded-lg hover:shadow-sm transition-shadow">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center shrink-0">
+                      <Calendar size={20} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-900 dark:text-gray-100">{dateStr}</h4>
+                      <p className="text-[10px] text-gray-500">{dayStr}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 dark:text-gray-100">{h.date}</h4>
-                    <p className="text-[10px] text-gray-500">{h.day}</p>
+                  <div className="font-bold text-xs text-gray-700 dark:text-gray-300 text-right">
+                    {h.name}
                   </div>
                 </div>
-                <div className="font-bold text-xs text-gray-700 dark:text-gray-300 text-right">
-                  {h.name}
-                </div>
-              </div>
-            ))}
+              );
+            }) : (
+              <div className="text-center py-4 text-gray-500 text-xs font-medium">No upcoming holidays</div>
+            )}
           </div>
         </div>
 

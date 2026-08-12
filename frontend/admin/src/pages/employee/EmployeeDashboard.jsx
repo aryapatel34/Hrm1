@@ -11,7 +11,7 @@ import {
   LogIn, LogOut, Briefcase, Target, Bell, Star,
   CalendarCheck, CalendarX, Cake, Gift, ArrowRight, CalendarPlus, User, Download,
   PartyPopper, Sparkles, Heart, Smile, TrendingUp, ChevronDown,
-  AlertTriangle, Monitor, X, ExternalLink, RefreshCw
+  AlertTriangle, Monitor, X, ExternalLink, RefreshCw, Activity
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { startDesktopTracker, stopDesktopTracker } from '@shared/services/desktopTrackerService';
@@ -173,27 +173,43 @@ const EmployeeDashboard = () => {
           return d >= startOfWeek && d <= now;
         });
 
+        const presentMonth = thisMonthAtt.filter(a => a.status === 'Present' || a.status === 'Late').length;
+        const effectiveMonth = presentMonth + (halfDays * 0.5);
+        const presentWeek = thisWeekAtt.filter(a => a.status === 'Present' || a.status === 'Late').length;
+        const halfWeek = thisWeekAtt.filter(a => a.status === 'Half Day').length;
+        const effectiveWeek = presentWeek + (halfWeek * 0.5);
+
         setAttMetrics({
-          thisWeek: 5,
-          thisMonth: 22,
-          workingDays: 24,
-          lateCount: 2,
-          halfDays: 1,
-          percentage: 92
+          thisWeek: effectiveWeek,
+          thisMonth: effectiveMonth,
+          workingDays: workingDays,
+          lateCount: lateCount,
+          halfDays: halfDays,
+          percentage: workingDays > 0 ? Math.round((effectiveMonth / workingDays) * 100) : 100
         });
+
+        const getDayValue = (dateObj) => {
+          if (dateObj > now) return null;
+          const record = att.find(a => new Date(a.date).toDateString() === dateObj.toDateString());
+          if (!record) return 0;
+          if (record.status === 'Present' || record.status === 'Late') return 100;
+          if (record.status === 'Half Day') return 50;
+          return 0;
+        };
 
         let chart = [];
         if (timeRange === 'weekly') {
-          const mockWeekly = [100, 100, 50, 100, 100, 0, 0];
           chart = WEEK_DAYS.map((dayName, i) => {
-            return { day: dayName, active: mockWeekly[i] };
+            const dateObj = new Date(startOfWeek);
+            dateObj.setDate(startOfWeek.getDate() + i);
+            return { day: dayName, active: getDayValue(dateObj) };
           });
         } else {
           const daysInMonth = now.getDate();
           for (let i = 1; i <= daysInMonth; i++) {
-            const dStr = new Date(now.getFullYear(), now.getMonth(), i).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-            let val = (i % 7 === 0 || i % 7 === 6) ? 0 : (i % 5 === 0 ? 50 : 100);
-            chart.push({ day: dStr, active: val });
+            const dateObj = new Date(now.getFullYear(), now.getMonth(), i);
+            const dStr = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+            chart.push({ day: dStr, active: getDayValue(dateObj) });
           }
         }
         setWeeklyChart(chart);
@@ -308,7 +324,7 @@ const EmployeeDashboard = () => {
   const usedEarned = approvedLeavesArray.filter(l => l.leaveType === 'earned').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
   const usedSick = approvedLeavesArray.filter(l => l.leaveType === 'sick').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
   const usedCasual = approvedLeavesArray.filter(l => l.leaveType === 'casual').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
-  
+
   const totalAllocated = QUOTAS.earned + QUOTAS.sick + QUOTAS.casual + QUOTAS.compOff + QUOTAS.optionalHoliday;
   const totalUsedLeaves = usedEarned + usedSick + usedCasual;
   const totalLeaveBalance = totalAllocated - totalUsedLeaves;
@@ -377,8 +393,8 @@ const EmployeeDashboard = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] bg-[#F8F9FB] dark:bg-[#110e0c] w-full h-full">
         <div className="relative flex justify-center items-center h-20 w-20">
-           <div className="absolute animate-ping w-16 h-16 rounded-full bg-[#00a76b] opacity-20"></div>
-           <Activity className="animate-bounce text-[#00a76b] relative z-10" size={42} />
+          <div className="absolute animate-ping w-16 h-16 rounded-full bg-[#00a76b] opacity-20"></div>
+          <Activity className="animate-bounce text-[#00a76b] relative z-10" size={42} />
         </div>
         <p className="font-bold text-xl text-gray-800 dark:text-gray-200 mt-2 tracking-wide">
           Loading Dashboard...
@@ -520,8 +536,8 @@ const EmployeeDashboard = () => {
                       type="button"
                       onClick={() => { setTimeRange('weekly'); setTimeRangeOpen(false); }}
                       className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${timeRange === 'weekly'
-                          ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
-                          : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
+                        ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
+                        : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
                         }`}
                     >
                       <span>This Week</span>
@@ -531,8 +547,8 @@ const EmployeeDashboard = () => {
                       type="button"
                       onClick={() => { setTimeRange('monthly'); setTimeRangeOpen(false); }}
                       className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${timeRange === 'monthly'
-                          ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
-                          : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
+                        ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
+                        : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
                         }`}
                     >
                       <span>This Month</span>
@@ -606,18 +622,19 @@ const EmployeeDashboard = () => {
                       { name: 'Ongoing', value: ongoingTasks, color: '#f59e0b' },
                       { name: 'Upcoming', value: upcomingTasks, color: '#ef4444' },
                       { name: 'Pending', value: pendingTasks, color: '#3b82f6' }
-                    ]} cx="50%" cy="50%" innerRadius={45} outerRadius={60} dataKey="value" stroke="none" paddingAngle={3}>
+                    ]} cx="50%" cy="50%" innerRadius={75} outerRadius={105} dataKey="value" stroke="none" paddingAngle={3}>
                       {
                         (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#8b5cf6' }, { color: '#f59e0b' }, { color: '#ef4444' }, { color: '#3b82f6' }]).map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))
                       }
                     </Pie>
+                    <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[18px] font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
-                  <span className="text-[10px] font-bold text-[#939084] tracking-wider uppercase mt-1">Total Tasks</span>
+                  <span className="text-3xl font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
+                  <span className="text-[11px] font-bold text-[#939084] tracking-wider uppercase mt-1">Total Tasks</span>
                 </div>
               </div>
 
@@ -905,15 +922,15 @@ const EmployeeDashboard = () => {
                     key={tab.id}
                     onClick={() => setEventFilter(tab.id)}
                     className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${isActive
-                        ? 'bg-[#00a76b] text-white shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                      ? 'bg-[#00a76b] text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
                       }`}
                   >
                     <Icon size={14} className={isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'} />
                     <span>{tab.label}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${isActive
-                        ? 'bg-white/20 text-white'
-                        : 'bg-black/5 dark:bg-white/10 text-gray-500 dark:text-gray-400'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-black/5 dark:bg-white/10 text-gray-500 dark:text-gray-400'
                       }`}>
                       {tab.count}
                     </span>
@@ -939,8 +956,8 @@ const EmployeeDashboard = () => {
                       <div
                         key={ann.id || i}
                         className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 flex flex-col justify-between border ${isToday
-                            ? 'bg-white dark:bg-[#14120e] border-[#00a76b] dark:border-emerald-600 shadow-[0_4px_20px_rgba(0,167,107,0.08)] ring-1 ring-[#00a76b]/25'
-                            : 'bg-white dark:bg-[#14120e] border-[#eceae3] dark:border-[#38352e] hover:border-[#00a76b]/50 hover:shadow-md'
+                          ? 'bg-white dark:bg-[#14120e] border-[#00a76b] dark:border-emerald-600 shadow-[0_4px_20px_rgba(0,167,107,0.08)] ring-1 ring-[#00a76b]/25'
+                          : 'bg-white dark:bg-[#14120e] border-[#eceae3] dark:border-[#38352e] hover:border-[#00a76b]/50 hover:shadow-md'
                           }`}
                       >
                         {/* Top Row: Avatar + Info */}
@@ -1014,10 +1031,10 @@ const EmployeeDashboard = () => {
                               }
                             }}
                             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 shrink-0 cursor-pointer ${isWished
-                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-[#00a76b] dark:text-emerald-400 border border-[#00a76b]/30 dark:border-emerald-800/40 shadow-xs'
-                                : isToday || isPast
-                                  ? 'bg-[#00a76b] hover:bg-[#008f5b] text-white shadow-sm shadow-[#00a76b]/20 active:scale-95'
-                                  : 'bg-white hover:bg-gray-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 active:scale-95'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-[#00a76b] dark:text-emerald-400 border border-[#00a76b]/30 dark:border-emerald-800/40 shadow-xs'
+                              : isToday || isPast
+                                ? 'bg-[#00a76b] hover:bg-[#008f5b] text-white shadow-sm shadow-[#00a76b]/20 active:scale-95'
+                                : 'bg-white hover:bg-gray-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 active:scale-95'
                               }`}
                           >
                             {isWished ? (

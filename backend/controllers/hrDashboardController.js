@@ -166,7 +166,18 @@ exports.getDashboardStats = async (req, res) => {
     const recentJoiners = await Employee.find().sort({ joinDate: -1 }).limit(5).populate('userId', 'name email profile');
 
     // 8. Pending Approvals (Leaves)
-    const pendingLeaves = await Leave.find({ status: { $regex: /^pending$/i } })
+    const currentUser = await User.findById(req.user.id);
+    let pendingLeaveQuery = { status: { $regex: /^pending$/i } };
+    
+    if (currentUser.role === 'hr') {
+      const allowedUsers = await User.find({ role: { $nin: ['admin', 'manager'] } }).select('_id');
+      pendingLeaveQuery.user = { $in: allowedUsers.map(u => u._id) };
+    } else if (currentUser.role === 'manager') {
+      const allowedUsers = await User.find({ role: 'employee' }).select('_id');
+      pendingLeaveQuery.user = { $in: allowedUsers.map(u => u._id) };
+    }
+
+    const pendingLeaves = await Leave.find(pendingLeaveQuery)
       .populate('user', 'name email role employeeId profileImage')
       .sort({ createdAt: -1 })
       .limit(10);
