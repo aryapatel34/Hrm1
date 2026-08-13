@@ -52,19 +52,20 @@ const CompOffApprovalModal = ({ isOpen, onClose }) => {
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex justify-end bg-black/40 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white dark:bg-[#1e293b] h-full w-full max-w-sm p-6 relative shadow-2xl flex flex-col justify-between border-l border-gray-200 dark:border-gray-800">
-        <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-          <X size={20} />
-        </button>
+      <div className="bg-white dark:bg-[#1e293b] h-full w-full max-w-sm pt-3 px-6 pb-6 relative shadow-2xl flex flex-col justify-between border-l-2 border-gray-300 dark:border-gray-800">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-155 dark:border-gray-800 shrink-0">
+          <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Comp-Off Approvals</h2>
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-850 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
 
-        <div className="flex-1 flex flex-col pt-6 h-full overflow-hidden">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Comp-Off Approvals</h2>
-          
-          <div className="overflow-y-auto pr-1 flex-1 space-y-4">
+        <div className="flex-1 flex flex-col pt-4 h-full overflow-hidden">
+          <div className="overflow-y-auto pr-1 flex-1 space-y-4 pb-2">
             {loading ? (
               <div className="py-10 text-center text-gray-500">Loading requests...</div>
             ) : requests.length === 0 ? (
-              <div className="py-10 text-center text-gray-500 font-medium bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
+              <div className="py-8 text-center text-gray-500 font-bold text-xs bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
                 No pending Comp-Off requests
               </div>
             ) : (
@@ -103,7 +104,7 @@ const CompOffApprovalModal = ({ isOpen, onClose }) => {
           </div>
           
           <div className="pt-4 border-t border-gray-200 dark:border-gray-800 flex justify-end mt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 w-full">Close</button>
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl font-bold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 text-xs transition-colors w-full">Close</button>
           </div>
         </div>
       </div>

@@ -142,17 +142,17 @@ exports.applyLeave = async (req, res) => {
     const startObj = new Date(startDate);
     const m = startObj.getMonth() + 1;
     const y = startObj.getFullYear();
-    
+
     let balance = await LeaveBalance.findOne({ employeeId: req.user.id, month: m, year: y });
     if (!balance) {
       await updateLeaveBalanceForUser(req.user.id, startObj);
       balance = await LeaveBalance.findOne({ employeeId: req.user.id, month: m, year: y });
     }
-    
+
     const remaining = balance ? balance.remainingLeave : 1.5;
     if (remaining < (totalDays || 1)) {
-      return res.status(400).json({ 
-        message: `Insufficient leave balance. Available: ${remaining} day(s). Requested: ${totalDays || 1} day(s).` 
+      return res.status(400).json({
+        message: `Insufficient leave balance. Available: ${remaining} day(s). Requested: ${totalDays || 1} day(s).`
       });
     }
 
@@ -357,12 +357,16 @@ exports.hrApprove = async (req, res) => {
     const leave = await Leave.findById(req.params.id);
     if (!leave) return res.status(404).json({ message: 'Leave request not found' });
 
-    if (leave.status === 'approved') {
+    if (leave.status === 'approved' && leave.status !== 'cancellation_pending') {
       return res.status(400).json({ message: 'Leave request is already approved' });
     }
 
     const oldStatus = leave.status;
-    leave.status = 'approved';
+    if (oldStatus === 'cancellation_pending') {
+      leave.status = 'cancelled';
+    } else {
+      leave.status = 'approved';
+    }
     leave.hrId = req.user.id;
     await leave.save();
 
@@ -371,9 +375,9 @@ exports.hrApprove = async (req, res) => {
       leaveId: leave._id,
       actorId: req.user.id,
       actorRole: req.user.role || 'hr',
-      action: 'Approved',
+      action: oldStatus === 'cancellation_pending' ? 'Cancellation Approved' : 'Approved',
       oldStatus,
-      newStatus: 'approved'
+      newStatus: leave.status
     });
 
     await updateLeaveBalanceForUser(leave.user, new Date(leave.startDate));
@@ -385,9 +389,11 @@ exports.hrApprove = async (req, res) => {
         userId: approvingUser._id,
         userName: approvingUser.name || 'HR',
         userRole: approvingUser.role || 'hr',
-        action: 'Approve Leave',
+        action: oldStatus === 'cancellation_pending' ? 'Approve Leave Cancellation' : 'Approve Leave',
         module: 'Leave',
-        description: `${approvingUser.name || 'HR'} approved ${leave.totalDays || 1} day(s) leave for ${leaveUser.name || 'User'}.`,
+        description: oldStatus === 'cancellation_pending' 
+          ? `${approvingUser.name || 'HR'} approved cancellation of ${leave.totalDays || 1} day(s) leave for ${leaveUser.name || 'User'}.`
+          : `${approvingUser.name || 'HR'} approved ${leave.totalDays || 1} day(s) leave for ${leaveUser.name || 'User'}.`,
         status: 'Success'
       });
     }
@@ -396,12 +402,14 @@ exports.hrApprove = async (req, res) => {
     const formattedEnd = new Date(leave.endDate).toLocaleDateString('en-GB');
     await createInAppAndEmailNotification(req, {
       userId: leave.user,
-      title: 'Leave Approved',
-      message: `Your leave request from ${formattedStart} to ${formattedEnd} has been approved.`,
-      type: 'leave_approved',
-      subject: 'Your Leave Request Has Been Approved',
+      title: oldStatus === 'cancellation_pending' ? 'Leave Cancellation Approved' : 'Leave Approved',
+      message: oldStatus === 'cancellation_pending'
+        ? `Your request to cancel leave from ${formattedStart} to ${formattedEnd} has been approved.`
+        : `Your leave request from ${formattedStart} to ${formattedEnd} has been approved.`,
+      type: oldStatus === 'cancellation_pending' ? 'leave_cancelled' : 'leave_approved',
+      subject: oldStatus === 'cancellation_pending' ? 'Your Leave Cancellation Request Has Been Approved' : 'Your Leave Request Has Been Approved',
       emailHtml: `<p>Hello ${leaveUser?.name || 'Employee'},</p>
-                  <p>Your leave request has been approved.</p>
+                  <p>${oldStatus === 'cancellation_pending' ? 'Your leave cancellation request has been approved.' : 'Your leave request has been approved.'}</p>
                   <ul>
                     <li><strong>Leave Type:</strong> ${leave.leaveType}</li>
                     <li><strong>From:</strong> ${formattedStart}</li>
@@ -430,13 +438,17 @@ exports.rejectLeave = async (req, res) => {
     const leave = await Leave.findById(req.params.id);
     if (!leave) return res.status(404).json({ message: 'Leave request not found' });
 
-    if (leave.status === 'rejected') {
+    if (leave.status === 'rejected' && leave.status !== 'cancellation_pending') {
       return res.status(400).json({ message: 'Leave request is already rejected' });
     }
 
     const oldStatus = leave.status;
-    leave.status = 'rejected';
-    
+    if (oldStatus === 'cancellation_pending') {
+      leave.status = 'approved';
+    } else {
+      leave.status = 'rejected';
+    }
+
     const reason = req.body.reason || req.body.rejectionReason || '';
     leave.rejectionReason = reason;
     await leave.save();
@@ -446,9 +458,9 @@ exports.rejectLeave = async (req, res) => {
       leaveId: leave._id,
       actorId: req.user.id,
       actorRole: req.user.role || 'approver',
-      action: 'Rejected',
+      action: oldStatus === 'cancellation_pending' ? 'Cancellation Rejected' : 'Rejected',
       oldStatus,
-      newStatus: 'rejected',
+      newStatus: leave.status,
       reason
     });
 
@@ -472,12 +484,14 @@ exports.rejectLeave = async (req, res) => {
     const formattedEnd = new Date(leave.endDate).toLocaleDateString('en-GB');
     await createInAppAndEmailNotification(req, {
       userId: leave.user,
-      title: 'Leave Rejected',
-      message: `Your leave request from ${formattedStart} to ${formattedEnd} has been rejected.`,
+      title: oldStatus === 'cancellation_pending' ? 'Leave Cancellation Rejected' : 'Leave Rejected',
+      message: oldStatus === 'cancellation_pending'
+        ? `Your request to cancel leave from ${formattedStart} to ${formattedEnd} has been rejected.`
+        : `Your leave request from ${formattedStart} to ${formattedEnd} has been rejected.`,
       type: 'leave_rejected',
-      subject: 'Your Leave Request Has Been Rejected',
+      subject: oldStatus === 'cancellation_pending' ? 'Your Leave Cancellation Request Has Been Rejected' : 'Your Leave Request Has Been Rejected',
       emailHtml: `<p>Hello ${leaveUser?.name || 'Employee'},</p>
-                  <p>Your leave request has been rejected.</p>
+                  <p>${oldStatus === 'cancellation_pending' ? 'Your leave cancellation request has been rejected. Your leave remains approved.' : 'Your leave request has been rejected.'}</p>
                   <ul>
                     <li><strong>Leave Type:</strong> ${leave.leaveType}</li>
                     <li><strong>From:</strong> ${formattedStart}</li>
@@ -518,6 +532,50 @@ exports.cancelLeave = async (req, res) => {
 
     leave.status = 'cancelled';
     await leave.save();
+
+    // Notify manager and HR
+    const employee = await User.findById(req.user.id);
+    const formattedStart = new Date(leave.startDate).toLocaleDateString('en-GB');
+    const formattedEnd = new Date(leave.endDate).toLocaleDateString('en-GB');
+    const message = `${employee.name} has cancelled their pending leave request from ${formattedStart} to ${formattedEnd}.`;
+    
+    if (employee.reportingManager) {
+      await createInAppAndEmailNotification(req, {
+        userId: employee.reportingManager,
+        title: 'Leave Request Cancelled',
+        message,
+        type: 'leave_cancelled',
+        subject: 'Leave Request Cancelled by Employee',
+        emailHtml: `<p>Hello,</p>
+                    <p>${employee.name} has cancelled their pending leave request.</p>
+                    <ul>
+                      <li><strong>Leave Type:</strong> ${leave.leaveType}</li>
+                      <li><strong>From:</strong> ${formattedStart}</li>
+                      <li><strong>To:</strong> ${formattedEnd}</li>
+                      <li><strong>Total Days:</strong> ${leave.totalDays}</li>
+                    </ul>`
+      });
+    }
+
+    const hrUsers = await User.find({ role: 'hr' }).select('_id');
+    for (const hr of hrUsers) {
+      await createInAppAndEmailNotification(req, {
+        userId: hr._id,
+        title: 'Leave Request Cancelled',
+        message,
+        type: 'leave_cancelled',
+        subject: 'Leave Request Cancelled by Employee',
+        emailHtml: `<p>Hello,</p>
+                    <p>${employee.name} has cancelled their pending leave request.</p>
+                    <ul>
+                      <li><strong>Leave Type:</strong> ${leave.leaveType}</li>
+                      <li><strong>From:</strong> ${formattedStart}</li>
+                      <li><strong>To:</strong> ${formattedEnd}</li>
+                      <li><strong>Total Days:</strong> ${leave.totalDays}</li>
+                    </ul>`
+      });
+    }
+
     const io = req.app.get('io');
     if (io) {
       io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
@@ -550,7 +608,7 @@ exports.getMyLeaveQuotas = async (req, res) => {
   try {
     const LeaveBalance = require('../models/LeaveBalance');
     const balances = await LeaveBalance.find({ employeeId: req.user.id });
-    
+
     let quotas = {
       sick: 10,
       earned: 20,
@@ -619,12 +677,12 @@ exports.getManagerStats = async (req, res) => {
 
     const totalEmployees = subIds.length;
     let availableCount = totalEmployees - onLeaveToday;
-    if(availableCount < 0) availableCount = 0;
+    if (availableCount < 0) availableCount = 0;
     const availabilityPercent = totalEmployees > 0 ? Math.round((availableCount / totalEmployees) * 100) : 0;
 
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    
+
     const thisMonthRequests = await Leave.countDocuments({
       user: { $in: subIds },
       createdAt: { $gte: currentMonthStart }
@@ -633,7 +691,7 @@ exports.getManagerStats = async (req, res) => {
       user: { $in: subIds },
       createdAt: { $gte: lastMonthStart, $lt: currentMonthStart }
     });
-    
+
     let growth = 0;
     if (lastMonthRequests > 0) {
       growth = Math.round(((thisMonthRequests - lastMonthRequests) / lastMonthRequests) * 100);
@@ -666,7 +724,7 @@ exports.getTeamLeaves = async (req, res) => {
     const subIds = subordinates.map(s => s._id);
 
     const query = { user: { $in: subIds }, status: 'pending' };
-    
+
     const total = await Leave.countDocuments(query);
     const leaves = await Leave.find(query)
       .populate('user', 'name profileImage department designation')
@@ -718,7 +776,7 @@ exports.getAvailabilityStats = async (req, res) => {
     const totalEmployees = subIds.length;
     const totalUnavailable = onLeave + workFromHome + halfDay + absent;
     let available = totalEmployees - totalUnavailable;
-    if(available < 0) available = 0;
+    if (available < 0) available = 0;
 
     res.json({
       available,
@@ -778,7 +836,7 @@ exports.getTeamLeaveBalances = async (req, res) => {
       const subIds = subordinates.map(s => s._id);
       query.employeeId = { $in: subIds };
     }
-    
+
     const total = await LeaveBalance.countDocuments(query);
     const balances = await LeaveBalance.find(query)
       .populate('employeeId', 'name profileImage')
@@ -797,7 +855,7 @@ exports.getTeamLeaveBalances = async (req, res) => {
         compOff: Math.floor(Math.random() * (doc.compOff || 1)),
       };
       doc.usedLeave.total = doc.usedLeave.casual + doc.usedLeave.sick + doc.usedLeave.earned + doc.usedLeave.compOff;
-      doc.totalLeave = (doc.casualLeave||0) + (doc.sickLeave||0) + (doc.earnedLeave||0) + (doc.compOff||0);
+      doc.totalLeave = (doc.casualLeave || 0) + (doc.sickLeave || 0) + (doc.earnedLeave || 0) + (doc.compOff || 0);
       return doc;
     });
 
@@ -858,7 +916,7 @@ exports.getDepartmentAnalytics = async (req, res) => {
     const now = new Date();
     const month = req.query.month ? parseInt(req.query.month) - 1 : now.getMonth();
     const year = req.query.year ? parseInt(req.query.year) : now.getFullYear();
-    
+
     const startDate = new Date(year, month, 1);
     const endDate = new Date(year, month + 1, 0, 23, 59, 59);
 
@@ -896,8 +954,8 @@ exports.bulkApproveLeaves = async (req, res) => {
     }
 
     const leaves = await Leave.find({ _id: { $in: ids } });
-    
-    for(const leave of leaves) {
+
+    for (const leave of leaves) {
       if (leave.managerId && leave.managerId.toString() !== req.user.id) {
         continue; // skip if not authorized
       }
@@ -914,7 +972,7 @@ exports.bulkApproveLeaves = async (req, res) => {
 exports.exportTeamLeaves = async (req, res) => {
   try {
     const { format } = req.query; // pdf or xlsx
-    
+
     const subordinates = await User.find({ reportingManager: req.user.id }).select('_id');
     const subIds = subordinates.map(s => s._id);
 
@@ -926,7 +984,7 @@ exports.exportTeamLeaves = async (req, res) => {
       const exceljs = require('exceljs');
       const workbook = new exceljs.Workbook();
       const worksheet = workbook.addWorksheet('Leaves');
-      
+
       worksheet.columns = [
         { header: 'Employee', key: 'employee', width: 20 },
         { header: 'Type', key: 'type', width: 15 },
@@ -956,14 +1014,14 @@ exports.exportTeamLeaves = async (req, res) => {
     } else {
       const PDFDocument = require('pdfkit');
       const doc = new PDFDocument();
-      
+
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename=team_leaves.pdf');
-      
+
       doc.pipe(res);
       doc.fontSize(20).text('Team Leaves Report', { align: 'center' });
       doc.moveDown();
-      
+
       leaves.forEach(l => {
         const empName = l.user ? l.user.name : 'Unknown';
         doc.fontSize(12).text(`${empName} - ${l.leaveType} (${l.status})`);
@@ -971,7 +1029,7 @@ exports.exportTeamLeaves = async (req, res) => {
         doc.text(`Reason: ${l.reason}`);
         doc.moveDown();
       });
-      
+
       doc.end();
     }
   } catch (error) {
@@ -1156,6 +1214,93 @@ exports.getLeaveHistory = async (req, res) => {
       .populate('actorId', 'name role')
       .sort({ createdAt: 1 });
     res.json(history);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Request Leave Cancellation
+// @route   POST /api/leaves/request-cancellation/:id
+// @access  Private/Employee
+exports.requestLeaveCancellation = async (req, res) => {
+  try {
+    const leave = await Leave.findById(req.params.id);
+    if (!leave) return res.status(404).json({ message: 'Leave request not found' });
+
+    if (leave.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to request cancellation' });
+    }
+
+    if (leave.status !== 'approved') {
+      return res.status(400).json({ message: 'Only approved leaves can request cancellation' });
+    }
+
+    const oldStatus = leave.status;
+    leave.status = 'cancellation_pending';
+    leave.cancellationReason = req.body.cancellationReason;
+    await leave.save();
+
+    const LeaveHistory = require('../models/LeaveHistory');
+    await LeaveHistory.create({
+      leaveId: leave._id,
+      actorId: req.user.id,
+      actorRole: req.user.role || 'employee',
+      action: 'Cancellation Requested',
+      oldStatus,
+      newStatus: 'cancellation_pending',
+      reason: req.body.cancellationReason || ''
+    });
+
+    // Notify manager and HR
+    const employee = await User.findById(req.user.id);
+    const formattedStart = new Date(leave.startDate).toLocaleDateString('en-GB');
+    const formattedEnd = new Date(leave.endDate).toLocaleDateString('en-GB');
+    const message = `${employee.name} has requested cancellation for their approved leave from ${formattedStart} to ${formattedEnd}.`;
+    
+    if (employee.reportingManager) {
+      await createInAppAndEmailNotification(req, {
+        userId: employee.reportingManager,
+        title: 'Leave Cancellation Requested',
+        message,
+        type: 'leave_cancellation_requested',
+        subject: 'Leave Cancellation Requested by Employee',
+        emailHtml: `<p>Hello,</p>
+                    <p>${employee.name} has requested to cancel their approved leave request.</p>
+                    <ul>
+                      <li><strong>Leave Type:</strong> ${leave.leaveType}</li>
+                      <li><strong>From:</strong> ${formattedStart}</li>
+                      <li><strong>To:</strong> ${formattedEnd}</li>
+                      <li><strong>Total Days:</strong> ${leave.totalDays}</li>
+                      <li><strong>Cancellation Reason:</strong> ${req.body.cancellationReason || 'Not specified'}</li>
+                    </ul>`
+      });
+    }
+
+    const hrUsers = await User.find({ role: 'hr' }).select('_id');
+    for (const hr of hrUsers) {
+      await createInAppAndEmailNotification(req, {
+        userId: hr._id,
+        title: 'Leave Cancellation Requested',
+        message,
+        type: 'leave_cancellation_requested',
+        subject: 'Leave Cancellation Requested by Employee',
+        emailHtml: `<p>Hello,</p>
+                    <p>${employee.name} has requested to cancel their approved leave request.</p>
+                    <ul>
+                      <li><strong>Leave Type:</strong> ${leave.leaveType}</li>
+                      <li><strong>From:</strong> ${formattedStart}</li>
+                      <li><strong>To:</strong> ${formattedEnd}</li>
+                      <li><strong>Total Days:</strong> ${leave.totalDays}</li>
+                      <li><strong>Cancellation Reason:</strong> ${req.body.cancellationReason || 'Not specified'}</li>
+                    </ul>`
+      });
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${leave.user.toString()}`).emit('leave_updated', leave);
+    }
+    res.json(leave);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

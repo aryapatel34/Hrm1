@@ -635,7 +635,8 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
         {/* Brand Block / Logo (Fixed width matching expanded sidebar) */}
         <Link
           to={`/${activeRole}/dashboard`}
-          className="px-3 md:px-6 flex items-center no-underline hover:opacity-90 transition-opacity gap-2 md:gap-3 shrink-0 h-full w-auto md:w-[250px]"
+          className="px-4 flex items-center no-underline hover:opacity-90 transition-all duration-300 gap-3 shrink-0 h-full overflow-hidden"
+          style={{ width: showExpandedSidebar ? '250px' : '72px' }}
         >
           <div className="w-10 h-10 bg-[#00a76b] rounded-full flex items-center justify-center flex-shrink-0 shadow-sm transition-all duration-300 hover:scale-105">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -643,10 +644,12 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
               <path d="M18 5h4M20 3v4" strokeWidth="2" />
             </svg>
           </div>
-          <div className="flex flex-col items-start leading-tight">
-            <span className="text-[16px] font-bold text-[#1f2937] dark:text-white tracking-tight">Fluid HR</span>
-            <span className="text-[11px] font-semibold text-[#829e92] dark:text-[#a3b3af]">Workforce OS</span>
-          </div>
+          {showExpandedSidebar && (
+            <div className="flex flex-col items-start leading-tight animate-in fade-in duration-200">
+              <span className="text-[16px] font-bold text-[#1f2937] dark:text-white tracking-tight whitespace-nowrap">Fluid HR</span>
+              <span className="text-[11px] font-semibold text-[#829e92] dark:text-[#a3b3af] whitespace-nowrap">Workforce OS</span>
+            </div>
+          )}
         </Link>
 
         {/* Top Bar Controls */}
@@ -1100,7 +1103,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
             }`}
           style={{
             height: 'calc(100vh - 70px)',
-            backgroundColor: isDarkMode ? '#050c0a' : '#f4f9f6',
+            backgroundColor: isDarkMode ? '#08100e' : '#ffffff',
             borderColor: isDarkMode ? '#1a2d29' : '#e2eae7'
           }}
         >

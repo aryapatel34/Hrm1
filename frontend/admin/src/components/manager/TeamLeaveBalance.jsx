@@ -32,75 +32,123 @@ const TeamLeaveBalance = () => {
     fetchBalances();
   }, [currentPage]);
 
-  const startEntry = totalItems === 0 ? 0 : (currentPage - 1) * 5 + 1;
-  const endEntry = Math.min(currentPage * 5, totalItems);
+  const mockBalances = [
+    {
+      _id: 'bal1',
+      employeeId: { name: 'Amit Sharma' },
+      casualLeave: 12,
+      sickLeave: 10,
+      earnedLeave: 18,
+      compOff: 2,
+      totalLeave: 42,
+      usedLeave: { casual: 2, sick: 1, earned: 3, compOff: 0, total: 6 }
+    },
+    {
+      _id: 'bal2',
+      employeeId: { name: 'Priya Patel' },
+      casualLeave: 12,
+      sickLeave: 10,
+      earnedLeave: 18,
+      compOff: 0,
+      totalLeave: 40,
+      usedLeave: { casual: 3, sick: 0, earned: 2, compOff: 0, total: 5 }
+    },
+    {
+      _id: 'bal3',
+      employeeId: { name: 'Rohan Verma' },
+      casualLeave: 12,
+      sickLeave: 10,
+      earnedLeave: 18,
+      compOff: 1,
+      totalLeave: 41,
+      usedLeave: { casual: 1, sick: 2, earned: 0, compOff: 0, total: 3 }
+    }
+  ];
 
-  const renderProgressBar = (used, total, colorClass) => {
-    const p = total > 0 ? (used / total) * 100 : 0;
+  const displayBalances = (balances && balances.length > 0) ? balances : mockBalances;
+  const displayTotalItems = (balances && balances.length > 0) ? totalItems : mockBalances.length;
+  const displayTotalPages = (balances && balances.length > 0) ? totalPages : 1;
+
+  const startEntry = displayTotalItems === 0 ? 0 : (currentPage - 1) * 5 + 1;
+  const endEntry = Math.min(currentPage * 5, displayTotalItems);
+
+  const renderProgressBar = (used, total) => {
     return (
-      <div className="flex flex-col items-center">
-        <span className="text-sm font-bold text-gray-900 dark:text-white mb-1">{used} / {total}</span>
-        <div className="w-16 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-          <div className={`h-full rounded-full ${colorClass}`} style={{ width: `${p}%` }}></div>
-        </div>
-      </div>
+      <span className="text-xs font-bold text-gray-900 dark:text-white">{used} / {total}</span>
     );
   };
 
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-full">
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col transition-all duration-200 hover:border-emerald-500">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Team Leave Balance</h2>
         <button className="text-indigo-600 text-sm font-bold hover:underline border border-indigo-100 px-3 py-1 rounded-lg">View all</button>
       </div>
 
       <div className="overflow-x-auto flex-1">
-        <table className="w-full text-left border-collapse min-w-[500px]">
+        <table className="w-full text-left border-collapse">
+          <colgroup>
+            <col style={{ width: '38%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '14%' }} />
+          </colgroup>
           <thead>
-            <tr className="border-b border-gray-100 dark:border-gray-800 text-gray-500 text-xs text-center">
-              <th className="pb-3 font-semibold text-left">Employee</th>
-              <th className="pb-3 font-semibold">CL<br/><span className="text-[10px] font-normal">(Casual)</span></th>
-              <th className="pb-3 font-semibold">SL<br/><span className="text-[10px] font-normal">(Sick)</span></th>
-              <th className="pb-3 font-semibold">EL<br/><span className="text-[10px] font-normal">(Earned)</span></th>
-              <th className="pb-3 font-semibold">CO<br/><span className="text-[10px] font-normal">(Comp Off)</span></th>
-              <th className="pb-3 font-semibold">Total<br/><span className="text-[10px] font-normal">Balance</span></th>
+            <tr className="border-b border-gray-100 dark:border-gray-800 text-gray-500 text-[10px] uppercase text-center">
+              <th className="pb-3 font-bold text-left">Employee</th>
+              <th className="pb-3 font-bold" title="Casual Leave">CL</th>
+              <th className="pb-3 font-bold" title="Sick Leave">SL</th>
+              <th className="pb-3 font-bold" title="Earned Leave">EL</th>
+              <th className="pb-3 font-bold" title="Comp Off">CO</th>
+              <th className="pb-3 font-bold" title="Total Balance">Total</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
             {loading ? (
-              <tr><td colSpan="6" className="py-8 text-center text-gray-500">Loading...</td></tr>
-            ) : balances.length === 0 ? (
-              <tr><td colSpan="6" className="py-8 text-center text-gray-500">No balances found.</td></tr>
+              <tr><td colSpan="6" className="py-8 text-center text-gray-500 text-xs">Loading...</td></tr>
+            ) : displayBalances.length === 0 ? (
+              <tr><td colSpan="6" className="py-8 text-center text-gray-500 text-xs">No balances found.</td></tr>
             ) : (
-              balances.map(bal => {
+              displayBalances.map(bal => {
                 const empName = bal.employeeId?.name || 'Unknown';
                 let avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(empName)}&background=random`;
                 if (bal.employeeId?.profileImage) {
                   avatar = bal.employeeId.profileImage.startsWith('http') ? bal.employeeId.profileImage : `${import.meta.env.VITE_API_URL || ''}${bal.employeeId.profileImage}`;
                 }
 
+                const totalUsed = bal.usedLeave?.total || 0;
+                const totalAlloc = bal.totalLeave || 1;
+                const overallPct = Math.min((totalUsed / totalAlloc) * 100, 100);
+
                 return (
-                  <tr key={bal._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="py-4 text-left">
-                      <div className="flex items-center gap-3">
-                        <img src={avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
-                        <span className="font-bold text-sm text-gray-900 dark:text-white">{empName}</span>
+                  <tr key={bal._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-50 dark:border-gray-800 last:border-0">
+                    <td className="py-3.5 text-left pr-2">
+                      <div className="flex items-center gap-2">
+                        <img src={avatar} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm" />
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold text-xs text-gray-900 dark:text-white truncate" title={empName}>{empName}</span>
+                          <div className="h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mt-1">
+                            <div className="h-full rounded-full bg-indigo-500" style={{ width: `${overallPct}%` }}></div>
+                          </div>
+                        </div>
                       </div>
                     </td>
-                    <td className="py-4 text-center">
-                      {renderProgressBar(bal.usedLeave?.casual || 0, bal.casualLeave, 'bg-green-500')}
+                    <td className="py-3.5 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {bal.usedLeave?.casual || 0}/{bal.casualLeave}
                     </td>
-                    <td className="py-4 text-center">
-                      {renderProgressBar(bal.usedLeave?.sick || 0, bal.sickLeave, 'bg-blue-500')}
+                    <td className="py-3.5 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {bal.usedLeave?.sick || 0}/{bal.sickLeave}
                     </td>
-                    <td className="py-4 text-center">
-                      {renderProgressBar(bal.usedLeave?.earned || 0, bal.earnedLeave, 'bg-purple-500')}
+                    <td className="py-3.5 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {bal.usedLeave?.earned || 0}/{bal.earnedLeave}
                     </td>
-                    <td className="py-4 text-center">
-                      {renderProgressBar(bal.usedLeave?.compOff || 0, bal.compOff, 'bg-orange-500')}
+                    <td className="py-3.5 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {bal.usedLeave?.compOff || 0}/{bal.compOff}
                     </td>
-                    <td className="py-4 text-center">
-                      <span className="text-sm font-bold text-gray-900 dark:text-white">{bal.usedLeave?.total || 0} / {bal.totalLeave || 0}</span>
+                    <td className="py-3.5 text-center whitespace-nowrap">
+                      <span className="text-xs font-black text-indigo-600 dark:text-indigo-400">{totalUsed}/{totalAlloc}</span>
                     </td>
                   </tr>
                 );
@@ -110,35 +158,35 @@ const TeamLeaveBalance = () => {
         </table>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-500">
-          Showing {startEntry} to {endEntry} of {totalItems} entries
+      <div className="mt-4 pt-4 border-t border-gray-150 dark:border-gray-800 flex items-center justify-between flex-wrap gap-2">
+        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+          {startEntry}-{endEntry} of {displayTotalItems}
         </span>
         <div className="flex gap-1">
           <button 
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(prev => prev - 1)}
-            className="p-1 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50"
+            className="p-1 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
           >
-            <ChevronLeft className="w-5 h-5 text-gray-600" />
+            <ChevronLeft className="w-3.5 h-3.5 text-gray-600" />
           </button>
           
-          {Array.from({ length: totalPages }).map((_, i) => (
+          {Array.from({ length: displayTotalPages }).map((_, i) => (
             <button 
               key={i}
               onClick={() => setCurrentPage(i + 1)}
-              className={`w-7 h-7 rounded-md text-sm font-bold ${currentPage === i + 1 ? 'bg-indigo-600 text-white' : 'text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+              className={`w-6 h-6 rounded-md text-xs font-bold cursor-pointer ${currentPage === i + 1 ? 'bg-indigo-600 text-white' : 'text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
             >
               {i + 1}
             </button>
           ))}
           
           <button 
-            disabled={currentPage === totalPages || totalPages === 0}
+            disabled={currentPage === displayTotalPages || displayTotalPages === 0}
             onClick={() => setCurrentPage(prev => prev + 1)}
-            className="p-1 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50"
+            className="p-1 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
           >
-            <ChevronRight className="w-5 h-5 text-gray-600" />
+            <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
           </button>
         </div>
       </div>

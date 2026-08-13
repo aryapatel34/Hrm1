@@ -19,17 +19,17 @@ const leaveHistorySchema = new mongoose.Schema({
   action: {
     type: String,
     required: true,
-    enum: ['Created', 'Approved', 'Rejected', 'Override']
+    enum: ['Created', 'Approved', 'Rejected', 'Override', 'Cancellation Approved', 'Cancellation Rejected', 'Cancellation Requested']
   },
   oldStatus: {
     type: String,
-    enum: ['pending', 'approved', 'rejected', 'cancelled', null],
+    enum: ['pending', 'approved', 'rejected', 'cancelled', 'cancellation_pending', null],
     default: null
   },
   newStatus: {
     type: String,
     required: true,
-    enum: ['pending', 'approved', 'rejected', 'cancelled']
+    enum: ['pending', 'approved', 'rejected', 'cancelled', 'cancellation_pending']
   },
   reason: {
     type: String,

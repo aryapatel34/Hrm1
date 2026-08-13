@@ -110,16 +110,19 @@ const TeamLeaveCalendar = () => {
   const monthName = currentDate.toLocaleString('default', { month: 'long' });
 
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-full">
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-full transition-all duration-200 hover:border-indigo-500">
       
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Team Leave Calendar</h2>
-      </div>
-
-      <div className="flex items-center justify-center gap-4 mb-6">
-        <button onClick={prevMonth} className="p-1 text-gray-400 hover:text-gray-900"><ChevronLeft className="w-5 h-5"/></button>
-        <h3 className="text-lg font-bold w-40 text-center text-gray-900 dark:text-white">{monthName} {currentDate.getFullYear()}</h3>
-        <button onClick={nextMonth} className="p-1 text-gray-400 hover:text-gray-900"><ChevronRight className="w-5 h-5"/></button>
+        <div className="flex items-center gap-1">
+          <button onClick={prevMonth} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+            <ChevronLeft className="w-4 h-4"/>
+          </button>
+          <span className="text-sm font-bold text-gray-900 dark:text-white w-28 text-center">{monthName} {currentDate.getFullYear()}</span>
+          <button onClick={nextMonth} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+            <ChevronRight className="w-4 h-4"/>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-7 mb-2">

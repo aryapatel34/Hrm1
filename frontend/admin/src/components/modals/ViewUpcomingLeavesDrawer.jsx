@@ -24,13 +24,15 @@ const ViewUpcomingLeavesDrawer = ({ isOpen, onClose, leaves }) => {
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex justify-end bg-black/40 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white dark:bg-[#1e293b] h-full w-full max-w-sm p-6 relative shadow-2xl flex flex-col justify-between border-l border-gray-200 dark:border-gray-800">
-        <button type="button" onClick={onClose} className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-full transition-colors">
-          <X size={20} />
-        </button>
+      <div className="bg-white dark:bg-[#1e293b] h-full w-full max-w-sm pl-8 pr-6 py-6 relative shadow-2xl flex flex-col justify-between border-l border-gray-250 dark:border-gray-800">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-150 dark:border-gray-800 mb-6 shrink-0">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Upcoming Leaves</h2>
+          <button type="button" onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
+            <X size={20} />
+          </button>
+        </div>
 
-        <div className="flex-1 flex flex-col pt-6 h-full overflow-hidden">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Upcoming Leaves</h2>
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
           
           <div className="overflow-y-auto flex-1 pr-1 space-y-3">
             {upcomingLeaves.length === 0 ? (

@@ -1,16 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { 
-  applyLeave, 
-  getManagerLeaves, 
-  managerApprove, 
-  getHRLeaves, 
-  hrApprove, 
-  rejectLeave, 
+const {
+  applyLeave,
+  getManagerLeaves,
+  managerApprove,
+  getHRLeaves,
+  hrApprove,
+  rejectLeave,
   cancelLeave,
-  getMyLeaves, 
+  getMyLeaves,
   getAllLeaves,
-  allocateLeave
+  allocateLeave,
+  requestLeaveCancellation
 } = require('../controllers/leaveController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -19,6 +20,7 @@ router.post('/apply', protect, authorize('employee', 'manager', 'hr', 'admin'), 
 router.get('/my', protect, getMyLeaves);
 router.get('/my-quotas', protect, require('../controllers/leaveController').getMyLeaveQuotas);
 router.put('/cancel/:id', protect, cancelLeave);
+router.post('/request-cancellation/:id', protect, requestLeaveCancellation);
 
 // 👨‍💼 Manager Routes
 router.get('/manager/summary', protect, authorize('manager', 'admin'), require('../controllers/leaveController').getManagerStats);

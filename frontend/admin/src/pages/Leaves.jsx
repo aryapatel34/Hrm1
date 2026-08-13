@@ -47,11 +47,6 @@ const Leaves = () => {
             Here's the leave management overview for your organization.
           </p>
         </div>
-        <div className="flex gap-3">
-          <button className="bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-sm">
-            <Calendar size={16} /> Today, {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-          </button>
-        </div>
       </div>
 
       {/* 2. SUMMARY CARDS */}

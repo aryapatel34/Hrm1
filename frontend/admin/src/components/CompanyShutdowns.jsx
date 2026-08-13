@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ArrowRight, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
+import CompanyShutdownsDrawer from './modals/CompanyShutdownsDrawer';
 
 const CompanyShutdowns = () => {
   const [shutdowns, setShutdowns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const token = sessionStorage.getItem('token');
 
   useEffect(() => {
@@ -26,10 +28,13 @@ const CompanyShutdowns = () => {
   }, [token]);
 
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col h-full">
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col h-full transition-all duration-200 hover:border-rose-500">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Company Shutdown Days</h2>
-        <button className="text-xs font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+        <button
+          onClick={() => setIsDrawerOpen(true)}
+          className="text-xs font-bold text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 cursor-pointer transition-colors"
+        >
           View All
         </button>
       </div>
@@ -76,9 +81,8 @@ const CompanyShutdowns = () => {
         </table>
       </div>
 
-      <button className="mt-6 text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 hover:gap-2 transition-all w-max">
-        View Shutdown Calendar <ArrowRight size={14} />
-      </button>
+
+      <CompanyShutdownsDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
     </div>
   );
 };

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import {
   CheckSquare, Clock, Users, Calendar, BarChart2,
   CheckCircle2, AlertTriangle, ArrowRight, XCircle, LayoutGrid,
-  FileText, Upload, RefreshCcw, HandCoins, DollarSign, Check
+  FileText, Upload, RefreshCcw, HandCoins, DollarSign, Check, ChevronDown
 } from 'lucide-react';
 import LeavePolicyOverview from '../../components/LeavePolicyOverview';
 import HolidayManagement from '../../components/HolidayManagement';
@@ -13,6 +14,7 @@ import CompanyShutdowns from '../../components/CompanyShutdowns';
 import EmployeeLeaveAudit from '../../components/EmployeeLeaveAudit';
 import LeaveDashboardHeader from '../../components/LeaveDashboardHeader';
 import EmployeeLeaveManagement from '../employee/LeaveManagement';
+import CustomDatePicker from '../../components/CustomDatePicker';
 
 // Modals
 import CreatePolicyModal from '../../components/modals/CreatePolicyModal';
@@ -27,18 +29,22 @@ const Leaves = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('employee'); // 'hr' or 'employee'
-  
+
   // Modal states
   const [activeModal, setActiveModal] = useState(null);
   const [requestFilter, setRequestFilter] = useState('pending');
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedLeaveDetails, setSelectedLeaveDetails] = useState(null);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [requestFilter]);
+  }, [requestFilter, filterStartDate, filterEndDate]);
 
   const leaveRequestsRef = useRef(null);
-  
+
   // Data refresh trigger
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const triggerRefresh = () => setRefreshTrigger(prev => prev + 1);
@@ -74,14 +80,68 @@ const Leaves = () => {
     }
   };
 
+  const handleOverrideLeave = async (id, currentStatus) => {
+    const targetStatus = currentStatus === 'approved' ? 'rejected' : 'approved';
+    const confirmMsg = `Are you sure you want to override the decision to ${targetStatus.toUpperCase()}?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    const reason = window.prompt("Enter reason for override:");
+    if (reason === null) return; // cancelled
+
+    try {
+      await axios.put(`/api/leaves/override/${id}`, { targetStatus, reason }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Leave status overrode successfully');
+      triggerRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to override leave');
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'approved': return 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400';
+      case 'pending': return 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400';
+      case 'cancellation_pending': return 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400';
+      case 'rejected': return 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400';
+      case 'cancelled': return 'bg-gray-50 dark:bg-gray-900/20 text-gray-500 dark:text-gray-400';
+      default: return 'bg-gray-50 dark:bg-gray-900/20 text-gray-500 dark:text-gray-400';
+    }
+  };
+
   const token = sessionStorage.getItem('token');
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   const role = sessionStorage.getItem('role');
 
   // Basic stats for summary cards
-  const pendingRequests = leaves.filter(l => l.status?.toLowerCase() === 'pending').length;
+  const pendingRequests = leaves.filter(l => l.status?.toLowerCase() === 'pending' || l.status?.toLowerCase() === 'cancellation_pending').length;
   const approvedLeaves = leaves.filter(l => l.status?.toLowerCase() === 'approved').length;
   const totalRequests = leaves.length;
+
+  const dateFilteredLeaves = leaves.filter(l => {
+    if (l.startDate) {
+      const leaveStart = l.startDate.split('T')[0];
+      if (filterStartDate && leaveStart < filterStartDate) return false;
+      if (filterEndDate && leaveStart > filterEndDate) return false;
+    } else if (filterStartDate || filterEndDate) {
+      return false;
+    }
+    return true;
+  });
+
+  // Counts and filters for the request filter tabs
+  const countAll = dateFilteredLeaves.length;
+  const countPending = dateFilteredLeaves.filter(l => l.status?.toLowerCase() === 'pending').length;
+  const countApproved = dateFilteredLeaves.filter(l => l.status?.toLowerCase() === 'approved').length;
+  const countCancellation = dateFilteredLeaves.filter(l => l.status?.toLowerCase() === 'cancellation_pending').length;
+  const countRejected = dateFilteredLeaves.filter(l => l.status?.toLowerCase() === 'rejected').length;
+  const countCancelled = dateFilteredLeaves.filter(l => l.status?.toLowerCase() === 'cancelled').length;
+
+  const filteredLeaves = dateFilteredLeaves.filter(l => {
+    if (requestFilter === 'all') return true;
+    return l.status?.toLowerCase() === requestFilter;
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -138,19 +198,27 @@ const Leaves = () => {
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0b1120] text-[#1e293b] dark:text-[#cbd5e1] font-['Inter',sans-serif] px-4 pb-8 pt-2 transition-colors duration-300">
 
-      {/* 1. HEADER */}
-      <LeaveDashboardHeader userName={user.name?.split(' ')[0] || user.firstName || 'Admin'} />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+        <div>
+          <h1 className="text-2xl font-black text-[#1e293b] dark:text-white tracking-tight leading-none mb-1.5">
+            Leave Management
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 font-semibold text-xs">
+            Manage leave policies, track request history, and approve employee leaves.
+          </p>
+        </div>
+      </div>
 
       {/* VIEW MODE TOGGLE */}
       <div className="flex justify-start w-full mb-2 mt-2">
         <div className="bg-white dark:bg-[#1e293b] p-1 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm inline-flex">
-          <button 
+          <button
             onClick={() => setViewMode('employee')}
             className={`px-6 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'employee' ? 'bg-[#00a76b] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
           >
             My Leaves
           </button>
-          <button 
+          <button
             onClick={() => setViewMode('hr')}
             className={`px-6 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'hr' ? 'bg-[#00a76b] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
           >
@@ -164,85 +232,271 @@ const Leaves = () => {
       ) : (
         <>
           {/* 2. SUMMARY CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
             {[
-              { label: 'Total Leave Requests', val: totalRequests, sub: 'This Month', icon: CheckSquare, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20', filter: 'all' },
-              { label: 'Pending Approvals', val: pendingRequests, sub: 'Requests', icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', filter: 'pending' },
-              { label: 'Employees On Leave', val: stats?.employeesOnLeave || 0, sub: 'Today', icon: Users, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20' },
-              { label: 'Leave Balance Allocated', val: (stats?.leaveBalanceAllocated || 0).toLocaleString(), sub: 'Days', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-              { label: 'Upcoming Holidays', val: stats?.upcomingHolidays || 0, sub: 'In Next 30 Days', icon: Calendar, color: 'text-pink-600', bg: 'bg-pink-50 dark:bg-pink-900/20' }
+              { label: 'Total Leave Requests', val: totalRequests, sub: 'This Month', icon: CheckSquare, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20', hoverBorder: 'hover:border-indigo-500 hover:shadow-indigo-500/5', filter: 'all' },
+              { label: 'Pending Approvals', val: pendingRequests, sub: 'Requests', icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', hoverBorder: 'hover:border-purple-500 hover:shadow-purple-500/5', filter: 'pending' },
+              { label: 'Employees On Leave', val: stats?.employeesOnLeave || 0, sub: 'Today', icon: Users, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', hoverBorder: 'hover:border-orange-500 hover:shadow-orange-500/5' },
+              { label: 'Employees Present Today', val: stats ? (stats.totalEmployees - (stats.employeesOnLeave || 0)) : 0, sub: 'Present', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', hoverBorder: 'hover:border-emerald-500 hover:shadow-emerald-500/5' },
+              { label: 'Upcoming Holidays', val: stats?.upcomingHolidays || 0, sub: 'In 30 Days', icon: Calendar, color: 'text-pink-600', bg: 'bg-pink-50 dark:bg-pink-900/20', hoverBorder: 'hover:border-pink-500 hover:shadow-pink-500/5' }
             ].map((stat, i) => {
               const isClickable = !!stat.filter;
               return (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   onClick={() => isClickable && scrollToRequests(stat.filter)}
-                  className={`bg-white dark:bg-[#1e293b] p-5 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm transition-all flex flex-col justify-between ${
-                    isClickable 
-                      ? 'cursor-pointer hover:border-indigo-500 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0' 
-                      : ''
-                  }`}
+                  className={`bg-white dark:bg-[#1e293b] p-3.5 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm transition-all flex items-center justify-between gap-3 cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 group ${stat.hoverBorder}`}
                 >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`p-2.5 rounded-xl ${stat.bg}`}>
-                      <stat.icon size={20} className={stat.color} />
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`p-2 rounded-lg shrink-0 ${stat.bg} group-hover:scale-110 transition-all duration-200`}>
+                      <stat.icon size={16} className={stat.color} />
                     </div>
-                    <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">{stat.label}</span>
+                    <div className="min-w-0 relative group">
+                      <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider truncate block cursor-help">{stat.label}</span>
+                      <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover:block z-50 bg-gray-900 dark:bg-gray-750 text-white text-[9px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap pointer-events-none uppercase tracking-wider">
+                        {stat.label}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <h3 className="text-3xl font-black text-gray-900 dark:text-white tabular-nums">{stat.val}</h3>
-                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{stat.sub}</p>
+                  <div className="flex items-baseline shrink-0 ml-2">
+                    <h3 className="text-xl font-black text-gray-900 dark:text-white tabular-nums leading-none">{stat.val}</h3>
+                    {stat.sub && <p className="text-[9px] font-bold text-gray-400 ml-1 leading-none">{stat.sub}</p>}
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* 3. ROW 1: Policy Overview + Allocation Summary */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <LeavePolicyOverview />
-            <LeaveAllocationSummary />
+          {/* 3. Employee Leave Requests (Full Width 100% - Row 2) */}
+          <div ref={leaveRequestsRef} className="w-full bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 flex flex-col justify-between h-[750px] mb-8 overflow-hidden transition-all duration-200 hover:border-emerald-500">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Employee Leave Requests</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Review, approve, or reject employee leave applications</p>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Date Range Filter */}
+                <div className="flex items-center gap-2">
+                  <CustomDatePicker
+                    name="filterStartDate"
+                    value={filterStartDate}
+                    onChange={(e) => setFilterStartDate(e.target.value)}
+                    placeholder="Start Date"
+                    className="w-26 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg h-9 flex items-center text-[11px] font-semibold text-gray-700 dark:text-gray-300"
+                  />
+                  <span className="text-gray-400 text-xs font-bold">to</span>
+                  <CustomDatePicker
+                    name="filterEndDate"
+                    value={filterEndDate}
+                    onChange={(e) => setFilterEndDate(e.target.value)}
+                    placeholder="End Date"
+                    align="right"
+                    className="w-26 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg h-9 flex items-center text-[11px] font-semibold text-gray-700 dark:text-gray-300"
+                  />
+                  {(filterStartDate || filterEndDate) && (
+                    <button 
+                      onClick={() => { setFilterStartDate(''); setFilterEndDate(''); }}
+                      className="text-[10px] font-black text-red-500 hover:text-red-700 uppercase px-2 py-1 bg-red-50 dark:bg-red-950/20 rounded-md transition-colors cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Dropdown status filter */}
+                <div className="relative">
+                  <button
+                    onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
+                    className="flex items-center gap-1.5 text-xs font-bold bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg h-9 text-gray-600 dark:text-gray-300 outline-none cursor-pointer transition-all"
+                  >
+                    {requestFilter === 'all' && `All (${countAll})`}
+                    {requestFilter === 'pending' && `Pending (${countPending})`}
+                    {requestFilter === 'approved' && `Approved (${countApproved})`}
+                    {requestFilter === 'cancellation_pending' && `Cancellation Requested (${countCancellation})`}
+                    {requestFilter === 'rejected' && `Rejected (${countRejected})`}
+                    {requestFilter === 'cancelled' && `Cancelled (${countCancelled})`}
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${filterDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {filterDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setFilterDropdownOpen(false)} />
+                      <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-[#1e293b] border border-gray-150 dark:border-gray-800 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                        {[
+                          { value: 'all', label: 'All', count: countAll },
+                          { value: 'pending', label: 'Pending', count: countPending },
+                          { value: 'approved', label: 'Approved', count: countApproved },
+                          { value: 'cancellation_pending', label: 'Cancellation Requested', count: countCancellation },
+                          { value: 'rejected', label: 'Rejected', count: countRejected },
+                          { value: 'cancelled', label: 'Cancelled', count: countCancelled }
+                        ].map(opt => (
+                          <button
+                            key={opt.value}
+                            onClick={() => { setRequestFilter(opt.value); setFilterDropdownOpen(false); }}
+                            className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors cursor-pointer ${requestFilter === opt.value ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                          >
+                            {opt.label} ({opt.count})
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {filteredLeaves.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center text-gray-500 font-medium py-12">No leave requests found.</div>
+            ) : (
+              <>
+                <div className="overflow-x-auto overflow-y-hidden flex-1">
+                  <table className="w-full text-left border-collapse min-w-[700px]">
+                    <thead>
+                      <tr className="border-b border-gray-100 dark:border-gray-800 text-gray-500 text-xs text-center">
+                        <th className="pb-3 font-semibold text-left">Employee</th>
+                        <th className="pb-3 font-semibold">Leave Type</th>
+                        <th className="pb-3 font-semibold">From</th>
+                        <th className="pb-3 font-semibold">To</th>
+                        <th className="pb-3 font-semibold">Duration</th>
+                        <th className="pb-3 font-semibold">Reason</th>
+                        <th className="pb-3 font-semibold">Status</th>
+                        {(requestFilter === 'pending' || requestFilter === 'cancellation_pending') && <th className="pb-3 font-semibold text-right">Action</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredLeaves
+                        .slice((currentPage - 1) * 10, currentPage * 10)
+                        .map(leave => (
+                          <tr key={leave._id} onClick={() => setSelectedLeaveDetails(leave)} className="border-b border-gray-50 dark:border-gray-850 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-all text-xs font-semibold text-gray-700 dark:text-gray-300 text-center cursor-pointer">
+                            <td className="py-4 text-left flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-50 to-violet-50 text-indigo-600 flex items-center justify-center font-bold text-xs border border-indigo-100 shadow-sm shrink-0">
+                                {leave.user?.name ? leave.user.name.charAt(0).toUpperCase() : 'U'}
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-bold text-gray-900 dark:text-white truncate">{leave.user?.name || 'Unknown'}</span>
+                                <span className="text-[10px] text-gray-400 font-medium truncate">{leave.user?.email || 'No email'}</span>
+                              </div>
+                            </td>
+                            <td className="py-4">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                leave.leaveType === 'sick' ? 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400' :
+                                leave.leaveType === 'casual' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400' :
+                                'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400'
+                              }`}>
+                                {leave.leaveType || leave.type}
+                              </span>
+                            </td>
+                            <td className="py-4 text-gray-500 dark:text-gray-400 font-medium">
+                              {leave.startDate ? new Date(leave.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                            </td>
+                            <td className="py-4 text-gray-500 dark:text-gray-400 font-medium">
+                              {leave.endDate ? new Date(leave.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                            </td>
+                            <td className="py-4 font-bold text-gray-900 dark:text-white">
+                              {leave.totalDays || 0} day(s)
+                            </td>
+                            <td className="py-4 text-gray-500 dark:text-gray-400 font-medium max-w-[150px] truncate" title={leave.reason}>
+                              {leave.reason || '-'}
+                            </td>
+                            <td className="py-4">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusColor(leave.status)}`}>
+                                {leave.status === 'cancellation_pending' ? 'Cancellation Requested' : leave.status}
+                              </span>
+                            </td>
+                            {(requestFilter === 'pending' || requestFilter === 'cancellation_pending') && (
+                              <td className="py-4 text-right">
+                                <div className="flex justify-end gap-1.5">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleRejectLeave(leave._id); }}
+                                    className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
+                                    title="Reject"
+                                  >
+                                    <XCircle size={16} />
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleApproveLeave(leave._id); }}
+                                    className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
+                                    title="Approve"
+                                  >
+                                    <CheckCircle2 size={16} />
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination controls */}
+                {Math.ceil(filteredLeaves.length / 10) > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Page {currentPage} of {Math.ceil(filteredLeaves.length / 10)}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 disabled:opacity-50"
+                      >
+                        Prev
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredLeaves.length / 10), p + 1))}
+                        disabled={currentPage === Math.ceil(filteredLeaves.length / 10)}
+                        className="px-3 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-255 dark:border-gray-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
-          {/* 7. ROW 5: Quick Actions Row */}
+          {/* 4. Quick Actions Row - Row 3 */}
           <div className="mb-8">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 ml-1">Quick Actions</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
               {[
-                { label: 'Create Policy', icon: FileText, color: 'text-purple-500', onClick: () => setActiveModal('createPolicy') },
-                { label: 'Allocate Leave', icon: ArrowRight, color: 'text-green-500', onClick: () => setActiveModal('allocateLeave') },
-                { label: 'On Duty Requests', icon: Calendar, color: 'text-blue-500', onClick: () => setActiveModal('onDutyApproval') },
-                { label: 'Add Holiday', icon: Calendar, color: 'text-pink-500', onClick: () => setActiveModal('addHoliday') },
-                { label: 'Compensatory Off approval', icon: HandCoins, color: 'text-emerald-500', onClick: () => setActiveModal('compOff') },
-                { label: 'Leave Encashment', icon: DollarSign, color: 'text-red-500', onClick: () => setActiveModal('leaveEncashment') },
-                { label: 'Download Report', icon: Upload, color: 'text-indigo-500', isRotate: true, onClick: handleDownloadReport }
+                { label: 'Create Policy', icon: FileText, color: 'text-purple-500', hoverBorder: 'hover:border-purple-500', hoverText: 'hover:text-purple-600 dark:hover:text-purple-455', onClick: () => setActiveModal('createPolicy') },
+                { label: 'Allocate Leave', icon: ArrowRight, color: 'text-green-500', hoverBorder: 'hover:border-green-500', hoverText: 'hover:text-green-600 dark:hover:text-green-455', onClick: () => setActiveModal('allocateLeave') },
+                { label: 'On Duty Requests', icon: Calendar, color: 'text-blue-500', hoverBorder: 'hover:border-blue-500', hoverText: 'hover:text-blue-600 dark:hover:text-blue-455', onClick: () => setActiveModal('onDutyApproval') },
+                { label: 'Add Holiday', icon: Calendar, color: 'text-pink-500', hoverBorder: 'hover:border-pink-500', hoverText: 'hover:text-pink-600 dark:hover:text-pink-455', onClick: () => setActiveModal('addHoliday') },
+                { label: 'Compensatory Off approval', icon: HandCoins, color: 'text-emerald-500', hoverBorder: 'hover:border-emerald-500', hoverText: 'hover:text-emerald-600 dark:hover:text-emerald-455', onClick: () => setActiveModal('compOff') },
+                { label: 'Leave Encashment', icon: DollarSign, color: 'text-red-500', hoverBorder: 'hover:border-red-500', hoverText: 'hover:text-red-600 dark:hover:text-red-455', onClick: () => setActiveModal('leaveEncashment') },
+                { label: 'Download Report', icon: Upload, color: 'text-indigo-500', hoverBorder: 'hover:border-indigo-500', hoverText: 'hover:text-indigo-600 dark:hover:text-indigo-455', isRotate: true, onClick: handleDownloadReport }
               ].map((action, i) => (
-                <button key={i} onClick={action.onClick} className="bg-white dark:bg-[#1e293b] border border-gray-150 dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 p-4 rounded-2xl font-bold text-xs transition-all flex flex-col items-center justify-center gap-3 shadow-sm group">
-                  <div className={`p-3 rounded-xl bg-gray-50 dark:bg-[#0f172a] ${action.color} group-hover:scale-110 transition-transform`}>
-                    <action.icon size={20} className={action.isRotate ? "rotate-180" : ""} />
+                <button key={i} onClick={action.onClick} className={`bg-white dark:bg-[#1e293b] border border-gray-150 dark:border-gray-800 text-gray-700 dark:text-gray-200 py-2 px-3 rounded-xl transition-all flex items-center justify-start gap-2.5 shadow-sm group cursor-pointer ${action.hoverBorder} ${action.hoverText}`}>
+                  <div className={`p-2 rounded-lg bg-gray-50 dark:bg-[#0f172a] ${action.color} group-hover:scale-105 transition-transform shrink-0`}>
+                    <action.icon size={15} className={action.isRotate ? "rotate-180" : ""} />
                   </div>
-                  <span className="text-center">{action.label}</span>
+                  <span className="text-left font-black text-[11px] tracking-tight leading-none truncate w-full">{action.label}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* 4. ROW 2: Holiday Management + Shutdown Days */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* 5. 3-Column Grid: Holiday Management, Company Shutdowns, Leave Allocation Summary - Row 4 */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
             <HolidayManagement refreshTrigger={refreshTrigger} />
             <CompanyShutdowns />
+            <LeaveAllocationSummary />
           </div>
 
-          {/* 5. ROW 3: 5 Quick-Stat Cards */}
+          {/* 6. 5 Quick-Stat Cards - Row 5 */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
             {[
-              { label: 'Bulk Leave Allocation', val: (stats?.quickStats?.bulkAllocationDays || 0).toLocaleString(), sub: 'Days Allocated This Month', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', link: 'View Details' },
-              { label: 'Bulk Import', val: (stats?.quickStats?.importedEmployees || 0).toLocaleString(), sub: 'Employees Imported This Month', icon: Upload, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20', link: 'View Import Status' },
-              { label: 'Leave Adjustments', val: (stats?.quickStats?.leaveAdjustments || 0).toLocaleString(), sub: 'Adjustments Made This Month', icon: RefreshCcw, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', link: 'View Adjustments' },
-              { label: 'Comp-Off Management', val: (stats?.quickStats?.compOffsApproved || 0).toLocaleString(), sub: 'Comp-Offs Approved This Month', icon: HandCoins, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', link: 'View Comp-Offs' },
-              { label: 'Leave Encashment', val: (stats?.quickStats?.encashmentsPending || 0).toLocaleString(), sub: 'Requests Pending This Month', icon: DollarSign, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20', link: 'View Requests' }
+              { label: 'Bulk Leave Allocation', val: (stats?.quickStats?.bulkAllocationDays || 0).toLocaleString(), sub: 'Days Allocated This Month', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', hoverBorder: 'hover:border-blue-500 hover:shadow-blue-500/5', link: 'View Details' },
+              { label: 'Bulk Import', val: (stats?.quickStats?.importedEmployees || 0).toLocaleString(), sub: 'Employees Imported This Month', icon: Upload, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20', hoverBorder: 'hover:border-green-500 hover:shadow-green-500/5', link: 'View Import Status' },
+              { label: 'Leave Adjustments', val: (stats?.quickStats?.leaveAdjustments || 0).toLocaleString(), sub: 'Adjustments Made This Month', icon: RefreshCcw, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', hoverBorder: 'hover:border-purple-500 hover:shadow-purple-500/5', link: 'View Adjustments' },
+              { label: 'Comp-Off Management', val: (stats?.quickStats?.compOffsApproved || 0).toLocaleString(), sub: 'Comp-Offs Approved This Month', icon: HandCoins, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', hoverBorder: 'hover:border-orange-500 hover:shadow-orange-500/5', link: 'View Comp-Offs' },
+              { label: 'Leave Encashment', val: (stats?.quickStats?.encashmentsPending || 0).toLocaleString(), sub: 'Requests Pending This Month', icon: DollarSign, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20', hoverBorder: 'hover:border-red-500 hover:shadow-red-500/5', link: 'View Requests' }
             ].map((stat, i) => (
-              <div key={i} className="bg-white dark:bg-[#1e293b] p-5 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+              <div key={i} className={`bg-white dark:bg-[#1e293b] p-5 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer ${stat.hoverBorder}`}>
                 <div className="flex items-center gap-3 mb-4">
                   <div className={`p-2.5 rounded-xl ${stat.bg}`}>
                     <stat.icon size={20} className={stat.color} />
@@ -260,142 +514,109 @@ const Leaves = () => {
             ))}
           </div>
 
-          {/* 6. ROW 4: Audit Log + Leave Requests (30/70 Split) */}
-          <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 mb-8 items-stretch">
-            <div className="lg:col-span-3 flex flex-col h-[480px]">
-              <EmployeeLeaveAudit />
-            </div>
-            <div ref={leaveRequestsRef} className="lg:col-span-7 bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 flex flex-col justify-between h-[480px]">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Employee Leave Requests</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Review, approve, or reject employee leave applications</p>
-                </div>
-                <div className="bg-gray-100 dark:bg-[#0f172a] p-1 rounded-lg border border-gray-200 dark:border-gray-800 flex">
-                  <button 
-                    onClick={() => setRequestFilter('pending')}
-                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${requestFilter === 'pending' ? 'bg-[#00a76b] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
-                  >
-                    Pending Approvals ({pendingRequests})
-                  </button>
-                  <button 
-                    onClick={() => setRequestFilter('all')}
-                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${requestFilter === 'all' ? 'bg-[#00a76b] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
-                  >
-                    All Requests ({totalRequests})
-                  </button>
-                </div>
-              </div>
-
-              {leaves.filter(l => requestFilter === 'all' || l.status?.toLowerCase() === 'pending').length === 0 ? (
-                <div className="flex-1 flex items-center justify-center text-gray-500 font-medium py-12">No leave requests found.</div>
-              ) : (
-                <>
-                  <div className="overflow-x-auto flex-1">
-                    <table className="w-full text-left text-sm text-gray-500 dark:text-gray-400">
-                      <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-800/50">
-                        <tr>
-                          <th className="px-4 py-2 font-bold">Employee</th>
-                          <th className="px-4 py-2 font-bold">Leave Type</th>
-                          <th className="px-4 py-2 font-bold">Duration</th>
-                          <th className="px-4 py-2 font-bold text-center">Days</th>
-                          <th className="px-4 py-2 font-bold">Reason</th>
-                          <th className="px-4 py-2 font-bold">Status</th>
-                          {requestFilter === 'pending' && <th className="px-4 py-2 font-bold text-right">Actions</th>}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                        {leaves
-                          .filter(l => requestFilter === 'all' || l.status?.toLowerCase() === 'pending')
-                          .slice((currentPage - 1) * 5, currentPage * 5)
-                          .map(leave => (
-                            <tr key={leave._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20">
-                              <td className="px-4 py-2">
-                                <div className="font-bold text-gray-900 dark:text-white">{leave.user?.name || 'Unknown'}</div>
-                                <div className="text-[10px] text-gray-400">{leave.user?.email}</div>
-                              </td>
-                              <td className="px-4 py-2 font-semibold capitalize text-gray-700 dark:text-gray-300">
-                                {leave.leaveType?.replace(/([A-Z])/g, ' $1').trim() || leave.type}
-                              </td>
-                              <td className="px-4 py-2 text-xs">
-                                {leave.startDate && new Date(leave.startDate).toLocaleDateString('en-GB')} to{' '}
-                                {leave.endDate && new Date(leave.endDate).toLocaleDateString('en-GB')}
-                              </td>
-                              <td className="px-4 py-2 font-bold text-gray-900 dark:text-white text-center">{leave.totalDays || 0}</td>
-                              <td className="px-4 py-2 max-w-[200px] truncate text-xs" title={leave.reason}>
-                                {leave.reason || '-'}
-                              </td>
-                              <td className="px-4 py-2">
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                                  leave.status?.toLowerCase() === 'approved' ? 'bg-green-50 dark:bg-green-900/20 text-green-600' :
-                                  leave.status?.toLowerCase() === 'pending' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' :
-                                  'bg-red-50 dark:bg-red-900/20 text-red-600'
-                                }`}>
-                                  {leave.status}
-                                </span>
-                              </td>
-                              {requestFilter === 'pending' && (
-                                <td className="px-4 py-2 text-right">
-                                  <div className="flex justify-end gap-2 flex-wrap">
-                                    <button 
-                                      onClick={() => handleRejectLeave(leave._id)}
-                                      className="px-2.5 py-1.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 transition-colors text-xs font-bold flex items-center gap-1 border border-red-100 dark:border-red-900/30"
-                                    >
-                                      <XCircle size={14} /> Reject
-                                    </button>
-                                    <button 
-                                      onClick={() => handleApproveLeave(leave._id)}
-                                      className="px-2.5 py-1.5 bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 transition-colors text-xs font-bold flex items-center gap-1 border border-green-100 dark:border-green-900/30"
-                                    >
-                                      <Check size={14} /> Approve
-                                    </button>
-                                  </div>
-                                </td>
-                              )}
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Pagination controls */}
-                  {Math.ceil(leaves.filter(l => requestFilter === 'all' || l.status?.toLowerCase() === 'pending').length / 5) > 1 && (
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        Page {currentPage} of {Math.ceil(leaves.filter(l => requestFilter === 'all' || l.status?.toLowerCase() === 'pending').length / 5)}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                          disabled={currentPage === 1}
-                          className="px-3 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 disabled:opacity-50"
-                        >
-                          Prev
-                        </button>
-                        <button 
-                          onClick={() => setCurrentPage(p => Math.min(Math.ceil(leaves.filter(l => requestFilter === 'all' || l.status?.toLowerCase() === 'pending').length / 5), p + 1))}
-                          disabled={currentPage === Math.ceil(leaves.filter(l => requestFilter === 'all' || l.status?.toLowerCase() === 'pending').length / 5)}
-                          className="px-3 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 disabled:opacity-50"
-                        >
-                          Next
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+          {/* 7. Leave Policy Overview (Full Width - Row 6) */}
+          <div className="w-full mb-8">
+            <LeavePolicyOverview />
           </div>
         </>
       )}
 
       {/* Modals */}
-      <CreatePolicyModal isOpen={activeModal === 'createPolicy'} onClose={() => setActiveModal(null)} onSuccess={() => {}} />
+      <CreatePolicyModal isOpen={activeModal === 'createPolicy'} onClose={() => setActiveModal(null)} onSuccess={() => { }} />
       <AllocateLeaveModal isOpen={activeModal === 'allocateLeave'} onClose={() => setActiveModal(null)} />
       <OnDutyApprovalModal isOpen={activeModal === 'onDutyApproval'} onClose={() => setActiveModal(null)} />
       <AddHolidayModal isOpen={activeModal === 'addHoliday'} onClose={() => setActiveModal(null)} onSuccess={triggerRefresh} />
       <CompOffApprovalModal isOpen={activeModal === 'compOff'} onClose={() => setActiveModal(null)} />
       <LeaveEncashmentModal isOpen={activeModal === 'leaveEncashment'} onClose={() => setActiveModal(null)} />
+
+      {/* Leave Details & Override Modal */}
+      {selectedLeaveDetails && createPortal(
+        <div className="fixed inset-0 z-[99999] bg-black/40 backdrop-blur-sm" onClick={() => setSelectedLeaveDetails(null)}>
+          <div className="fixed right-0 top-0 bottom-0 h-full w-full max-w-sm bg-white dark:bg-[#1e293b] shadow-2xl flex flex-col justify-between border-l-2 border-gray-300 dark:border-gray-800" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-150 dark:border-gray-800 relative">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Leave Request Details</h3>
+              <button onClick={() => setSelectedLeaveDetails(null)} className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-full transition-colors">
+                <XCircle size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3.5">
+                <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-155 dark:border-gray-800">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Employee</p>
+                  <p className="text-xs font-black text-gray-900 dark:text-white mt-0.5">{selectedLeaveDetails.user?.name || 'Unknown'}</p>
+                  <p className="text-[9px] text-gray-400 truncate">{selectedLeaveDetails.user?.email}</p>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-155 dark:border-gray-800">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Leave Type</p>
+                  <p className="text-xs font-black text-gray-900 dark:text-white mt-0.5 capitalize">{selectedLeaveDetails.leaveType} Leave</p>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-155 dark:border-gray-800">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Duration</p>
+                  <p className="text-xs font-black text-gray-900 dark:text-white mt-0.5">
+                    {selectedLeaveDetails.totalDays} {selectedLeaveDetails.totalDays === 1 ? 'Day' : 'Days'}
+                  </p>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-155 dark:border-gray-800">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Status</p>
+                  <div className="mt-0.5">
+                    <span className={`inline-block text-[9px] font-black px-2 py-0.5 rounded-full capitalize ${getStatusColor(selectedLeaveDetails.status)}`}>
+                      {selectedLeaveDetails.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-155 dark:border-gray-800">
+                <p className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">Leave Dates</p>
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  {selectedLeaveDetails.startDate && new Date(selectedLeaveDetails.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} to{' '}
+                  {selectedLeaveDetails.endDate && new Date(selectedLeaveDetails.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </p>
+              </div>
+
+              <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-155 dark:border-gray-800">
+                <p className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">Reason</p>
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 break-words">{selectedLeaveDetails.reason || '-'}</p>
+              </div>
+
+              {selectedLeaveDetails.status === 'cancellation_pending' && selectedLeaveDetails.cancellationReason && (
+                <div className="p-3 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-100 dark:border-red-900/20">
+                  <p className="text-[10px] font-bold text-red-500 uppercase mb-0.5">Cancellation Reason</p>
+                  <p className="text-xs font-semibold text-red-700 dark:text-red-450 break-words">{selectedLeaveDetails.cancellationReason}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 pt-4 border-t border-gray-150 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex justify-end gap-3 shrink-0">
+              {selectedLeaveDetails.status === 'pending' || selectedLeaveDetails.status === 'cancellation_pending' ? (
+                <>
+                  <button
+                    onClick={() => { handleRejectLeave(selectedLeaveDetails._id); setSelectedLeaveDetails(null); }}
+                    className="flex-1 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-xs font-bold cursor-pointer"
+                  >
+                    Reject Request
+                  </button>
+                  <button
+                    onClick={() => { handleApproveLeave(selectedLeaveDetails._id); setSelectedLeaveDetails(null); }}
+                    className="flex-1 py-2.5 bg-[#00a76b] text-white rounded-xl hover:bg-[#00915c] transition-colors text-xs font-bold cursor-pointer"
+                  >
+                    Approve Request
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => { handleOverrideLeave(selectedLeaveDetails._id, selectedLeaveDetails.status); setSelectedLeaveDetails(null); }}
+                  className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition-colors text-xs font-bold cursor-pointer"
+                >
+                  Override Decision ({selectedLeaveDetails.status === 'approved' ? 'Reject' : 'Approve'})
+                </button>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
