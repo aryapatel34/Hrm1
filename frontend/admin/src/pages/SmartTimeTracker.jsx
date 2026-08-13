@@ -388,39 +388,38 @@ const SmartTimeTracker = () => {
         </div>
       </div>
 
-      {/* TOP ROW: 60/40 SPLIT */}
-      <div className="flex flex-col lg:flex-row gap-6 mb-8">
+      {/* TOP ROW: 70/30 SPLIT */}
+      <div className="flex flex-col lg:flex-row gap-6 mb-6 items-stretch">
 
-        {/* TIME TRACKER CARD (60%) */}
-        <div className="lg:w-[60%] bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm px-10 pt-6 pb-6 flex flex-col justify-center relative overflow-hidden">
-          <div className="flex justify-between items-start mb-10 relative z-10">
+        {/* TIME TRACKER CARD (70%) */}
+        <div className="lg:w-[70%] bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm px-6 py-4 flex flex-col justify-between relative overflow-hidden">
+          <div className="flex justify-between items-start mb-3 relative z-10">
             <div>
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Current Session</h2>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-1">Current Session</h2>
               <div className="flex items-center gap-2">
                 <div className={`w-2.5 h-2.5 rounded-full ${session?.isRunning ? (session.status === 'active' ? 'bg-[#10B981] animate-pulse' : 'bg-amber-500 animate-pulse') : 'bg-gray-400 dark:bg-gray-600'}`}></div>
-                <span className="text-xs font-bold uppercase tracking-widest text-gray-600 dark:text-[#a3a094]">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600 dark:text-[#a3a094]">
                   {session?.isRunning ? (session.status === 'active' ? 'Working' : 'On Break') : (session?.status === 'completed' ? 'Stopped' : 'Not Started')}
                 </span>
               </div>
             </div>
-            <Clock size={28} className="text-gray-300 dark:text-gray-600" />
+            <Clock size={24} className="text-gray-300 dark:text-gray-600" />
           </div>
 
-          <div className="text-center mb-4 relative z-10">
-            <div className="text-[5rem] leading-none font-black text-gray-900 dark:text-white font-mono tracking-tighter mb-2">
+          <div className="text-center my-auto py-2 relative z-10">
+            <div className="text-7xl leading-none font-black text-gray-900 dark:text-white font-mono tracking-tighter mb-1">
               {formatTime(timer)}
             </div>
-            <p className="text-xs text-gray-400 dark:text-[#a3a094] font-bold tracking-[0.2em] uppercase">Total Time Tracked</p>
+            <p className="text-[10px] text-gray-400 dark:text-[#a3a094] font-bold tracking-[0.2em] uppercase">Total Time Tracked</p>
           </div>
-
 
         </div>
 
-        {/* DYNAMIC CALENDAR (40%) */}
-        <div className="lg:w-[40%] bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm px-8 pt-4 pb-2 flex flex-col">
-          <div className="flex justify-between items-center mb-6 relative">
+        {/* DYNAMIC CALENDAR (30%) */}
+        <div className="lg:w-[30%] bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm p-4 flex flex-col">
+          <div className="flex justify-between items-center mb-3 relative">
             <button 
-              className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-1 hover:text-[#10B981] transition-colors cursor-pointer select-none bg-transparent border-none"
+              className="text-md font-bold text-gray-800 dark:text-white flex items-center gap-1 hover:text-[#10B981] transition-colors cursor-pointer select-none bg-transparent border-none"
               onClick={() => {
                 setShowMonthYearPicker(!showMonthYearPicker);
                 if (!showMonthYearPicker) {
@@ -429,7 +428,7 @@ const SmartTimeTracker = () => {
                 }
               }}
             >
-              <CalendarIcon size={20} className={showMonthYearPicker ? "text-[#10B981] mr-1" : "text-[#10B981] mr-1 opacity-70"} />
+              <CalendarIcon size={16} className={showMonthYearPicker ? "text-[#10B981] mr-1" : "text-[#10B981] mr-1 opacity-70"} />
               {fullMonthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
             </button>
 
@@ -437,31 +436,31 @@ const SmartTimeTracker = () => {
             {showMonthYearPicker && (
               <div 
                 ref={pickerRef} 
-                className="absolute top-10 left-1/2 -translate-x-1/2 z-50 w-64 bg-white dark:bg-[#1E2026] border border-gray-200 dark:border-[#38352e] rounded-xl shadow-2xl p-4 flex flex-col"
+                className="absolute top-9 left-1/2 -translate-x-1/2 z-50 w-60 bg-white dark:bg-[#1E2026] border border-gray-200 dark:border-[#38352e] rounded-xl shadow-2xl p-3 flex flex-col"
               >
                 {/* Selected Year Header (Clickable) */}
                 <button
                   type="button"
                   onClick={() => setPickerMode(pickerMode === 'year' ? 'month' : 'year')}
-                  className="w-full bg-gray-100 dark:bg-[#2A2D35] hover:bg-gray-200 dark:hover:bg-[#32363F] text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg transition-colors mb-3 flex justify-center items-center"
+                  className="w-full bg-gray-100 dark:bg-[#2A2D35] hover:bg-gray-200 dark:hover:bg-[#32363F] text-gray-800 dark:text-white font-bold py-1.5 px-3 rounded-lg transition-colors mb-2 flex justify-center items-center text-sm"
                 >
                   {tempYear}
-                  <svg className={`w-4 h-4 ml-2 transition-transform ${pickerMode === 'year' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className={`w-3.5 h-3.5 ml-1.5 transition-transform ${pickerMode === 'year' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
 
                 {pickerMode === 'year' ? (
-                  <div className="max-h-56 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1">
+                  <div className="max-h-48 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1">
                     {Array.from({ length: 60 }, (_, i) => new Date().getFullYear() - 30 + i).map((y) => (
                       <button
                         key={y}
-                        id={tempYear === y ? 'admin-selected-year-btn' : undefined}
+                        id="admin-selected-year-btn"
                         onClick={() => {
                           setTempYear(y);
                           setPickerMode('month');
                         }}
-                        className={`w-full py-2 rounded-lg text-sm font-semibold transition-colors ${
+                        className={`w-full py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                           tempYear === y 
                             ? 'bg-[#E0F2FE] dark:bg-[#10B981]/20 text-[#0284C7] dark:text-[#10B981]' 
                             : 'hover:bg-gray-50 dark:hover:bg-[#2A2D35] text-gray-700 dark:text-gray-300'
@@ -472,7 +471,7 @@ const SmartTimeTracker = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-4 gap-1.5">
                     {monthNames.map((m, i) => {
                       const isSelected = currentMonth.getFullYear() === tempYear && currentMonth.getMonth() === i;
                       return (
@@ -482,7 +481,7 @@ const SmartTimeTracker = () => {
                             setCurrentMonth(new Date(tempYear, i, 1));
                             setShowMonthYearPicker(false);
                           }}
-                          className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                          className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                             isSelected 
                               ? 'bg-[#10B981] text-white shadow-md' 
                               : 'hover:bg-gray-50 dark:hover:bg-[#2A2D35] text-gray-700 dark:text-gray-300'
@@ -497,20 +496,20 @@ const SmartTimeTracker = () => {
               </div>
             )}
 
-            <div className="flex gap-2">
-              <button onClick={handlePrevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-[#282520] rounded-lg transition-colors bg-transparent border-none cursor-pointer"><ChevronLeft size={18} className="text-gray-600 dark:text-[#a3a094]" /></button>
-              <button onClick={handleNextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-[#282520] rounded-lg transition-colors bg-transparent border-none cursor-pointer"><ChevronRight size={18} className="text-gray-600 dark:text-[#a3a094]" /></button>
+            <div className="flex gap-1">
+              <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-[#282520] rounded-lg transition-colors bg-transparent border-none cursor-pointer"><ChevronLeft size={16} className="text-gray-600 dark:text-[#a3a094]" /></button>
+              <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-[#282520] rounded-lg transition-colors bg-transparent border-none cursor-pointer"><ChevronRight size={16} className="text-gray-600 dark:text-[#a3a094]" /></button>
             </div>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 text-center mb-3">
+          <div className="grid grid-cols-7 gap-1 text-center mb-1">
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-              <div key={d} className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{d}</div>
+              <div key={d} className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{d}</div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-1 text-center flex-1 content-start">
-            {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`empty-${i}`} className="aspect-square" />)}
+          <div className="grid grid-cols-7 gap-y-1 gap-x-0.5 text-center flex-1 content-start">
+            {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`empty-${i}`} className="w-8 h-8 mx-auto" />)}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
               const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -524,7 +523,7 @@ const SmartTimeTracker = () => {
                   key={day}
                   onClick={() => setSelectedDate(dateStr)}
                   className={`
-                    relative w-full aspect-square flex items-center justify-center text-sm font-semibold rounded-xl transition-all border-none cursor-pointer
+                    relative w-8 h-8 mx-auto flex items-center justify-center text-xs font-semibold rounded-full transition-all border-none cursor-pointer
                     ${isSelected ? 'bg-[#10B981] text-white shadow-md' : 'hover:bg-gray-100 dark:hover:bg-[#282520] text-gray-700 dark:text-gray-300 bg-transparent'}
                     ${isToday && !isSelected ? 'border-2 border-[#10B981] text-[#10B981]' : ''}
                   `}
@@ -563,15 +562,15 @@ const SmartTimeTracker = () => {
 
       {/* BOTTOM ROW: ROLE-BASED DAILY ACTIVITY LOG */}
       <div className="bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-[#38352e] flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-[#282520]">
-          <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-widest">
+        <div className="px-4 py-2.5 border-b border-gray-200 dark:border-[#38352e] flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-[#282520]">
+          <h3 className="text-xs font-bold text-gray-800 dark:text-white uppercase tracking-widest">
             {isAdmin ? 'All Employees Daily Activity' : 'Daily Activity'}
           </h3>
 
           {!isAdmin && (
             <input
               type="date"
-              className="text-sm outline-none text-gray-700 dark:text-gray-300 font-normal bg-white dark:bg-[#181612] border border-gray-200 dark:border-[#38352e] rounded-lg px-3 py-1.5 shadow-sm focus:ring-1 focus:ring-[#10B981] focus:border-[#10B981]"
+              className="text-xs outline-none text-gray-700 dark:text-gray-300 font-normal bg-white dark:bg-[#181612] border border-gray-200 dark:border-[#38352e] rounded-lg px-2.5 py-1 shadow-sm focus:ring-1 focus:ring-[#10B981] focus:border-[#10B981]"
               value={selectedDate}
               onChange={e => setSelectedDate(e.target.value)}
             />
@@ -601,13 +600,13 @@ const SmartTimeTracker = () => {
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="bg-gray-50 dark:bg-[#1e1c18] border-b border-gray-200 dark:border-[#38352e]">
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Employee Name</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Check-in Time</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider text-center">No. of Pauses</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Total Break Time</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Stop Time</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider text-right">Total Hours Worked</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Employee Name</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Date</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Check-in Time</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider text-center">No. of Pauses</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Total Break Time</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Stop Time</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider text-right">Total Hours Worked</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-[#38352e]">
@@ -624,35 +623,35 @@ const SmartTimeTracker = () => {
 
                     return (
                       <tr key={i} onClick={() => setSelectedLog(log)} className="hover:bg-gray-50 dark:hover:bg-[#282520] transition-colors group cursor-pointer">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 flex items-center justify-center font-bold text-xs uppercase">
+                        <td className="px-4 py-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 flex items-center justify-center font-bold text-[10px] uppercase">
                               {(log.employeeId?.name || log.employeeId?.fullName || 'U').charAt(0)}
                             </div>
                             <div>
-                              <p className="text-sm font-bold text-gray-800 dark:text-white">{log.employeeId?.fullName || log.employeeId?.name || 'Unknown'}</p>
-                              <p className="text-xs font-semibold text-gray-400 dark:text-[#a3a094] capitalize">{log.employeeRole || 'N/A'}</p>
+                              <p className="text-xs font-bold text-gray-800 dark:text-white leading-tight">{log.employeeId?.fullName || log.employeeId?.name || 'Unknown'}</p>
+                              <p className="text-[10px] font-semibold text-gray-400 dark:text-[#a3a094] capitalize leading-none">{log.employeeRole || 'N/A'}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">{log.date}</td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-700 dark:text-gray-300">{checkin}</td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-600 dark:text-gray-300 text-center">{numPauses}</td>
-                        <td className="px-6 py-4 text-sm font-medium text-amber-600 dark:text-amber-500">{breakMins > 0 ? `${breakMins} mins` : '-'}</td>
-                        <td className="px-6 py-4 text-sm font-medium">
-                          <div className="flex items-center gap-2">
+                        <td className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300">{log.date}</td>
+                        <td className="px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-300">{checkin}</td>
+                        <td className="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 text-center">{numPauses}</td>
+                        <td className="px-4 py-2 text-xs font-medium text-amber-600 dark:text-amber-500">{breakMins > 0 ? `${breakMins} mins` : '-'}</td>
+                        <td className="px-4 py-2 text-xs font-medium">
+                          <div className="flex items-center gap-1.5">
                             {isRunningToday ? (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#10B981]/10 dark:bg-[#10B981]/20 text-[#10B981] dark:text-[#34d399] uppercase tracking-wider">Live</span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#10B981]/10 dark:bg-[#10B981]/20 text-[#10B981] dark:text-[#34d399] uppercase tracking-wider">Live</span>
                             ) : (
                               <span className="text-gray-700 dark:text-gray-300">{checkout}</span>
                             )}
                             {log.isAutoStop && (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 uppercase tracking-wider border border-amber-200 dark:border-amber-900/50">Auto</span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 uppercase tracking-wider border border-amber-200 dark:border-amber-900/50">Auto</span>
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className="text-sm font-bold text-[#10B981]">{formatMinutes(activeSecs)}</span>
+                        <td className="px-4 py-2 text-right">
+                          <span className="text-xs font-bold text-[#10B981]">{formatMinutes(activeSecs)}</span>
                         </td>
                       </tr>
                     );
@@ -670,11 +669,11 @@ const SmartTimeTracker = () => {
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="bg-gray-50 dark:bg-[#1e1c18] border-b border-gray-200 dark:border-[#38352e]">
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Check-in Time</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider text-center">No. of Pauses</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Resume Time</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Pause Time</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider text-right">Total Time</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Check-in Time</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider text-center">No. of Pauses</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Resume Time</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Pause Time</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider text-right">Total Time</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-[#38352e]">
@@ -751,23 +750,23 @@ const SmartTimeTracker = () => {
                   if (employeeRows.length > 0) {
                     return employeeRows.map((row, idx) => (
                       <tr key={idx} className={`transition-colors ${row.isLive ? 'bg-[#10B981]/10 dark:bg-[#10B981]/20 hover:bg-[#10B981]/20 dark:hover:bg-[#10B981]/30' : 'hover:bg-gray-50 dark:hover:bg-[#282520]'}`}>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-700 dark:text-gray-300">{row.checkin}</td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-600 dark:text-gray-400 text-center">{row.pauseNo}</td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-700 dark:text-gray-300">{row.resumeTime}</td>
-                        <td className="px-6 py-4 text-sm font-medium">
+                        <td className="px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-300">{row.checkin}</td>
+                        <td className="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 text-center">{row.pauseNo}</td>
+                        <td className="px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-300">{row.resumeTime}</td>
+                        <td className="px-4 py-2 text-xs font-medium">
                           {row.isLive ? (
                             <span className="text-[#10B981] font-bold animate-pulse">{row.pauseTime}</span>
                           ) : (
                             <span className="text-gray-700 dark:text-gray-300">{row.pauseTime}</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <span className={`text-sm font-bold ${row.isLive ? 'text-[#10B981]' : 'text-gray-700 dark:text-gray-300'}`}>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span className={`text-xs font-bold ${row.isLive ? 'text-[#10B981]' : 'text-gray-700 dark:text-gray-300'}`}>
                               {row.totalTime}
                             </span>
                             {row.isLive && (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#10B981] text-white uppercase tracking-wider">Live</span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#10B981] text-white uppercase tracking-wider">Live</span>
                             )}
                           </div>
                         </td>
@@ -791,9 +790,9 @@ const SmartTimeTracker = () => {
 
       {/* DAILY SUMMARY LOG (EMPLOYEE ONLY) */}
       {!isAdmin && (
-        <div className="bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm overflow-hidden mt-8 mb-8">
-          <div className="p-6 border-b border-gray-200 dark:border-[#38352e] flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-[#282520]">
-            <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-widest">
+        <div className="bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm overflow-hidden mt-4 mb-4">
+          <div className="px-4 py-2.5 border-b border-gray-200 dark:border-[#38352e] flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-[#282520]">
+            <h3 className="text-xs font-bold text-gray-800 dark:text-white uppercase tracking-widest">
               Daily Summary
             </h3>
 
@@ -833,10 +832,10 @@ const SmartTimeTracker = () => {
             <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="bg-gray-50 dark:bg-[#1e1c18] border-b border-gray-200 dark:border-[#38352e]">
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Check-in</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Check-out</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider text-right">Total Hours</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Date</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Check-in</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider">Check-out</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider text-right">Total Hours</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-[#38352e]">
@@ -861,27 +860,27 @@ const SmartTimeTracker = () => {
 
                     return (
                       <tr key={i} className={`transition-colors ${isLive ? 'bg-[#10B981]/10 dark:bg-[#10B981]/20 hover:bg-[#10B981]/20 dark:hover:bg-[#10B981]/30' : 'hover:bg-gray-50 dark:hover:bg-[#282520]'}`}>
-                        <td className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">{new Date(dayLog.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-700 dark:text-gray-300">{checkInTime}</td>
-                        <td className="px-6 py-4 text-sm font-medium">
-                          <div className="flex items-center gap-2">
+                        <td className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300">{new Date(dayLog.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</td>
+                        <td className="px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-300">{checkInTime}</td>
+                        <td className="px-4 py-2 text-xs font-medium">
+                          <div className="flex items-center gap-1.5">
                             {isLive ? (
                               <span className="text-[#10B981] font-bold animate-pulse">{checkOutTime}</span>
                             ) : (
                               <span className="text-gray-700 dark:text-gray-300">{checkOutTime}</span>
                             )}
                             {dayLog.isAutoStop && !isLive && (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 uppercase tracking-wider border border-amber-200 dark:border-amber-900/50">Auto</span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 uppercase tracking-wider border border-amber-200 dark:border-amber-900/50">Auto</span>
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <span className={`text-sm font-bold ${isLive ? 'text-[#10B981]' : 'text-gray-700 dark:text-gray-300'}`}>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span className={`text-xs font-bold ${isLive ? 'text-[#10B981]' : 'text-gray-700 dark:text-gray-300'}`}>
                               {totalStr}
                             </span>
                             {isLive && (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#10B981] text-white uppercase tracking-wider">Live</span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#10B981] text-white uppercase tracking-wider">Live</span>
                             )}
                           </div>
                         </td>

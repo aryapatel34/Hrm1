@@ -9,6 +9,8 @@ import {
 import { io } from 'socket.io-client';
 import ViewPolicyDrawer from '../../components/modals/ViewPolicyDrawer';
 import ViewHolidaysDrawer from '../../components/modals/ViewHolidaysDrawer';
+import ViewUpcomingLeavesDrawer from '../../components/modals/ViewUpcomingLeavesDrawer';
+import ViewLeaveRequestsDrawer from '../../components/modals/ViewLeaveRequestsDrawer';
 import OnDutyRequestModal from '../../components/modals/OnDutyRequestModal';
 import MyOnDutyRequestsModal from '../../components/modals/MyOnDutyRequestsModal';
 import CompOffRequestModal from '../../components/modals/CompOffRequestModal';
@@ -27,6 +29,8 @@ const LeaveManagement = () => {
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isPolicyDrawerOpen, setIsPolicyDrawerOpen] = useState(false);
   const [isHolidaysDrawerOpen, setIsHolidaysDrawerOpen] = useState(false);
+  const [isUpcomingLeavesDrawerOpen, setIsUpcomingLeavesDrawerOpen] = useState(false);
+  const [isLeaveRequestsDrawerOpen, setIsLeaveRequestsDrawerOpen] = useState(false);
   const [isOnDutyModalOpen, setIsOnDutyModalOpen] = useState(false);
   const [isMyOnDutyModalOpen, setIsMyOnDutyModalOpen] = useState(false);
   const [isCompOffModalOpen, setIsCompOffModalOpen] = useState(false);
@@ -342,6 +346,8 @@ const LeaveManagement = () => {
         ))}
         <ViewPolicyDrawer isOpen={isPolicyDrawerOpen} onClose={() => setIsPolicyDrawerOpen(false)} />
         <ViewHolidaysDrawer isOpen={isHolidaysDrawerOpen} onClose={() => setIsHolidaysDrawerOpen(false)} />
+        <ViewUpcomingLeavesDrawer isOpen={isUpcomingLeavesDrawerOpen} onClose={() => setIsUpcomingLeavesDrawerOpen(false)} leaves={leaves} />
+        <ViewLeaveRequestsDrawer isOpen={isLeaveRequestsDrawerOpen} onClose={() => setIsLeaveRequestsDrawerOpen(false)} leaves={leaves} />
       </div>
 
       {/* 3. Two-Column Section: Balance & Calendar (70/30 Split) */}
@@ -371,7 +377,6 @@ const LeaveManagement = () => {
                   { name: 'Casual Leave (CL)', balance: QUOTAS.casual - usedCasual, used: usedCasual, total: QUOTAS.casual, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-100' },
                   { name: 'Sick Leave (SL)', balance: sickBalance, used: usedSick, total: QUOTAS.sick, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-100' },
                   { name: 'Earned Leave (EL)', balance: annualBalance, used: usedEarned, total: QUOTAS.earned, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-100' },
-                  { name: 'Comp Off (CO)', balance: QUOTAS.compOff, used: 0, total: QUOTAS.compOff, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-100' },
                   { name: 'Optional Holiday (OH)', balance: QUOTAS.optionalHoliday, used: 0, total: QUOTAS.optionalHoliday, icon: FileText, color: 'text-pink-600', bg: 'bg-pink-100' }
                 ].map((row, idx) => (
                   <tr key={idx} className="border-b border-gray-50 dark:border-gray-800 last:border-0">
@@ -473,7 +478,7 @@ const LeaveManagement = () => {
         <div className="lg:col-span-3 bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col justify-between">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-base font-bold text-gray-900 dark:text-white">My Upcoming Leaves</h2>
-            <button className="text-xs font-bold text-blue-600">View All</button>
+            <button onClick={() => setIsUpcomingLeavesDrawerOpen(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">View All</button>
           </div>
           <div className="space-y-4">
             {leaves.filter(l => new Date(l.startDate) >= new Date() && (l.status === 'approved' || l.status === 'pending')).length > 0 ? (
@@ -507,7 +512,7 @@ const LeaveManagement = () => {
         <div className="lg:col-span-7 bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-base font-bold text-gray-900 dark:text-white">Leave Policy</h2>
-            <button onClick={() => setIsPolicyDrawerOpen(true)} className="text-xs font-bold text-blue-600">View Full Policy</button>
+            <button onClick={() => setIsPolicyDrawerOpen(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">View Full Policy</button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 border border-gray-100 dark:border-gray-800 hover:border-purple-500 dark:hover:border-purple-500 transition-colors rounded-lg flex gap-3 cursor-pointer">
@@ -571,7 +576,7 @@ const LeaveManagement = () => {
         <div className="lg:col-span-7 bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-base font-bold text-gray-900 dark:text-white">My Leave Requests</h2>
-            <button onClick={() => setActiveTab('All')} className="text-xs font-bold text-blue-600 border border-blue-200 px-4 py-1.5 rounded-lg hover:bg-blue-50">View All Requests</button>
+            <button onClick={() => setIsLeaveRequestsDrawerOpen(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">View All Requests</button>
           </div>
 
           <div className="flex gap-6 border-b border-gray-100 dark:border-gray-800 mb-4 overflow-x-auto">
@@ -637,7 +642,7 @@ const LeaveManagement = () => {
         <div className="lg:col-span-3 bg-white dark:bg-[#111c18] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-base font-bold text-gray-900 dark:text-white">Upcoming Holidays</h2>
-            <button onClick={() => setIsHolidaysDrawerOpen(true)} className="text-xs font-bold text-blue-600">View Calendar</button>
+            <button onClick={() => setIsHolidaysDrawerOpen(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">View Calendar</button>
           </div>
           <div className="space-y-4">
             {holidays.length > 0 ? holidays.filter(h => {

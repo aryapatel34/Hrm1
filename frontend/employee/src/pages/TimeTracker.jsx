@@ -237,33 +237,33 @@ const TimeTracker = () => {
         </div>
       </div>
 
-      {/* TOP ROW: 60/40 SPLIT */}
-      <div className="flex flex-col lg:flex-row gap-6 mb-8 items-start">
+      {/* TOP ROW: 70/30 SPLIT */}
+      <div className="flex flex-col lg:flex-row gap-6 mb-6 items-stretch">
 
-        {/* TIME TRACKER CARD (60%) */}
-        <div className="lg:w-[60%] bg-white rounded-2xl border border-gray-100 shadow-sm px-8 pt-6 pb-6 flex flex-col justify-center">
-          <div className="flex justify-between items-start mb-6">
+        {/* TIME TRACKER CARD (70%) */}
+        <div className="lg:w-[70%] bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-4 flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-3">
             <div>
               <h2 className="text-lg font-semibold text-gray-800 mb-1">Current Session</h2>
               {getStatusBadge()}
             </div>
-            <Clock size={24} className="text-gray-300" />
+            <Clock size={22} className="text-gray-300" />
           </div>
 
-          <div className="text-center mb-0">
-            <div className="text-6xl font-bold text-gray-800 font-mono tracking-tight mb-2">
+          <div className="text-center my-auto py-2">
+            <div className="text-7xl font-bold text-gray-800 font-mono tracking-tight mb-1">
               {formatTime(displaySeconds)}
             </div>
-            <p className="text-sm text-gray-400 font-medium tracking-wide uppercase">Total Time Tracked</p>
+            <p className="text-xs text-gray-400 font-medium tracking-wide uppercase">Total Time Tracked</p>
           </div>
 
         </div>
 
-        {/* DYNAMIC CALENDAR (40%) */}
-        <div className="lg:w-[40%] bg-white rounded-2xl border border-gray-100 shadow-sm px-5 pt-5 pb-3 relative">
-          <div className="flex justify-between items-center mb-4 relative">
+        {/* DYNAMIC CALENDAR (30%) */}
+        <div className="lg:w-[30%] bg-white rounded-2xl border border-gray-100 shadow-sm p-4 relative">
+          <div className="flex justify-between items-center mb-3 relative">
             <button 
-              className="text-lg font-semibold text-gray-800 flex items-center gap-2 hover:text-[#10B981] transition-colors cursor-pointer select-none"
+              className="text-md font-semibold text-gray-800 flex items-center gap-1.5 hover:text-[#10B981] transition-colors cursor-pointer select-none"
               onClick={() => {
                 setShowMonthYearPicker(!showMonthYearPicker);
                 if (!showMonthYearPicker) {
@@ -272,34 +272,34 @@ const TimeTracker = () => {
                 }
               }}
             >
-              <CalendarIcon size={18} className={showMonthYearPicker ? "text-[#10B981]" : "text-gray-400"} />
+              <CalendarIcon size={16} className={showMonthYearPicker ? "text-[#10B981]" : "text-gray-400"} />
               {currentMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
             </button>
-            <div className="flex gap-2">
-              <button onClick={handlePrevMonth} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"><ChevronLeft size={18} className="text-gray-600" /></button>
-              <button onClick={handleNextMonth} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"><ChevronRight size={18} className="text-gray-600" /></button>
+            <div className="flex gap-1">
+              <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded-lg transition-colors"><ChevronLeft size={16} className="text-gray-600" /></button>
+              <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded-lg transition-colors"><ChevronRight size={16} className="text-gray-600" /></button>
             </div>
             
             {/* Custom Month-Year Picker Popup */}
             {showMonthYearPicker && (
               <div 
                 ref={pickerRef} 
-                className="absolute top-10 left-1/2 -translate-x-1/2 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 flex flex-col"
+                className="absolute top-9 left-1/2 -translate-x-1/2 z-50 w-60 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 flex flex-col"
               >
                 {/* Selected Year Header (Clickable) */}
                 <button
                   type="button"
                   onClick={() => setPickerMode(pickerMode === 'year' ? 'month' : 'year')}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors mb-3 flex justify-center items-center"
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-1.5 px-3 rounded-lg transition-colors mb-2 flex justify-center items-center text-sm"
                 >
                   {tempYear}
-                  <svg className={`w-4 h-4 ml-2 transition-transform ${pickerMode === 'year' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className={`w-3.5 h-3.5 ml-1.5 transition-transform ${pickerMode === 'year' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
 
                 {pickerMode === 'year' ? (
-                  <div className="max-h-56 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1">
+                  <div className="max-h-48 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1">
                     {Array.from({ length: 60 }, (_, i) => new Date().getFullYear() - 30 + i).map((y) => (
                       <button
                         key={y}
@@ -308,7 +308,7 @@ const TimeTracker = () => {
                           setTempYear(y);
                           setPickerMode('month');
                         }}
-                        className={`w-full py-2 rounded-lg text-sm font-semibold transition-colors ${
+                        className={`w-full py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                           tempYear === y 
                             ? 'bg-[#E0F2FE] text-[#0284C7]' 
                             : 'hover:bg-gray-50 text-gray-700'
@@ -319,7 +319,7 @@ const TimeTracker = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-4 gap-1.5">
                     {monthNames.map((m, i) => {
                       const isSelected = currentMonth.getFullYear() === tempYear && currentMonth.getMonth() === i;
                       return (
@@ -329,7 +329,7 @@ const TimeTracker = () => {
                             setCurrentMonth(new Date(tempYear, i, 1));
                             setShowMonthYearPicker(false);
                           }}
-                          className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                          className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                             isSelected 
                               ? 'bg-[#10B981] text-white shadow-md' 
                               : 'hover:bg-gray-50 text-gray-700'
@@ -345,14 +345,14 @@ const TimeTracker = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-7 gap-1 text-center mb-2">
+          <div className="grid grid-cols-7 gap-1 text-center mb-1">
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-              <div key={d} className="text-xs font-semibold text-gray-400 py-1">{d}</div>
+              <div key={d} className="text-[10px] font-semibold text-gray-400 py-0.5">{d}</div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-1 text-center">
-            {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`empty-${i}`} />)}
+          <div className="grid grid-cols-7 gap-y-1 gap-x-0.5 text-center">
+            {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`empty-${i}`} className="w-8 h-8 mx-auto" />)}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
               const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -367,7 +367,7 @@ const TimeTracker = () => {
                   key={day}
                   onClick={() => setSelectedDate(dateStr)}
                   className={`
-                    relative w-full aspect-square flex items-center justify-center text-sm rounded-lg transition-all
+                    relative w-8 h-8 mx-auto flex items-center justify-center text-xs rounded-full transition-all
                     ${isSelected ? 'bg-[#10B981] text-white font-bold shadow-md' : 'hover:bg-gray-50 text-gray-700'}
                     ${isToday && !isSelected ? 'border border-[#10B981] text-[#10B981] font-bold' : ''}
                   `}
@@ -383,14 +383,14 @@ const TimeTracker = () => {
       </div>
 
       {/* DAILY ACTIVITY TABLE */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
-          <h2 className="text-lg font-semibold text-gray-800">Daily Activity</h2>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-4">
+        <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-white">
+          <h2 className="text-md font-semibold text-gray-800">Daily Activity</h2>
           <input 
             type="date" 
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] cursor-pointer shadow-sm transition-all ml-auto"
+            className="px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] cursor-pointer shadow-sm transition-all ml-auto"
           />
         </div>
 
@@ -398,43 +398,43 @@ const TimeTracker = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50/50">
-                <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Check-in Time</th>
-                <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">No. of Pauses</th>
-                <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Break Time</th>
-                <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Stop Time</th>
-                <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Total Hours Worked</th>
+                <th className="py-2 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="py-2 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Check-in Time</th>
+                <th className="py-2 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">No. of Pauses</th>
+                <th className="py-2 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total Break Time</th>
+                <th className="py-2 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Stop Time</th>
+                <th className="py-2 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider text-right">Total Hours Worked</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {dailyData ? (
                 <tr className="hover:bg-gray-50/50 transition-colors">
-                  <td className="py-4 px-6 text-sm text-gray-800 font-medium">
+                  <td className="py-2 px-4 text-xs text-gray-800 font-medium">
                     {new Date(dailyData.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    {isTodayRunning && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#10B981]/10 text-[#10B981]">LIVE</span>}
+                    {isTodayRunning && <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#10B981]/10 text-[#10B981]">LIVE</span>}
                   </td>
-                  <td className="py-4 px-6 text-sm text-gray-600">
+                  <td className="py-2 px-4 text-xs text-gray-600">
                     {dailyData.startTime ? new Date(dailyData.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--'}
                   </td>
-                  <td className="py-4 px-6 text-sm text-gray-600">
+                  <td className="py-2 px-4 text-xs text-gray-600">
                     {dailyData.pauseEvents?.length || 0}
                   </td>
-                  <td className="py-4 px-6 text-sm text-gray-600">
+                  <td className="py-2 px-4 text-xs text-gray-600">
                     {formatHoursMinutes(dailyData.totalPauseDuration || 0)}
                   </td>
-                  <td className="py-4 px-6 text-sm text-gray-600">
+                  <td className="py-2 px-4 text-xs text-gray-600">
                     {dailyData.endTime ? (
                       <div className="flex items-center gap-2">
                         {new Date(dailyData.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         {dailyData.isAutoStop && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gray-200 text-gray-700">AUTO</span>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-gray-200 text-gray-700">AUTO</span>
                         )}
                       </div>
                     ) : (
                       <span className="text-gray-400 italic">--</span>
                     )}
                   </td>
-                  <td className="py-4 px-6 text-sm font-semibold text-gray-800 text-right">
+                  <td className="py-2 px-4 text-xs font-semibold text-gray-800 text-right">
                     {isTodayRunning
                       ? formatTime(displaySeconds)
                       : formatHoursMinutes(dailyData.totalWorkedDuration || 0)}
@@ -442,7 +442,7 @@ const TimeTracker = () => {
                 </tr>
               ) : (
                 <tr>
-                  <td colSpan="6" className="py-12 text-center text-gray-400 text-sm">
+                  <td colSpan="6" className="py-6 text-center text-gray-400 text-xs">
                     No activity recorded for this date.
                   </td>
                 </tr>

@@ -1,4 +1,5 @@
 const CompOffRequest = require('../models/CompOffRequest');
+const LeaveBalance = require('../models/LeaveBalance');
 
 exports.createRequest = async (req, res) => {
   try {
@@ -64,6 +65,7 @@ exports.updateStatus = async (req, res) => {
       return res.status(404).json({ message: 'Request not found' });
     }
 
+    const previousStatus = request.status;
     request.status = status;
     request.approverId = req.user.id || req.user._id;
     
@@ -72,6 +74,30 @@ exports.updateStatus = async (req, res) => {
     }
     
     await request.save();
+
+    // Adjust employee's Earned Leave balance when Comp-Off is approved
+    if (status === 'approved' && previousStatus !== 'approved') {
+      const now = new Date();
+      const m = now.getMonth() + 1;
+      const y = now.getFullYear();
+      let balance = await LeaveBalance.findOne({ employeeId: request.employeeId, month: m, year: y });
+      if (!balance) {
+        balance = new LeaveBalance({ employeeId: request.employeeId, month: m, year: y, earnedLeave: 1.5 });
+      }
+      balance.earnedLeave = (balance.earnedLeave || 0) + 1;
+      balance.remainingLeave = (balance.remainingLeave || 0) + 1;
+      await balance.save();
+    } else if (previousStatus === 'approved' && status !== 'approved') {
+      const now = new Date();
+      const m = now.getMonth() + 1;
+      const y = now.getFullYear();
+      let balance = await LeaveBalance.findOne({ employeeId: request.employeeId, month: m, year: y });
+      if (balance) {
+        balance.earnedLeave = Math.max(0, (balance.earnedLeave || 0) - 1);
+        balance.remainingLeave = Math.max(0, (balance.remainingLeave || 0) - 1);
+        await balance.save();
+      }
+    }
     
     res.status(200).json({ message: `Request ${status} successfully`, request });
   } catch (error) {
