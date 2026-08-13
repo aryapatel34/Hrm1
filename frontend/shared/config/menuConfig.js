@@ -2,7 +2,6 @@ export const menuConfig = {
   employee: [
     { label: 'Dashboard', path: '/employee/dashboard' },
     { label: 'Team Chat', path: '/employee/chat' },
-    { label: 'Time Tracker', path: '/employee/time-tracker' },
     { label: 'Create Task', path: '/employee/task-management/create' },
     { label: 'My Documents', path: '/employee/documents' }
   ],
@@ -13,7 +12,6 @@ export const menuConfig = {
     { label: 'Employees', path: '/hr/employees' },
     { label: 'Daily Tasks Board', path: '/hr/tasks' },
     { label: 'Attendance', path: '/hr/attendance' },
-    { label: 'Time Tracker', path: '/hr/time-tracker' },
     { label: 'Payroll', path: '/hr/payroll' },
     { label: 'Performance', path: '/hr/performance' },
     { label: 'Tasks', path: '/hr/tasks' },
@@ -28,7 +26,6 @@ export const menuConfig = {
     { label: 'Employees', path: '/admin/employees' },
     { label: 'Daily Tasks Board', path: '/admin/tasks' },
     { label: 'Attendance', path: '/admin/attendance' },
-    { label: 'Time Tracker', path: '/admin/time-tracker' },
     { label: 'Payroll', path: '/admin/payroll' },
     { label: 'Performance', path: '/admin/performance' },
     { label: 'Tasks', path: '/admin/tasks' },
@@ -41,7 +38,6 @@ export const menuConfig = {
     { label: 'Team Chat', path: '/manager/chat' },
     { label: 'Team / Employees', path: '/manager/employees' },
     { label: 'Daily Tasks Board', path: '/manager/tasks' },
-    { label: 'Time Tracker', path: '/manager/time-tracker' },
     { label: 'Team Attendance', path: '/manager/attendance' },
     { label: 'Monitoring Logs', path: '/manager/screenshots' }
   ]

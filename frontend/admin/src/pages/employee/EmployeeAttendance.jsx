@@ -437,29 +437,52 @@ const EmployeeAttendance = () => {
         
         {/* Weekly Attendance — Donut Pie Chart (2/3 width) */}
         <div className="lg:col-span-2 bg-white dark:bg-[#050c0a] p-5 md:p-6 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-[#1a2d29] flex flex-col justify-between">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Weekly Attendance</h3>
-            <p className="text-xs text-slate-400 dark:text-[#a3b3af] mt-0.5">This week's attendance breakdown</p>
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
+                {statsPeriod === 'week' ? 'Weekly' : statsPeriod === 'month' ? 'Monthly' : 'Yearly'} Attendance
+              </h3>
+              <p className="text-xs text-slate-400 dark:text-[#a3b3af] mt-0.5">
+                This {statsPeriod === 'week' ? "week's" : statsPeriod === 'month' ? "month's" : "year's"} attendance breakdown
+              </p>
+            </div>
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#1a2d29] p-1 rounded-xl">
+              {['week', 'month', 'year'].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setStatsPeriod(p)}
+                  className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
+                    statsPeriod === p
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
           </div>
 
           {(() => {
-            const totals = { Present: 0, Late: 0, Leave: 0, Absent: 0 };
-            (activeLogsChart || []).forEach(d => {
-              totals.Present += Number(d.Present) || 0;
-              totals.Late    += Number(d.Late)    || 0;
-              totals.Leave   += Number(d.Leave)   || 0;
-              totals.Absent  += Number(d.Absent)  || 0;
-            });
+            const activeData = periodStats || {};
+            const totals = {
+              Present: activeData.present || 0,
+              Late: activeData.late || 0,
+              'Half Day': activeData.halfDay || 0,
+              Leave: activeData.leave || 0,
+              Absent: activeData.absent || 0
+            };
 
             const pieData = [
               { name: 'Present', value: totals.Present, color: '#00a76b' },
               { name: 'Late',    value: totals.Late,    color: '#F59E0B' },
+              { name: 'Half Day', value: totals['Half Day'], color: '#3b82f6' },
               { name: 'Leave',   value: totals.Leave,   color: '#8b5cf6' },
               { name: 'Absent',  value: totals.Absent,  color: '#EF4444' },
             ];
 
-            const total = totals.Present + totals.Late + totals.Leave + totals.Absent;
-            const rate  = total > 0 ? Math.round(((totals.Present + totals.Late) / total) * 100) : 0;
+            const total = totals.Present + totals.Late + totals['Half Day'] + totals.Leave + totals.Absent;
+            const rate  = total > 0 ? Math.round(((totals.Present + totals.Late + totals['Half Day']) / total) * 100) : 0;
             const activePie = pieData.filter(d => d.value > 0);
             const displayPie = activePie.length > 0 ? activePie : [{ name: 'No Data', value: 1, color: isDark ? '#142420' : '#e2eae7' }];
 
@@ -507,7 +530,9 @@ const EmployeeAttendance = () => {
                     ) : (
                       <>
                         <span className="text-3xl font-black text-slate-800 dark:text-slate-100 tabular-nums leading-none">{rate}%</span>
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-[#a3b3af] uppercase tracking-widest mt-1">Weekly Rate</span>
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-[#a3b3af] uppercase tracking-widest mt-1">
+                          {statsPeriod === 'week' ? 'Weekly' : statsPeriod === 'month' ? 'Monthly' : 'Yearly'} Rate
+                        </span>
                       </>
                     )}
                   </div>
@@ -548,7 +573,7 @@ const EmployeeAttendance = () => {
                     );
                   })}
                   <div className="pt-2 border-t border-slate-100 dark:border-[#1a2d29] flex items-center justify-between text-[11px] font-semibold text-slate-400 dark:text-[#a3b3af]">
-                    <span>Total this week (Mon - Sun):</span>
+                    <span>Total this {statsPeriod === 'week' ? 'week' : statsPeriod === 'month' ? 'month' : 'year'}:</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">{total} days</span>
                   </div>
                 </div>
