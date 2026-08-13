@@ -6,6 +6,7 @@ const {
   pauseTracking,
   resumeTracking,
   stopTracking,
+  desktopLogout,
   updateActivity,
   getMyTime,
   getHRTime,
@@ -27,6 +28,7 @@ router.post('/start', protect, startTracking);
 router.post('/pause', protect, pauseTracking);
 router.post('/resume', protect, resumeTracking);
 router.post('/stop', protect, stopTracking);
+router.post('/desktop-logout', protect, desktopLogout);
 
 // 🔄 Monitoring
 router.post('/activity', protect, updateActivity);

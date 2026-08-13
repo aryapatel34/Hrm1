@@ -115,13 +115,24 @@ async function loadSession() {
   }
 
   BACKEND_HOST = 'https://hrm1.onrender.com';
-  try {
-    const localPing = await fetch('http://localhost:4000/api/time/status').catch(() => null);
-    if (localPing && (localPing.ok || localPing.status === 401)) {
-      BACKEND_HOST = 'http://localhost:4000';
-      console.log('🔌 Local development backend detected! Connected to http://localhost:4000');
-    }
-  } catch (e) {}
+  const candidateHosts = [
+    'http://localhost:5000',
+    'http://127.0.0.1:5000',
+    'http://localhost:4000',
+    'http://127.0.0.1:4000',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+  ];
+  for (const host of candidateHosts) {
+    try {
+      const res = await fetch(`${host}/api/health`).catch(() => null);
+      if (res && res.ok) {
+        BACKEND_HOST = host;
+        console.log(`🔌 Local development backend detected! Connected to ${host}`);
+        break;
+      }
+    } catch (_) {}
+  }
   API_BASE = `${BACKEND_HOST}/api/time`;
 
   const savedToken = await window.electronAPI.getStoreValue('authToken');
@@ -604,7 +615,7 @@ if (window.electronAPI?.onDeepLinkToken) {
   window.electronAPI.onDeepLinkToken(async (token) => {
     const errorEl = document.getElementById('auth-error');
     if (errorEl) errorEl.style.display = 'none';
-    
+
     console.log('Auth token received via deep link.');
     authToken = token;
     await window.electronAPI.setStoreValue('authToken', authToken);
@@ -642,10 +653,43 @@ if (window.electronAPI?.onDeepLinkAction) {
 }
 
 async function logout() {
-  if (socket) {
-    socket.disconnect();
+  const currentToken = authToken;
+  const currentSocket = socket;
+  const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+
+  // 1. Tell backend to stop tracking and record logout
+  if (currentToken) {
+    try {
+      await fetch(`${API_BASE}/desktop-logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logoutTime: nowStr })
+      }).catch(() => {});
+
+      await fetch(`${API_BASE}/stop`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${currentToken}`, 'Content-Type': 'application/json' }
+      }).catch(() => {});
+    } catch (e) {
+      console.error('[LOGOUT NOTIFICATION ERROR]', e);
+    }
+  }
+
+  // 2. Emit socket event
+  if (currentSocket) {
+    try {
+      let userId = null;
+      if (currentToken) {
+        try {
+          userId = JSON.parse(atob(currentToken.split('.')[1]))?.id;
+        } catch (_) {}
+      }
+      currentSocket.emit('desktop_logout', { userId, timestamp: nowStr });
+    } catch (_) {}
+    currentSocket.disconnect();
     socket = null;
   }
+
   authToken = '';
   await window.electronAPI.setStoreValue('authToken', '');
   stopPolling();

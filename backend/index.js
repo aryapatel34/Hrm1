@@ -92,6 +92,47 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('desktop_logout', async (data) => {
+    try {
+      const userId = data?.userId;
+      const logoutTime = data?.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+      if (userId) {
+        const TimeTrack = require('./models/TimeTrack');
+        const Attendance = require('./models/Attendance');
+        const now = new Date();
+        
+        await TimeTrack.updateMany(
+          { employeeId: userId, status: { $in: ['active', 'paused', 'idle'] } },
+          { $set: { status: 'completed', isRunning: false, endTime: now, segmentStart: null } }
+        );
+
+        io.to(`user_${userId}`).emit('timer_stopped', {
+          userId,
+          hasActiveSession: false,
+          isRunning: false,
+          status: 'completed',
+          activeTime: 0
+        });
+        io.to(`user_${userId}`).emit('timer_update', {
+          hasActiveSession: false,
+          isRunning: false,
+          status: 'completed',
+          activeTime: 0
+        });
+        io.to(`user_${userId}`).emit('desktop_app_logout', {
+          userId,
+          message: `You are successfully logged out at ${logoutTime}`,
+          time: logoutTime,
+          logoutTime: logoutTime,
+          timestamp: new Date().toISOString()
+        });
+        console.log(`[SOCKET DESKTOP LOGOUT] Emitted for user_${userId} at ${logoutTime}`);
+      }
+    } catch (err) {
+      console.error('[SOCKET DESKTOP LOGOUT ERROR]', err);
+    }
+  });
+
   socket.on('disconnect', () => {
     let disconnectedUserId = null;
     for (const [userId, sid] of activeUsers.entries()) {
@@ -183,6 +224,7 @@ app.use('/api/on-duty', require('./routes/onDutyRoutes'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'API is running' }));
+app.get('/api/health', (req, res) => res.json({ status: 'API is running' }));
 
 // 🌐 Serve Static Frontend Assets & Handle Routing Fallback (SPA)
 app.use(express.static(path.join(__dirname, '../frontend/admin/dist')));

@@ -227,6 +227,35 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
       ));
     });
 
+    socket.on('desktop_app_logout', (data) => {
+      const logoutTime = data?.logoutTime || data?.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+      toast.custom((t) => (
+        <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-[#18181b] text-white shadow-2xl rounded-2xl pointer-events-auto flex ring-1 ring-emerald-500/50 p-4 items-center gap-3 border border-emerald-500/30`}>
+          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+            <LogOut size={20} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-white">FluidHR Tracker</p>
+            <p className="text-xs text-emerald-400 font-medium mt-0.5">
+              You are successfully logged out at {logoutTime}
+            </p>
+          </div>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      ), {
+        position: 'bottom-center',
+        duration: 6000
+      });
+
+      // Notify all open pages/tabs to stop active timers immediately
+      window.dispatchEvent(new CustomEvent('desktop_tracker_stopped', { detail: { logoutTime } }));
+    });
+
     return () => socket.disconnect();
   }, [token, role, activeRole]);
 
@@ -357,7 +386,6 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           // { name: 'Task Management', path: '/hr/task-management', icon: ClipboardList },
           { name: 'Apply Leave', path: '/hr/leave', icon: ClipboardList },
           { name: 'Attendance', path: '/hr/attendance', icon: Calendar },
-          { name: 'Time Tracker', path: '/hr/time-tracker', icon: Clock },
           { name: 'Team Chat', path: '/hr/chat', icon: MessageSquare },
           { name: 'Payroll', path: '/hr/payroll', icon: Wallet },
           { name: 'Performance', path: '/hr/performance', icon: TrendingUp },
@@ -370,7 +398,6 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
         return [
           { name: 'Dashboard', path: '/employee/dashboard', icon: LayoutDashboard },
           { name: 'Attendance', path: '/employee/attendance', icon: Calendar },
-          { name: 'Time Tracker', path: '/employee/time-tracker', icon: Clock },
           { name: 'Apply Leave', path: '/employee/leave', icon: ClipboardList },
           { name: 'Team Chat', path: '/employee/chat', icon: MessageSquare },
           { name: 'Create Task', path: '/employee/task-management/create', icon: PlusCircle },
@@ -385,7 +412,6 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Events Management', path: '/manager/events', icon: Calendar },
           // { name: 'Task Management', path: '/manager/task-management', icon: ClipboardList },
           // { name: 'Project Hub', path: '/manager/projects', icon: Briefcase },
-          { name: 'Time Tracker', path: '/manager/time-tracker', icon: Clock },
           { name: 'Team Chat', path: '/manager/chat', icon: MessageSquare },
           { name: 'Team Attendance', path: '/manager/attendance', icon: Calendar },
           { name: 'Monitoring Logs', path: '/manager/screenshots', icon: Camera },
@@ -402,7 +428,6 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           // { name: 'Task Management', path: `/${currentRole}/task-management`, icon: ClipboardList },
           { name: 'Apply Leave', path: `/${currentRole}/leave`, icon: ClipboardList },
           { name: 'Attendance', path: `/${currentRole}/attendance`, icon: Calendar },
-          { name: 'Time Tracker', path: `/${currentRole}/time-tracker`, icon: Clock },
           { name: 'Global Chat', path: `/${currentRole}/chat`, icon: MessageSquare },
           { name: 'Payroll', path: `/${currentRole}/payroll`, icon: Wallet },
           { name: 'Performance', path: `/${currentRole}/performance`, icon: TrendingUp },
