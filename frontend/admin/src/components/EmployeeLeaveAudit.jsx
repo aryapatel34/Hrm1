@@ -29,7 +29,7 @@ const EmployeeLeaveAudit = () => {
   const issuesFound = auditLogs.filter(a => a.status === 'Issues Found').length;
 
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col h-full">
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col h-full overflow-hidden">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Employee Leave Audit</h2>
         <button className="text-xs font-bold bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300">
@@ -52,9 +52,9 @@ const EmployeeLeaveAudit = () => {
         </div>
       </div>
 
-      <div className="flex-1">
+      <div className="flex flex-col flex-1 min-h-0">
         <h3 className="text-xs font-bold text-gray-900 dark:text-white mb-4">Recent Audit Activities</h3>
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto flex-1 pr-1 custom-scrollbar">
           {loading ? (
             <p className="text-center py-4 text-sm text-gray-400">Loading audit logs...</p>
           ) : auditLogs.length === 0 ? (

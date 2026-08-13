@@ -650,8 +650,9 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
         </Link>
 
         {/* Top Bar Controls */}
-        <div className="flex-1 flex items-center h-full px-3 md:px-6 justify-between">
-          <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex-1 flex items-center h-full px-3 md:px-6 gap-4">
+          {/* Left Controls (Menu Toggle) */}
+          <div className="flex items-center">
             <button
               onClick={toggleSidebar}
               className="md:hidden flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-full text-[#374151] dark:text-[#cbd5e1] transition-all cursor-pointer border-none bg-transparent shrink-0"
@@ -659,12 +660,15 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
             >
               <Menu size={20} />
             </button>
+          </div>
 
-            {/* Role-based Search bar in the center-left (hidden on mobile) */}
+          {/* Center Search Bar */}
+          <div className="flex-1 flex justify-start md:justify-center px-2 md:px-8">
             <RoleSearchBar activeRole={activeRole} />
           </div>
 
-          <div className="ml-auto flex items-center h-full gap-2 md:gap-4">
+          {/* Right Controls */}
+          <div className="flex items-center h-full gap-3 md:gap-5 shrink-0 ml-auto">
             {/* Quick Action button */}
             <div className="relative" ref={quickActionRef}>
               <button

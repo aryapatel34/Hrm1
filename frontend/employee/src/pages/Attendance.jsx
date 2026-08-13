@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
 } from 'recharts';
 import {
   Calendar as CalendarIcon, Clock, Search, Filter, Download,
@@ -13,9 +14,8 @@ import {
 const CustomWeeklyTooltip = ({ active, payload, label, isDark }) => {
   if (active && payload && payload.length) {
     return (
-      <div className={`p-4 rounded-2xl border shadow-xl transition-all ${
-        isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'
-      }`}>
+      <div className={`p-4 rounded-2xl border shadow-xl transition-all ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'
+        }`}>
         <p className="font-bold text-xs uppercase tracking-wider mb-2.5 text-slate-400">{label}</p>
         <div className="space-y-1.5 min-w-[120px]">
           {payload.map((item, idx) => (
@@ -50,6 +50,9 @@ const Attendance = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [logs, setLogs] = useState([]);
   const [weeklyChartData, setWeeklyChartData] = useState({ this_week: [], last_week: [] });
+  const [hoveredWeeklySlice, setHoveredWeeklySlice] = useState(null);
+  const [statsPeriod, setStatsPeriod] = useState('week'); // 'week' | 'month' | 'year'
+  const [periodStats, setPeriodStats] = useState(null);
   const [yearlyStats, setYearlyStats] = useState(null);
 
   // Live Timer/Session State
@@ -110,16 +113,21 @@ const Attendance = () => {
     }
   };
 
-  const fetchYearlyStats = async () => {
+  const fetchStats = async (period = statsPeriod) => {
     try {
-      const res = await axios.get('/api/attendance/me/yearly-stats', {
+      const res = await axios.get(`/api/attendance/me/stats?period=${period}`, {
         headers: { Authorization: `Bearer ${token()}` }
       });
+      setPeriodStats(res.data);
       setYearlyStats(res.data);
     } catch (err) {
-      console.error('Error fetching yearly stats:', err);
+      console.error('Error fetching period stats:', err);
     }
   };
+
+  useEffect(() => {
+    fetchStats(statsPeriod);
+  }, [statsPeriod]);
 
   const loadData = async (showSkeleton = true) => {
     if (showSkeleton) setLoading(true);
@@ -127,7 +135,7 @@ const Attendance = () => {
       fetchAttendanceLogs(),
       fetchWeeklyChart(),
       fetchSessionStatus(),
-      fetchYearlyStats()
+      fetchStats(statsPeriod)
     ]);
     setLoading(false);
   };
@@ -323,7 +331,7 @@ const Attendance = () => {
 
   return (
     <div className="min-h-screen pb-16 space-y-6" style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
-      
+
       {/* ── TOP CONTROL PANEL ── */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900/60 p-4 md:p-6 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-md">
         <div>
@@ -342,7 +350,7 @@ const Attendance = () => {
               className="w-full pl-9 pr-4 py-2 text-xs font-semibold rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none transition-all"
             />
           </div>
-          
+
           {/* Filter Button mockup */}
           <button className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-950 text-xs font-bold rounded-full text-slate-700 dark:text-slate-350 transition-colors bg-transparent cursor-pointer">
             <Filter size={12} />
@@ -363,106 +371,188 @@ const Attendance = () => {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           {
-            label: 'Present (Year)',
-            value: yearlyStats?.present || 0,
+            label: `Present (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+            value: (periodStats || yearlyStats)?.present || 0,
             icon: <CheckCircle size={20} className="text-[#10B981]" />,
             bg: 'bg-emerald-50 dark:bg-emerald-950/20'
           },
           {
-            label: 'Late (Year)',
-            value: yearlyStats?.late || 0,
+            label: `Late (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+            value: (periodStats || yearlyStats)?.late || 0,
             icon: <Clock size={20} className="text-amber-500" />,
             bg: 'bg-amber-50 dark:bg-amber-950/20'
           },
           {
-            label: 'Absent (Year)',
-            value: yearlyStats?.absent || 0,
+            label: `Absent (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+            value: (periodStats || yearlyStats)?.absent || 0,
             icon: <XCircle size={20} className="text-red-500" />,
             bg: 'bg-red-50 dark:bg-red-950/20'
           },
           {
-            label: 'Half Day (Year)',
-            value: yearlyStats?.halfDay || 0,
+            label: `Half Day (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+            value: (periodStats || yearlyStats)?.halfDay || 0,
             icon: <Sun size={20} className="text-blue-500" />,
             bg: 'bg-blue-50 dark:bg-blue-950/20'
           },
           {
-            label: 'Leave (Year)',
-            value: yearlyStats?.leave || 0,
+            label: `Leave (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+            value: (periodStats || yearlyStats)?.leave || 0,
             icon: <CalendarIcon size={20} className="text-purple-500" />,
             bg: 'bg-purple-50 dark:bg-purple-950/20'
           }
         ].map((card, i) => (
           <div
             key={i}
-            className="group bg-white dark:bg-slate-900 p-5 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
+            className="group bg-white dark:bg-slate-900 p-5 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 flex flex-col justify-between"
           >
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex justify-between items-center mb-6">
               <div className={`p-2.5 rounded-xl ${card.bg}`}>
                 {card.icon}
               </div>
+              <select
+                value={statsPeriod}
+                onChange={(e) => setStatsPeriod(e.target.value)}
+                className="text-[11px] font-bold px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all hover:border-emerald-500"
+                title="Select time period"
+              >
+                <option value="week">Week</option>
+                <option value="month">Month</option>
+                <option value="year">Year</option>
+              </select>
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{card.label}</p>
               <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-1 tabular-nums">{card.value}</h2>
             </div>
-            {card.progress && (
-              <div className="mt-4 w-full bg-slate-100 dark:bg-slate-800 h-1 rounded-full">
-                <div className="bg-teal-500 h-full rounded-full transition-all duration-500" style={{ width: `${card.progress}%`, backgroundColor: '#10B981' }} />
-              </div>
-            )}
           </div>
         ))}
       </div>
 
       {/* ── MAIN CONTENT AREA ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Weekly Attendance Analytics Stacked Chart (2/3 width) */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 flex flex-col justify-between">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Weekly Attendance Analytics</h3>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Average employee count check-in statistics</p>
-            </div>
+
+        {/* Weekly Attendance — Donut Pie Chart (2/3 width) */}
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 flex flex-col">
+          {/* Header */}
+          <div className="mb-6">
+            <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Weekly Attendance</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">This week's attendance breakdown</p>
           </div>
 
-          <div className="h-[380px] w-full mt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={activeLogsChart}
-                margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
-                barCategoryGap="25%"
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke={resolvedGrid} vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: resolvedTick, fontSize: 11, fontWeight: 'bold' }}
-                  dy={6}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: resolvedTick, fontSize: 11, fontWeight: 'bold' }}
-                  domain={[0, 160]}
-                  ticks={[0, 40, 80, 120, 160]}
-                />
-                <Tooltip content={<CustomWeeklyTooltip isDark={isDark} />} cursor={{ fill: isDark ? '#1e293b' : '#f8fafc', opacity: 0.15 }} />
-                <Legend
-                  verticalAlign="top"
-                  align="right"
-                  iconSize={8}
-                  iconType="circle"
-                  wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', paddingBottom: '12px' }}
-                />
-                <Bar dataKey="Present" fill="#10B981" stackId="a" isAnimationActive={true} animationDuration={800} />
-                <Bar dataKey="Leave" fill="#F59E0B" stackId="a" isAnimationActive={true} animationDuration={850} />
-                <Bar dataKey="Absent" fill="#EF4444" stackId="a" radius={[4, 4, 0, 0]} isAnimationActive={true} animationDuration={900} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {/* Donut + Legend */}
+          {(() => {
+            const totals = { Present: 0, Late: 0, 'Half Day': 0, Leave: 0, Absent: 0 };
+            (activeLogsChart || []).forEach(d => {
+              totals.Present += Number(d.Present) || 0;
+              totals.Late    += Number(d.Late)    || 0;
+              totals['Half Day'] += Number(d['Half Day'] || d.HalfDay || d.halfDay) || 0;
+              totals.Leave   += Number(d.Leave)   || 0;
+              totals.Absent  += Number(d.Absent)  || 0;
+            });
+
+            const pieData = [
+              { name: 'Present',  value: totals.Present,  color: '#10B981' },
+              { name: 'Late',     value: totals.Late,     color: '#F59E0B' },
+              { name: 'Half Day', value: totals['Half Day'], color: '#3B82F6' },
+              { name: 'Leave',    value: totals.Leave,    color: '#8B5CF6' },
+              { name: 'Absent',   value: totals.Absent,   color: '#EF4444' },
+            ];
+
+            const total = totals.Present + totals.Late + totals['Half Day'] + totals.Leave + totals.Absent;
+            const working = totals.Present + totals.Late + totals['Half Day'];
+            const rate  = total > 0 ? Math.round((working / total) * 100) : 0;
+            const activePie   = pieData.filter(d => d.value > 0);
+            const displayPie  = activePie.length > 0 ? activePie : [{ name: 'No Data', value: 1, color: '#e2e8f0' }];
+
+            return (
+              <div className="flex flex-col sm:flex-row items-center gap-8 flex-1 justify-center">
+
+                {/* Donut */}
+                <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={displayPie}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={72}
+                        outerRadius={98}
+                        paddingAngle={activePie.length > 1 ? 4 : 0}
+                        dataKey="value"
+                        stroke="none"
+                        isAnimationActive
+                        animationDuration={900}
+                        onMouseLeave={() => setHoveredWeeklySlice(null)}
+                      >
+                        {displayPie.map((entry, i) => (
+                          <Cell
+                            key={i}
+                            fill={entry.color}
+                            className="transition-all cursor-pointer hover:opacity-85"
+                            onMouseEnter={() => entry.name !== 'No Data' && setHoveredWeeklySlice(entry)}
+                          />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Dynamic Centre label - No overlapping tooltip */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200">
+                    {hoveredWeeklySlice ? (
+                      <>
+                        <span className="text-4xl font-black tabular-nums leading-none" style={{ color: hoveredWeeklySlice.color }}>
+                          {hoveredWeeklySlice.value}
+                        </span>
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider mt-1.5" style={{ color: hoveredWeeklySlice.color }}>
+                          {hoveredWeeklySlice.name} ({total > 0 ? Math.round((hoveredWeeklySlice.value / total) * 100) : 0}%)
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-4xl font-black text-slate-800 dark:text-white tabular-nums leading-none">{rate}%</span>
+                        <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1.5">Weekly Rate</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Legend Table */}
+                <div className="flex-1 w-full space-y-4">
+                  {pieData.map((d, i) => {
+                    const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
+                    const isHovered = hoveredWeeklySlice?.name === d.name;
+                    return (
+                      <div
+                        key={i}
+                        className={`p-1.5 rounded-xl transition-all cursor-pointer ${isHovered ? 'bg-slate-50 dark:bg-slate-800/60 scale-[1.02]' : ''}`}
+                        onMouseEnter={() => setHoveredWeeklySlice(d)}
+                        onMouseLeave={() => setHoveredWeeklySlice(null)}
+                      >
+                        <div className="flex items-center gap-3 mb-1.5">
+                          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                          <span className={`text-sm flex-1 transition-colors ${isHovered ? 'font-black text-slate-900 dark:text-white' : 'font-semibold text-slate-600 dark:text-slate-300'}`}>
+                            {d.name}
+                          </span>
+                          <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">({pct}%)</span>
+                          <span className="text-sm font-black text-slate-800 dark:text-white tabular-nums">{d.value}</span>
+                        </div>
+                        {/* Progress bar */}
+                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full ml-6">
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{ width: `${pct}%`, backgroundColor: d.color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium ml-6 mt-1">
+                    Total this week (Mon - Sun): <span className="font-black text-slate-700 dark:text-slate-300">{total}</span> days
+                  </p>
+                </div>
+
+              </div>
+            );
+          })()}
         </div>
 
         {/* Clock In / Clock Out console (1/3 width) */}
@@ -472,7 +562,7 @@ const Attendance = () => {
               <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Quick Actions</h3>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 uppercase tracking-wider">Attendance console</p>
             </div>
-            
+
             <div className="flex flex-col gap-3">
               <button
                 onClick={handleCheckIn}
@@ -482,7 +572,7 @@ const Attendance = () => {
                 <Play size={15} fill="currentColor" />
                 <span>Check In</span>
               </button>
-              
+
               <button
                 onClick={handleCheckOut}
                 disabled={!session?.isRunning || actionLoading}
@@ -491,7 +581,7 @@ const Attendance = () => {
                 <Square size={12} fill="currentColor" />
                 <span>Check Out</span>
               </button>
-              
+
               <button
                 onClick={() => setIsCorrectionModalOpen(true)}
                 className="flex items-center justify-center gap-2.5 h-12 w-full rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950 text-slate-700 dark:text-slate-300 transition-all font-bold text-xs cursor-pointer bg-slate-50 dark:bg-slate-950/20 hover:scale-[1.01]"
@@ -508,9 +598,8 @@ const Attendance = () => {
               <h4 className="font-mono text-3xl font-black tracking-widest text-slate-900 dark:text-white tabular-nums">
                 {session ? formatTimer(timerSeconds) : '00:00:00'}
               </h4>
-              <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wide ${
-                session ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-[#10B981]' : 'bg-slate-200/60 text-slate-500 dark:bg-slate-900 dark:text-slate-400'
-              }`}>
+              <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wide ${session ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-[#10B981]' : 'bg-slate-200/60 text-slate-500 dark:bg-slate-900 dark:text-slate-400'
+                }`}>
                 {session ? 'Active' : 'Inactive'}
               </span>
             </div>
@@ -526,7 +615,7 @@ const Attendance = () => {
       {isCorrectionModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setIsCorrectionModalOpen(false)} />
-          
+
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-50 animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
               <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Request Clock Correction</h3>

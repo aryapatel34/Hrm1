@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
-  AreaChart, Area, LineChart, Line, LabelList, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
 import {
@@ -130,15 +130,15 @@ const Dashboard = () => {
       if (dashRes.status === 'fulfilled') {
         const d = dashRes.value.data;
         setDashData(d);
-        
+
         let liveTodayActive = 0;
         if (timerRes.status === 'fulfilled' && timerRes.value?.data) {
-           const { activeTime, isRunning, segmentStart } = timerRes.value.data;
-           let t = activeTime || 0;
-           if (isRunning && segmentStart) {
-              t += Math.max(0, Math.floor((Date.now() - new Date(segmentStart).getTime()) / 1000));
-           }
-           liveTodayActive = t / 3600;
+          const { activeTime, isRunning, segmentStart } = timerRes.value.data;
+          let t = activeTime || 0;
+          if (isRunning && segmentStart) {
+            t += Math.max(0, Math.floor((Date.now() - new Date(segmentStart).getTime()) / 1000));
+          }
+          liveTodayActive = t / 3600;
         }
 
       }
@@ -385,7 +385,7 @@ const Dashboard = () => {
     .filter(h => h.daysLeft >= 0)
     .sort((a, b) => a.daysLeft - b.daysLeft)
     .slice(0, 3);
-    
+
   const todayDateMidnight = new Date();
   todayDateMidnight.setHours(0, 0, 0, 0);
 
@@ -511,7 +511,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
         {/* 3. ATTENDANCE SUMMARY */}
         <div className="flex flex-col h-full">
-            <SectionHeader
+          <SectionHeader
             title="Attendance Overview"
             action={
               <div className="relative" ref={timeRangeRef}>
@@ -530,11 +530,10 @@ const Dashboard = () => {
                     <button
                       type="button"
                       onClick={() => { setTimeRange('weekly'); setTimeRangeOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${
-                        timeRange === 'weekly'
-                          ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
-                          : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
-                      }`}
+                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${timeRange === 'weekly'
+                        ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
+                        : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
+                        }`}
                     >
                       <span>This Week</span>
                       {timeRange === 'weekly' && <span className="w-1.5 h-1.5 rounded-full bg-[#00a76b]" />}
@@ -542,11 +541,10 @@ const Dashboard = () => {
                     <button
                       type="button"
                       onClick={() => { setTimeRange('monthly'); setTimeRangeOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${
-                        timeRange === 'monthly'
-                          ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
-                          : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
-                      }`}
+                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${timeRange === 'monthly'
+                        ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
+                        : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
+                        }`}
                     >
                       <span>This Month</span>
                       {timeRange === 'monthly' && <span className="w-1.5 h-1.5 rounded-full bg-[#00a76b]" />}
@@ -557,32 +555,43 @@ const Dashboard = () => {
             }
           />
           <Card className="flex-1 flex flex-col justify-center">
-            <div className="h-64">
+            {/* Inline legend — inside card, above chart */}
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#dcfce7] dark:bg-[#064e3b] border border-[#bbf7d0] dark:border-[#047857]">
+                <span className="w-2 h-2 rounded-full bg-[#00a76b] inline-block"></span>
+                <span className="text-[11px] font-bold text-[#166534] dark:text-[#a7f3d0]">Attendance %</span>
+              </span>
+              <span className="text-[10px] text-[#939084] ml-1">Hover on dots for exact values</span>
+            </div>
+            <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={weeklyChart} margin={{ top: 40, right: 25, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={true} stroke="#e5e7eb" className="stroke-gray-200 dark:stroke-[#28251e]" />
+                <LineChart data={weeklyChart} margin={{ top: 8, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="stroke-gray-200 dark:stroke-[#28251e]" />
                   <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#939084' }} dy={5} />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
                     tick={{ fontSize: 12, fill: '#939084' }}
                     tickFormatter={(val) => `${val}%`}
-                    domain={[0, 135]}
+                    domain={[0, 110]}
                     ticks={[0, 25, 50, 75, 100]}
                     width={45}
                     tickMargin={6}
                   />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
-                  <Line type="monotone" dataKey="active" stroke="#00a76b" strokeWidth={3} dot={{ fill: '#00a76b', strokeWidth: 2, r: 5 }}>
-                    <LabelList
-                      dataKey="active"
-                      position="top"
-                      offset={12}
-                      formatter={(val) => `${val}%`}
-                      className="fill-gray-700 dark:fill-gray-200 text-[11px] font-bold"
-                      style={{ fontSize: '11px', fontWeight: 'bold' }}
-                    />
-                  </Line>
+                  <Tooltip
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.12)', fontSize: '13px' }}
+                    formatter={(val) => [`${val}%`, 'Attendance']}
+                    cursor={{ stroke: '#00a76b', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="active"
+                    stroke="#00a76b"
+                    strokeWidth={3}
+                    dot={{ fill: '#00a76b', strokeWidth: 2, r: 5, stroke: '#fff' }}
+                    activeDot={{ r: 7, fill: '#00a76b', stroke: '#fff', strokeWidth: 2 }}
+                    isAnimationActive={false}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -608,65 +617,65 @@ const Dashboard = () => {
 
         {/* 4. MY TASKS OVERVIEW */}
         <div className="flex flex-col h-full">
-            <SectionHeader title="My Tasks Overview" />
-            <div className="rounded-2xl flex-1 flex flex-col">
-              <Card className="flex-1 flex flex-col justify-between">
-                <div className="h-64 relative flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={totalTasks === 0 ? [{ name: 'No Tasks', value: 1, color: '#e5e7eb' }] : [
-                        { name: 'Completed', value: completedTasks, color: '#8b5cf6' },
-                        { name: 'Ongoing', value: ongoingTasks, color: '#f59e0b' },
-                        { name: 'Upcoming', value: upcomingTasks, color: '#ef4444' },
-                        { name: 'Pending', value: pendingTasks, color: '#3b82f6' }
-                      ]} cx="50%" cy="50%" innerRadius={65} outerRadius={90} dataKey="value" stroke="none" paddingAngle={3}>
-                        {
-                          (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#8b5cf6' }, { color: '#f59e0b' }, { color: '#ef4444' }, { color: '#3b82f6' }]).map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))
-                        }
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-3xl font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
-                    <span className="text-[10px] font-bold text-[#939084] tracking-wider uppercase mt-1">Total Tasks</span>
-                  </div>
+          <SectionHeader title="My Tasks Overview" />
+          <div className="rounded-2xl flex-1 flex flex-col">
+            <Card className="flex-1 flex flex-col justify-between">
+              <div className="h-64 relative flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={totalTasks === 0 ? [{ name: 'No Tasks', value: 1, color: '#e5e7eb' }] : [
+                      { name: 'Completed', value: completedTasks, color: '#8b5cf6' },
+                      { name: 'Ongoing', value: ongoingTasks, color: '#f59e0b' },
+                      { name: 'Upcoming', value: upcomingTasks, color: '#ef4444' },
+                      { name: 'Pending', value: pendingTasks, color: '#3b82f6' }
+                    ]} cx="50%" cy="50%" innerRadius={65} outerRadius={90} dataKey="value" stroke="none" paddingAngle={3}>
+                      {
+                        (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#8b5cf6' }, { color: '#f59e0b' }, { color: '#ef4444' }, { color: '#3b82f6' }]).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))
+                      }
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-3xl font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
+                  <span className="text-[10px] font-bold text-[#939084] tracking-wider uppercase mt-1">Total Tasks</span>
                 </div>
+              </div>
 
-                {/* 4 Stat Cards below Pie Chart */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                  <div className="bg-blue-50 dark:bg-blue-950/40 p-3 rounded-xl border border-blue-200/60 dark:border-blue-800/40 flex flex-col items-center justify-center text-center">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
-                      <span className="text-xl font-bold text-blue-700 dark:text-blue-300 leading-none">{pendingTasks}</span>
-                    </div>
-                    <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">Pending</p>
+              {/* 4 Stat Cards below Pie Chart */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                <div className="bg-blue-50 dark:bg-blue-950/40 p-3 rounded-xl border border-blue-200/60 dark:border-blue-800/40 flex flex-col items-center justify-center text-center">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
+                    <span className="text-xl font-bold text-blue-700 dark:text-blue-300 leading-none">{pendingTasks}</span>
                   </div>
-                  <div className="bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200/60 dark:border-amber-800/40 flex flex-col items-center justify-center text-center">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
-                      <span className="text-xl font-bold text-amber-700 dark:text-amber-300 leading-none">{ongoingTasks}</span>
-                    </div>
-                    <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">In Progress</p>
-                  </div>
-                  <div className="bg-purple-50 dark:bg-purple-950/40 p-3 rounded-xl border border-purple-200/60 dark:border-purple-800/40 flex flex-col items-center justify-center text-center">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="w-2 h-2 rounded-full bg-[#8b5cf6]"></span>
-                      <span className="text-xl font-bold text-purple-700 dark:text-purple-300 leading-none">{completedTasks}</span>
-                    </div>
-                    <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold">Completed</p>
-                  </div>
-                  <div className="bg-red-50 dark:bg-red-950/40 p-3 rounded-xl border border-red-200/60 dark:border-red-800/40 flex flex-col items-center justify-center text-center">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="w-2 h-2 rounded-full bg-[#ef4444]"></span>
-                      <span className="text-xl font-bold text-red-700 dark:text-red-300 leading-none">{upcomingTasks}</span>
-                    </div>
-                    <p className="text-xs text-red-600 dark:text-red-400 font-semibold">Overdue</p>
-                  </div>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">Pending</p>
                 </div>
-              </Card>
-            </div>
+                <div className="bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200/60 dark:border-amber-800/40 flex flex-col items-center justify-center text-center">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
+                    <span className="text-xl font-bold text-amber-700 dark:text-amber-300 leading-none">{ongoingTasks}</span>
+                  </div>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">In Progress</p>
+                </div>
+                <div className="bg-purple-50 dark:bg-purple-950/40 p-3 rounded-xl border border-purple-200/60 dark:border-purple-800/40 flex flex-col items-center justify-center text-center">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="w-2 h-2 rounded-full bg-[#8b5cf6]"></span>
+                    <span className="text-xl font-bold text-purple-700 dark:text-purple-300 leading-none">{completedTasks}</span>
+                  </div>
+                  <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold">Completed</p>
+                </div>
+                <div className="bg-red-50 dark:bg-red-950/40 p-3 rounded-xl border border-red-200/60 dark:border-red-800/40 flex flex-col items-center justify-center text-center">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="w-2 h-2 rounded-full bg-[#ef4444]"></span>
+                    <span className="text-xl font-bold text-red-700 dark:text-red-300 leading-none">{upcomingTasks}</span>
+                  </div>
+                  <p className="text-xs text-red-600 dark:text-red-400 font-semibold">Overdue</p>
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
 
@@ -918,19 +927,17 @@ const Dashboard = () => {
                   <button
                     key={tab.id}
                     onClick={() => setEventFilter(tab.id)}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                      isActive
-                        ? 'bg-[#00a76b] text-white shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
-                    }`}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${isActive
+                      ? 'bg-[#00a76b] text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                      }`}
                   >
                     <Icon size={14} className={isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'} />
                     <span>{tab.label}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                      isActive
-                        ? 'bg-white/20 text-white'
-                        : 'bg-black/5 dark:bg-white/10 text-gray-500 dark:text-gray-400'
-                    }`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${isActive
+                      ? 'bg-white/20 text-white'
+                      : 'bg-black/5 dark:bg-white/10 text-gray-500 dark:text-gray-400'
+                      }`}>
                       {tab.count}
                     </span>
                   </button>
@@ -954,11 +961,10 @@ const Dashboard = () => {
                     return (
                       <div
                         key={ann.id || i}
-                        className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 flex flex-col justify-between border ${
-                          isToday
-                            ? 'bg-white dark:bg-[#14120e] border-[#00a76b] dark:border-emerald-600 shadow-[0_4px_20px_rgba(0,167,107,0.08)] ring-1 ring-[#00a76b]/25'
-                            : 'bg-white dark:bg-[#14120e] border-[#eceae3] dark:border-[#38352e] hover:border-[#00a76b]/50 hover:shadow-md'
-                        }`}
+                        className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 flex flex-col justify-between border ${isToday
+                          ? 'bg-white dark:bg-[#14120e] border-[#00a76b] dark:border-emerald-600 shadow-[0_4px_20px_rgba(0,167,107,0.08)] ring-1 ring-[#00a76b]/25'
+                          : 'bg-white dark:bg-[#14120e] border-[#eceae3] dark:border-[#38352e] hover:border-[#00a76b]/50 hover:shadow-md'
+                          }`}
                       >
                         {/* Top Row: Avatar + Info */}
                         <div className="flex items-start gap-3.5">
@@ -1030,13 +1036,12 @@ const Dashboard = () => {
                                 setWishedEvents(prev => [...prev, eventKey]);
                               }
                             }}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                              isWished
-                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-[#00a76b] dark:text-emerald-400 border border-[#00a76b]/30 dark:border-emerald-800/40 shadow-xs'
-                                : isToday || isPast
-                                  ? 'bg-[#00a76b] hover:bg-[#008f5b] text-white shadow-sm shadow-[#00a76b]/20 active:scale-95'
-                                  : 'bg-white hover:bg-gray-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 active:scale-95'
-                            }`}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 shrink-0 cursor-pointer ${isWished
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-[#00a76b] dark:text-emerald-400 border border-[#00a76b]/30 dark:border-emerald-800/40 shadow-xs'
+                              : isToday || isPast
+                                ? 'bg-[#00a76b] hover:bg-[#008f5b] text-white shadow-sm shadow-[#00a76b]/20 active:scale-95'
+                                : 'bg-white hover:bg-gray-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 active:scale-95'
+                              }`}
                           >
                             {isWished ? (
                               <>

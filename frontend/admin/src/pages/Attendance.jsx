@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
@@ -137,8 +138,20 @@ const Attendance = () => {
   const [error, setError] = useState(null);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [yearlyStats, setYearlyStats] = useState(null);
+  const [statsPeriod, setStatsPeriod] = useState('week'); // 'week' | 'month' | 'year'
+  const [periodStats, setPeriodStats] = useState(null);
+  const location = useLocation();
   const userRole = sessionStorage.getItem('role') || 'employee';
-  const [viewContext, setViewContext] = useState(userRole === 'employee' ? 'employee' : 'team');
+  const isEmployeeRoute = location.pathname.includes('/employee');
+  const [viewContext, setViewContext] = useState(isEmployeeRoute || userRole === 'employee' ? 'employee' : 'team');
+  const [hoveredWeeklySlice, setHoveredWeeklySlice] = useState(null);
+  const [hoveredStatusSlice, setHoveredStatusSlice] = useState(null);
+
+  useEffect(() => {
+    if (isEmployeeRoute) {
+      setViewContext('employee');
+    }
+  }, [isEmployeeRoute]);
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -161,6 +174,25 @@ const Attendance = () => {
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => obs.disconnect();
   }, []);
+
+  const fetchEmployeeStats = useCallback(async (period = statsPeriod) => {
+    const token = sessionStorage.getItem('token');
+    try {
+      const res = await axios.get(`/api/attendance/me/stats?period=${period}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPeriodStats(res.data);
+      setYearlyStats(res.data);
+    } catch(e) {
+      console.error('Error fetching period stats:', e);
+    }
+  }, [statsPeriod]);
+
+  useEffect(() => {
+    if (viewContext === 'employee') {
+      fetchEmployeeStats(statsPeriod);
+    }
+  }, [viewContext, statsPeriod, fetchEmployeeStats]);
 
   // Fetch data
   const fetchAttendance = useCallback(async () => {
@@ -187,14 +219,7 @@ const Attendance = () => {
       }
 
       if (viewContext === 'employee') {
-        try {
-          const yearlyRes = await axios.get('/api/attendance/me/yearly-stats', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          setYearlyStats(yearlyRes.data);
-        } catch(e) {
-          console.error('Error fetching yearly stats:', e);
-        }
+        fetchEmployeeStats(statsPeriod);
       }
     } catch (err) {
       console.warn('Using sample data:', err.message);
@@ -202,7 +227,7 @@ const Attendance = () => {
     } finally {
       setLoading(false);
     }
-  }, [viewContext]);
+  }, [viewContext, statsPeriod, fetchEmployeeStats]);
 
   useEffect(() => { fetchAttendance(); }, [fetchAttendance]);
 
@@ -307,13 +332,14 @@ const Attendance = () => {
 
   // ── Pie Data ──
   const pieData = useMemo(() => {
-    if (viewContext === 'employee' && yearlyStats) {
+    const activeStats = periodStats || yearlyStats;
+    if (viewContext === 'employee' && activeStats) {
       return [
-        { name: 'Present', value: yearlyStats.present || 0, fill: '#10b981' },
-        { name: 'Late', value: yearlyStats.late || 0, fill: '#f59e0b' },
-        { name: 'Absent', value: yearlyStats.absent || 0, fill: '#ef4444' },
-        { name: 'Half Day', value: yearlyStats.halfDay || 0, fill: '#3b82f6' },
-        { name: 'Leave', value: yearlyStats.leave || 0, fill: '#8b5cf6' },
+        { name: 'Present', value: activeStats.present || 0, fill: '#10b981' },
+        { name: 'Late', value: activeStats.late || 0, fill: '#f59e0b' },
+        { name: 'Absent', value: activeStats.absent || 0, fill: '#ef4444' },
+        { name: 'Half Day', value: activeStats.halfDay || 0, fill: '#3b82f6' },
+        { name: 'Leave', value: activeStats.leave || 0, fill: '#8b5cf6' },
       ].filter(d => d.value > 0);
     }
     return [
@@ -323,7 +349,7 @@ const Attendance = () => {
       { name: 'Half Day', value: summaryStats.halfDay, fill: '#3b82f6' },
       { name: 'Leave', value: summaryStats.leave, fill: '#8b5cf6' },
     ].filter(d => d.value > 0);
-  }, [summaryStats, yearlyStats, viewContext]);
+  }, [summaryStats, periodStats, yearlyStats, viewContext]);
 
   // Export CSV
   const exportCSV = () => {
@@ -338,39 +364,27 @@ const Attendance = () => {
       return '--';
     };
 
-    const rows = filteredRecords.map(r => {
-      const cIn = formatTimeHelper(r.clockIn || r.clock_in, r.checkInTime);
-      const cOut = formatTimeHelper(r.clockOut || r.clock_out, r.checkOutTime);
-      const wHours = getWorkingHours(cIn !== '--' ? cIn : null, cOut !== '--' ? cOut : null);
-      
-      return [
-        r.date, 
-        r.user?.name || 'N/A', 
-        r.status, 
-        cIn, 
-        cOut, 
-        wHours
-      ];
-    });
+    const rows = filteredRecords.map(r => [
+      r.date || '',
+      r.user?.name || 'N/A',
+      r.status || 'N/A',
+      formatTimeHelper(r.clockInTime, r.checkInTime),
+      formatTimeHelper(r.clockOutTime, r.checkOutTime),
+      r.totalHours ? `${r.totalHours} hrs` : '--'
+    ]);
 
-    const formatCSVField = (field) => {
-      const str = String(field || '');
-      return str.includes(',') || str.includes('"') || str.includes('\n') 
-        ? `"${str.replace(/"/g, '""')}"` 
-        : str;
-    };
-
-    const csv = [headers, ...rows].map(row => row.map(formatCSVField).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `attendance-report-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Attendance report exported successfully');
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `attendance_${viewMode}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
+  const periodLabel = statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year';
+  const activeStats = periodStats || yearlyStats;
 
   // ────────────────────────────── RENDER ──────────────────────────────
   if (loading) {
@@ -389,11 +403,17 @@ const Attendance = () => {
       {/* ── HEADER ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-[26px] font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Attendance
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-[26px] font-extrabold text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Attendance
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              {todayStr}
+            </span>
+          </div>
           <p className="text-sm text-slate-500 dark:text-[#829e92] mt-1">
-            Track and manage employee attendance records
+            {viewContext === 'employee' ? 'Track your daily attendance, working hours and weekly breakdown' : 'Monitor and manage organization-wide employee attendance and shifts'}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -433,11 +453,11 @@ const Attendance = () => {
       {/* ── SUMMARY CARDS ── */}
       <div className={`grid grid-cols-2 sm:grid-cols-3 gap-4 ${viewContext === 'employee' ? 'lg:grid-cols-5' : 'lg:grid-cols-6'}`}>
         {(viewContext === 'employee' ? [
-          { label: 'Present (Year)', value: yearlyStats?.present || 0, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30' },
-          { label: 'Late (Year)', value: yearlyStats?.late || 0, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/30' },
-          { label: 'Absent (Year)', value: yearlyStats?.absent || 0, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-red-50 dark:bg-red-950/30' },
-          { label: 'Half Day (Year)', value: yearlyStats?.halfDay || 0, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30' },
-          { label: 'Leave (Year)', value: yearlyStats?.leave || 0, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30' },
+          { label: `Present (${periodLabel})`, value: activeStats?.present || 0, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30' },
+          { label: `Late (${periodLabel})`, value: activeStats?.late || 0, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/30' },
+          { label: `Absent (${periodLabel})`, value: activeStats?.absent || 0, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-red-50 dark:bg-red-950/30' },
+          { label: `Half Day (${periodLabel})`, value: activeStats?.halfDay || 0, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30' },
+          { label: `Leave (${periodLabel})`, value: activeStats?.leave || 0, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30' },
         ] : [
           { label: 'Total Today', value: summaryStats.total, icon: Users, color: 'text-slate-700 dark:text-white', bgIcon: 'bg-slate-100 dark:bg-slate-800/40' },
           { label: 'Present', value: summaryStats.present, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30', trend: '+3%' },
@@ -446,15 +466,28 @@ const Attendance = () => {
           { label: 'Half Day', value: summaryStats.halfDay, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30' },
           { label: 'On Leave', value: summaryStats.leave, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30' },
         ]).map((card, i) => (
-          <Card key={i}>
+          <Card key={i} className="flex flex-col justify-between">
             <div className="flex items-center justify-between mb-3">
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${card.bgIcon}`}>
                 <card.icon size={17} className={card.color} />
               </div>
-              {card.trend && (
-                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">
-                  <ArrowUpRight size={10} /> {card.trend}
-                </span>
+              {viewContext === 'employee' ? (
+                <select
+                  value={statsPeriod}
+                  onChange={(e) => setStatsPeriod(e.target.value)}
+                  className="text-[11px] font-bold px-2 py-0.5 rounded-lg border border-slate-200 dark:border-[#133029] bg-slate-50 dark:bg-[#0a1f1a] text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  title="Select period"
+                >
+                  <option value="week">Week</option>
+                  <option value="month">Month</option>
+                  <option value="year">Year</option>
+                </select>
+              ) : (
+                card.trend && (
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">
+                    <ArrowUpRight size={10} /> {card.trend}
+                  </span>
+                )
               )}
             </div>
             <h3 className={`text-[18px] font-extrabold ${card.color} leading-none mb-1`}>{card.value}</h3>
@@ -497,25 +530,140 @@ const Attendance = () => {
       {/* ── CHARTS GRID ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Weekly Attendance Chart */}
-        <Card className="col-span-12 lg:col-span-7">
-          <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-white mb-4 tracking-tight">Weekly Attendance</h3>
-          <div className="w-full h-[280px] select-none">
-            <ResponsiveContainer width="100%" height="100%">
-              {viewContext === 'employee' ? (
-                <LineChart key={isDark ? 'd' : 'l'} data={weeklyChartData} margin={{ top: 15, right: 15, left: -25, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#143029' : '#eceae7'} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#829e92' : '#9CA3AF', fontSize: 11, fontWeight: 600 }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: isDark ? '#829e92' : '#9CA3AF', fontSize: 11, fontWeight: 500 }} dx={-5} />
-                  <Tooltip content={<ChartTooltip isDark={isDark} />} cursor={false} />
-                  <Legend verticalAlign="top" align="right" iconSize={8} iconType="circle"
-                    wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', paddingBottom: '15px' }}
-                    formatter={(v) => <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>{v}</span>} />
-                  <Line type="monotone" dataKey="Present" stroke="#10b981" strokeWidth={3} dot={{ r: 5, strokeWidth: 2, fill: isDark ? '#0a1f1a' : '#fff' }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="Late" stroke="#f59e0b" strokeWidth={3} dot={{ r: 5, strokeWidth: 2, fill: isDark ? '#0a1f1a' : '#fff' }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="Absent" stroke="#ef4444" strokeWidth={3} dot={{ r: 5, strokeWidth: 2, fill: isDark ? '#0a1f1a' : '#fff' }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="Leave" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 5, strokeWidth: 2, fill: isDark ? '#0a1f1a' : '#fff' }} activeDot={{ r: 6 }} />
-                </LineChart>
-              ) : (
+        <Card className="col-span-12 lg:col-span-7 flex flex-col justify-between">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-white tracking-tight">Weekly Attendance</h3>
+              <p className="text-xs text-slate-400 dark:text-[#829e92] mt-0.5">
+                {viewContext === 'employee' ? "This week's attendance breakdown" : 'Weekly team attendance overview'}
+              </p>
+            </div>
+            {viewContext === 'employee' && (
+              <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400">
+                This Week
+              </span>
+            )}
+          </div>
+
+          {viewContext === 'employee' ? (
+            (() => {
+              const totals = { Present: 0, Late: 0, Absent: 0, 'Half Day': 0, Leave: 0 };
+              (weeklyChartData || []).forEach(d => {
+                totals.Present += Number(d.Present) || 0;
+                totals.Late += Number(d.Late) || 0;
+                totals.Absent += Number(d.Absent) || 0;
+                totals['Half Day'] += Number(d['Half Day'] || d.HalfDay || d.halfDay) || 0;
+                totals.Leave += Number(d.Leave) || 0;
+              });
+
+              const weeklyPie = [
+                { name: 'Present', value: totals.Present, color: '#10b981' },
+                { name: 'Late', value: totals.Late, color: '#f59e0b' },
+                { name: 'Half Day', value: totals['Half Day'], color: '#3b82f6' },
+                { name: 'Leave', value: totals.Leave, color: '#8b5cf6' },
+                { name: 'Absent', value: totals.Absent, color: '#ef4444' },
+              ];
+
+              const total = totals.Present + totals.Late + totals.Absent + totals['Half Day'] + totals.Leave;
+              const workingDays = totals.Present + totals.Late + totals['Half Day'];
+              const rate = total > 0 ? Math.round((workingDays / total) * 100) : 0;
+              const activePie = weeklyPie.filter(d => d.value > 0);
+              const displayPie = activePie.length > 0 ? activePie : [{ name: 'No Data', value: 1, color: isDark ? '#133029' : '#e2eae7' }];
+
+              return (
+                <div className="flex flex-col sm:flex-row items-center gap-6 justify-between flex-1 select-none min-h-[220px]">
+                  {/* Donut Chart */}
+                  <div className="relative shrink-0 w-[180px] h-[180px] flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={displayPie}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={58}
+                          outerRadius={80}
+                          paddingAngle={activePie.length > 1 ? 3 : 0}
+                          dataKey="value"
+                          stroke="none"
+                          isAnimationActive={true}
+                          animationDuration={800}
+                          onMouseLeave={() => setHoveredWeeklySlice(null)}
+                        >
+                          {displayPie.map((entry, idx) => (
+                            <Cell
+                              key={idx}
+                              fill={entry.color}
+                              className="transition-all cursor-pointer hover:opacity-85"
+                              onMouseEnter={() => entry.name !== 'No Data' && setHoveredWeeklySlice(entry)}
+                            />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    {/* Dynamic Centre Label - No overlapping tooltip */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200">
+                      {hoveredWeeklySlice ? (
+                        <>
+                          <span className="text-3xl font-black tabular-nums leading-none" style={{ color: hoveredWeeklySlice.color }}>
+                            {hoveredWeeklySlice.value}
+                          </span>
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider mt-1" style={{ color: hoveredWeeklySlice.color }}>
+                            {hoveredWeeklySlice.name} ({total > 0 ? Math.round((hoveredWeeklySlice.value / total) * 100) : 0}%)
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-3xl font-black text-slate-800 dark:text-white tabular-nums leading-none">{rate}%</span>
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-widest mt-1">Weekly Rate</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Legend breakdown */}
+                  <div className="flex-1 w-full space-y-2.5">
+                    {weeklyPie.map((d, idx) => {
+                      const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
+                      const isHovered = hoveredWeeklySlice?.name === d.name;
+                      return (
+                        <div
+                          key={idx}
+                          className={`space-y-1 p-1 rounded-lg transition-all cursor-pointer ${isHovered ? 'bg-slate-50 dark:bg-[#133029]/60 scale-[1.02]' : ''}`}
+                          onMouseEnter={() => setHoveredWeeklySlice(d)}
+                          onMouseLeave={() => setHoveredWeeklySlice(null)}
+                        >
+                          <div className="flex items-center justify-between text-xs font-semibold">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                              <span className={`transition-colors ${isHovered ? 'font-black text-slate-900 dark:text-white' : 'text-slate-600 dark:text-[#a3b3af]'}`}>
+                                {d.name}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">({pct}%)</span>
+                              <span className="font-extrabold text-slate-900 dark:text-white tabular-nums">{d.value}</span>
+                            </div>
+                          </div>
+                          <div className="w-full bg-slate-100 dark:bg-[#133029] h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-700"
+                              style={{ width: `${pct}%`, backgroundColor: d.color }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="pt-2 border-t border-slate-100 dark:border-[#133029] flex items-center justify-between text-[11px] font-semibold text-slate-400 dark:text-[#829e92]">
+                      <span>Total this week (Mon - Sun):</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">{total} days</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()
+          ) : (
+            <div className="w-full h-[280px] select-none">
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart key={isDark ? 'd' : 'l'} data={weeklyChartData} margin={{ top: 15, right: 15, left: -25, bottom: 0 }} barGap={4}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#143029' : '#eceae7'} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#829e92' : '#9CA3AF', fontSize: 11, fontWeight: 600 }} dy={10} />
@@ -529,36 +677,63 @@ const Attendance = () => {
                   <Bar dataKey="Absent" fill="#ef4444" radius={[3, 3, 0, 0]} barSize={10} />
                   <Bar dataKey="Leave" fill="#8b5cf6" radius={[3, 3, 0, 0]} barSize={10} />
                 </BarChart>
-              )}
-            </ResponsiveContainer>
-          </div>
+              </ResponsiveContainer>
+            </div>
+          )}
         </Card>
 
         {/* Right Column: Pie + Monthly Trend */}
         <div className="col-span-12 lg:col-span-5 flex flex-col gap-6">
           {/* Status Breakdown Pie */}
           <Card>
-            <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-white mb-3 tracking-tight">{viewContext === 'employee' ? 'Yearly Breakdown' : "Today's Breakdown"}</h3>
+            <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-white mb-3 tracking-tight">
+              {viewContext === 'employee' ? `${statsPeriod === 'week' ? 'Weekly' : statsPeriod === 'month' ? 'Monthly' : 'Yearly'} Breakdown` : "Today's Breakdown"}
+            </h3>
             <div className="flex items-center gap-4">
               <div className="w-[130px] h-[130px] shrink-0 relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={pieData.length ? pieData : [{ name: 'No Data', value: 1 }]} cx="50%" cy="50%" innerRadius={40} outerRadius={58} paddingAngle={3} dataKey="value">
+                    <Pie
+                      data={pieData.length ? pieData : [{ name: 'No Data', value: 1 }]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={58}
+                      paddingAngle={3}
+                      dataKey="value"
+                      onMouseLeave={() => setHoveredStatusSlice(null)}
+                    >
                       {(pieData.length ? pieData : [{ name: 'No Data', value: 1 }]).map((item, idx) => (
-                        <Cell key={idx} fill={pieData.length ? item.fill : '#e2e8f0'} />
+                        <Cell
+                          key={idx}
+                          fill={pieData.length ? item.fill : (isDark ? '#133029' : '#e2e8f0')}
+                          className="transition-all cursor-pointer hover:opacity-85"
+                          onMouseEnter={() => item.name !== 'No Data' && setHoveredStatusSlice(item)}
+                        />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: isDark ? '#0a1f1a' : '#fff', borderColor: isDark ? '#133029' : '#eceae7', borderRadius: '8px', fontSize: '11px' }}
-                      itemStyle={{ color: isDark ? '#fff' : '#000' }} />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="absolute text-center">
-                  <span className="block text-lg font-black text-slate-800 dark:text-white leading-none">
-                    {viewContext === 'employee' ? (
-                      yearlyStats ? Math.round(((yearlyStats.present + yearlyStats.late + yearlyStats.halfDay) / ((yearlyStats.present + yearlyStats.late + yearlyStats.halfDay + yearlyStats.absent + yearlyStats.leave) || 1)) * 100) : 0
-                    ) : summaryStats.pct}%
-                  </span>
-                  <span className="text-[8px] uppercase font-bold tracking-widest text-slate-400 dark:text-[#829e92]">Rate</span>
+                <div className="absolute text-center pointer-events-none transition-all duration-200">
+                  {hoveredStatusSlice ? (
+                    <>
+                      <span className="block text-base font-black tabular-nums leading-none" style={{ color: hoveredStatusSlice.fill }}>
+                        {hoveredStatusSlice.value}
+                      </span>
+                      <span className="text-[7px] uppercase font-bold tracking-wider mt-0.5" style={{ color: hoveredStatusSlice.fill }}>
+                        {hoveredStatusSlice.name}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="block text-lg font-black text-slate-800 dark:text-white leading-none">
+                        {viewContext === 'employee' ? (
+                          yearlyStats ? Math.round(((yearlyStats.present + yearlyStats.late + yearlyStats.halfDay) / ((yearlyStats.present + yearlyStats.late + yearlyStats.halfDay + yearlyStats.absent + yearlyStats.leave) || 1)) * 100) : 0
+                        ) : summaryStats.pct}%
+                      </span>
+                      <span className="text-[8px] uppercase font-bold tracking-widest text-slate-400 dark:text-[#829e92]">Rate</span>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="flex-1 space-y-2">
@@ -578,11 +753,18 @@ const Attendance = () => {
                     if (status === 'Leave') count = summaryStats.leave;
                   }
 
+                  const isHovered = hoveredStatusSlice?.name === status;
+
                   return (
-                    <div key={status} className="flex items-center justify-between text-xs font-semibold">
+                    <div
+                      key={status}
+                      className={`flex items-center justify-between text-xs font-semibold px-1 py-0.5 rounded transition-all cursor-pointer ${isHovered ? 'bg-slate-50 dark:bg-[#133029]/60' : ''}`}
+                      onMouseEnter={() => setHoveredStatusSlice({ name: status, value: count, fill: colors.dot })}
+                      onMouseLeave={() => setHoveredStatusSlice(null)}
+                    >
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.dot }} />
-                        <span className="text-slate-600 dark:text-[#a3b3af]">{status}</span>
+                        <span className={isHovered ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-[#a3b3af]'}>{status}</span>
                       </div>
                       <span className="font-bold text-slate-900 dark:text-white tabular-nums">{count}</span>
                     </div>

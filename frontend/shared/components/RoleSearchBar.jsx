@@ -66,7 +66,7 @@ const RoleSearchBar = ({ activeRole }) => {
   };
 
   return (
-    <div className="hidden sm:block flex-1 max-w-[340px] relative" ref={searchRef}>
+    <div className="hidden sm:block flex-1 max-w-[600px] xl:max-w-[700px] relative" ref={searchRef}>
       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
         <Search size={18} />
       </div>

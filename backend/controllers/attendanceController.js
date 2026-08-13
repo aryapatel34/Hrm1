@@ -167,44 +167,71 @@ exports.getWeeklySummary = async (req, res) => {
 
     const weeklyData = weekdays.map(day => {
       const dayRecords = attendanceRecords.filter(r => r.date === day.dateStr);
-      const presentCount = dayRecords.filter(r => ['Present', 'Late', 'Half Day'].includes(r.status)).length;
-      
-      const dayDateObj = new Date(day.dateStr);
-      const leaveCount = approvedLeaves.filter(l => {
-        const start = new Date(l.startDate);
-        const end = new Date(l.endDate);
-        const dStr = day.dateStr + 'T12:00:00Z'; // Midday to ensure accurate date bounds
-        const dObj = new Date(dStr);
-        return dObj >= start && dObj <= end;
-      }).length;
 
-      let finalAbsent = totalEmployees - (presentCount + leaveCount);
-      
-      if (day.name === 'Sun') {
+      if (isEmployee) {
+        // Find single employee's status for this exact day (1 status per day)
+        const primaryRecord = dayRecords[0];
+        const hasApprovedLeave = approvedLeaves.some(l => {
+          const start = new Date(l.startDate);
+          const end = new Date(l.endDate);
+          const dStr = day.dateStr + 'T12:00:00Z';
+          const dObj = new Date(dStr);
+          return dObj >= start && dObj <= end;
+        });
+
+        let present = 0;
+        let late = 0;
+        let halfDay = 0;
+        let leave = 0;
+        let absent = 0;
+
+        if (primaryRecord) {
+          if (primaryRecord.status === 'Late') late = 1;
+          else if (primaryRecord.status === 'Half Day') halfDay = 1;
+          else present = 1;
+        } else if (hasApprovedLeave) {
+          leave = 1;
+        } else {
+          absent = 1;
+        }
+
         return {
           name: day.name,
           date: day.dateStr,
-          Present: presentCount,
-          Leave: leaveCount,
-          Absent: 0
+          Present: present,
+          Late: late,
+          'Half Day': halfDay,
+          Leave: leave,
+          Absent: absent
         };
-      } else if (day.name === 'Sat') {
+      } else {
+        const presentCount = dayRecords.filter(r => r.status === 'Present').length;
+        const lateCount = dayRecords.filter(r => r.status === 'Late').length;
+        const halfDayCount = dayRecords.filter(r => r.status === 'Half Day').length;
+        
+        // Count unique employees on approved leave on this date
+        const employeesOnLeave = new Set(
+          approvedLeaves.filter(l => {
+            const start = new Date(l.startDate);
+            const end = new Date(l.endDate);
+            const dStr = day.dateStr + 'T12:00:00Z';
+            const dObj = new Date(dStr);
+            return dObj >= start && dObj <= end;
+          }).map(l => String(l.user?._id || l.user))
+        ).size;
+
+        const totalWorking = presentCount + lateCount + halfDayCount;
+        const finalAbsent = Math.max(0, totalEmployees - (totalWorking + employeesOnLeave));
+
         return {
           name: day.name,
           date: day.dateStr,
-          Present: presentCount,
-          Leave: leaveCount,
-          Absent: isEmployee ? (presentCount > 0 || leaveCount > 0 ? 0 : 0) : Math.max(0, finalAbsent) // Assuming Saturday is usually off, or adjust as needed. Employee absent defaults to 0 on Sat.
+          Present: presentCount + halfDayCount,
+          Late: lateCount,
+          Leave: employeesOnLeave,
+          Absent: day.name === 'Sun' ? 0 : (day.name === 'Sat' ? Math.max(0, totalEmployees - totalWorking - employeesOnLeave) : finalAbsent)
         };
       }
-
-      return {
-        name: day.name,
-        date: day.dateStr,
-        Present: presentCount,
-        Leave: leaveCount,
-        Absent: isEmployee ? (presentCount === 0 && leaveCount === 0 ? 1 : 0) : Math.max(0, finalAbsent)
-      };
     });
 
     let lastWeekData = [];
@@ -341,87 +368,64 @@ exports.getMyAttendance = async (req, res) => {
   }
 };
 
-// @desc    Get My Yearly Stats
-// @route   GET /api/attendance/me/yearly-stats
+// @desc    Get Attendance Stats for Current User by Period (Week, Month, Year)
+// @route   GET /api/attendance/me/yearly-stats or GET /api/attendance/me/stats
 exports.getMyYearlyStats = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const currentYear = new Date().getFullYear();
-    const startOfYearStr = `${currentYear}-01-01`;
-    const endOfYearStr = `${currentYear}-12-31`;
-    
-    // 1. Get attendance records for this year
+    const userId = req.query.userId || req.user.id;
+    const period = (req.query.period || 'week').toLowerCase(); // 'week' | 'month' | 'year'
+
+    const now = new Date();
+    let startDate, endDate;
+
+    if (period === 'week') {
+      const currentDay = now.getDay();
+      const mondayDiff = currentDay === 0 ? -6 : 1 - currentDay;
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() + mondayDiff);
+      startDate.setHours(0, 0, 0, 0);
+
+      endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 6);
+      endDate.setHours(23, 59, 59, 999);
+    } else if (period === 'month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    } else {
+      // 'year'
+      startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+    }
+
+    const startStr = startDate.toISOString().split('T')[0];
+    const endStr = endDate.toISOString().split('T')[0];
+    const todayStr = now.toISOString().split('T')[0];
+
+    // 1. Get attendance records for this period
     const attendanceRecords = await Attendance.find({
       user: userId,
-      date: { $gte: startOfYearStr, $lte: endOfYearStr }
+      date: { $gte: startStr, $lte: endStr }
     });
 
-    let presentCount = 0;
-    let lateCount = 0;
-    let halfDayCount = 0;
-    let totalHrs = 0;
-
-    attendanceRecords.forEach(r => {
-      if (r.status === 'Present') presentCount++;
-      if (r.status === 'Late') lateCount++;
-      if (r.status === 'Half Day') halfDayCount++;
-      
-      // Calculate hours if checkInTime and checkOutTime exist
-      if (r.checkInTime && r.checkOutTime) {
-        let diff = (new Date(r.checkOutTime) - new Date(r.checkInTime)) / (1000 * 60 * 60);
-        if (diff > 6) diff -= 0.75; // Subtract 45 min break if worked more than 6 hours
-        totalHrs += diff;
-      }
-    });
-
-    const totalWorkingDaysSoFar = attendanceRecords.length || 1;
-    const avgHrs = (totalHrs / totalWorkingDaysSoFar).toFixed(1);
-
-    // 2. Get approved leaves for this year
+    // 2. Get approved leaves for this period
     const Leave = require('../models/Leave');
-    const startOfYearDate = new Date(currentYear, 0, 1);
-    const endOfYearDate = new Date(currentYear, 11, 31, 23, 59, 59);
-    
     const leaves = await Leave.find({
       user: userId,
       status: 'approved',
       $or: [
-        { startDate: { $gte: startOfYearDate, $lte: endOfYearDate } },
-        { endDate: { $gte: startOfYearDate, $lte: endOfYearDate } },
-        { startDate: { $lte: startOfYearDate }, endDate: { $gte: endOfYearDate } }
+        { startDate: { $gte: startDate, $lte: endDate } },
+        { endDate: { $gte: startDate, $lte: endDate } },
+        { startDate: { $lte: startDate }, endDate: { $gte: endDate } }
       ]
     });
 
-    let leaveCount = 0;
-    const todayForLeave = new Date();
-    
-    leaves.forEach(l => {
-      const start = new Date(l.startDate) > startOfYearDate ? new Date(l.startDate) : startOfYearDate;
-      let end = new Date(l.endDate) < endOfYearDate ? new Date(l.endDate) : endOfYearDate;
-      
-      // Do not count future leaves or future days of a current leave
-      if (end > todayForLeave) {
-        end = todayForLeave;
-      }
-      
-      if (start <= end) {
-        const diffTime = Math.abs(end - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        leaveCount += diffDays;
-      }
-    });
-
-    // 3. Calculate Absent (Expected working days - Present - Late - Half Day - Leave)
+    // 3. Determine employee effective join date
     const Employee = require('../models/Employee');
     const User = require('../models/User');
     const employeeData = await Employee.findOne({ userId });
     const userData = await User.findById(userId);
-    
-    const today = new Date();
-    
-    let calculationStartDate = startOfYearDate;
-    let actualJoinDate = null;
 
+    let actualJoinDate = null;
     if (employeeData && employeeData.joinDate) {
       actualJoinDate = new Date(employeeData.joinDate);
     } else if (userData && userData.joinDate) {
@@ -430,29 +434,78 @@ exports.getMyYearlyStats = async (req, res) => {
       actualJoinDate = new Date(userData.createdAt);
     }
 
-    if (actualJoinDate && actualJoinDate > startOfYearDate) {
-      calculationStartDate = actualJoinDate;
+    let calculationStartDate = new Date(startDate);
+    if (actualJoinDate && actualJoinDate > startDate) {
+      calculationStartDate = new Date(actualJoinDate);
+      calculationStartDate.setHours(0, 0, 0, 0);
     }
 
-    let expectedWorkingDays = 0;
-    if (calculationStartDate <= today) {
-      for (let d = new Date(calculationStartDate); d <= today; d.setDate(d.getDate() + 1)) {
-        if (d.getDay() !== 0) { // Assume Sunday is off
-          expectedWorkingDays++;
+    // 4. Calculate day by day to ensure 100% accuracy and eliminate double counting
+    let presentCount = 0;
+    let lateCount = 0;
+    let halfDayCount = 0;
+    let leaveCount = 0;
+    let absentCount = 0;
+    let totalHrs = 0;
+    let clockedDaysCount = 0;
+
+    const calculationEndDate = now < endDate ? now : endDate;
+
+    for (
+      let d = new Date(calculationStartDate);
+      d <= calculationEndDate;
+      d.setDate(d.getDate() + 1)
+    ) {
+      const dStr = d.toISOString().split('T')[0];
+      const isSunday = d.getDay() === 0;
+
+      // Check attendance record
+      const record = attendanceRecords.find(r => r.date === dStr);
+
+      if (record) {
+        if (record.status === 'Late') {
+          lateCount++;
+        } else if (record.status === 'Half Day') {
+          halfDayCount++;
+        } else {
+          presentCount++;
+        }
+
+        if (record.checkInTime && record.checkOutTime) {
+          let diff = (new Date(record.checkOutTime) - new Date(record.checkInTime)) / (1000 * 60 * 60);
+          if (diff > 6) diff -= 0.75;
+          totalHrs += Math.max(0, diff);
+          clockedDaysCount++;
+        }
+      } else {
+        // Check approved leave
+        const dObj = new Date(dStr + 'T12:00:00Z');
+        const hasLeave = leaves.some(l => {
+          const start = new Date(l.startDate);
+          const end = new Date(l.endDate);
+          return dObj >= start && dObj <= end;
+        });
+
+        if (hasLeave) {
+          leaveCount++;
+        } else if (!isSunday && dStr <= todayStr) {
+          // Working day with no attendance and no leave -> Absent
+          absentCount++;
         }
       }
     }
 
-    let absentCount = expectedWorkingDays - (presentCount + lateCount + halfDayCount + leaveCount);
-    if (absentCount < 0) absentCount = 0;
+    const avgHrs = clockedDaysCount > 0 ? (totalHrs / clockedDaysCount).toFixed(1) : '0.0';
 
     res.json({
+      period,
       present: presentCount,
       late: lateCount,
       halfDay: halfDayCount,
-      absent: absentCount,
       leave: leaveCount,
-      avgWeeklyHours: avgHrs
+      absent: absentCount,
+      avgWeeklyHours: `${avgHrs}h`,
+      totalHours: parseFloat(totalHrs.toFixed(1))
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
