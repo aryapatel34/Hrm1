@@ -9,7 +9,9 @@ const {
   getMyAttendance, 
   getMyYearlyStats,
   getAllAttendance, 
-  getWeeklySummary 
+  getWeeklySummary,
+  getTeamStats,
+  getTodayAttendance
 } = require('../controllers/attendanceController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -22,10 +24,12 @@ router.post('/clock-in', protect, clockIn);
 router.put('/clock-out', protect, clockOut);
 
 // Additional endpoints
+router.get('/today', protect, getTodayAttendance);
 router.get('/me', protect, getMyAttendance);
 router.get('/me/stats', protect, getMyYearlyStats);
 router.get('/me/yearly-stats', protect, getMyYearlyStats);
 router.get('/summary/weekly', protect, getWeeklySummary);
+router.get('/summary/team-stats', protect, getTeamStats);
 router.get('/all', protect, authorize('admin', 'hr'), getAllAttendance);
 
 // Hierarchy-based attendance query

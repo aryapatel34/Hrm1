@@ -9,6 +9,7 @@ import {
   Calendar as CalendarIcon, Clock, Search, Filter, Download,
   CheckCircle, XCircle, RefreshCw, Play, Square, FileClock, X, Sun
 } from 'lucide-react';
+import TimeTracker from './TimeTracker';
 
 // Custom tooltip for Weekly chart
 const CustomWeeklyTooltip = ({ active, payload, label, isDark }) => {
@@ -46,6 +47,7 @@ const Attendance = () => {
   }, []);
 
   // --- COMPONENT STATE ---
+  const [viewMode, setViewMode] = useState('attendance'); // 'attendance' | 'timeTracker'
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [logs, setLogs] = useState([]);
@@ -54,6 +56,8 @@ const Attendance = () => {
   const [statsPeriod, setStatsPeriod] = useState('week'); // 'week' | 'month' | 'year'
   const [periodStats, setPeriodStats] = useState(null);
   const [yearlyStats, setYearlyStats] = useState(null);
+  const [chartPeriod, setChartPeriod] = useState('week');
+  const [chartStats, setChartStats] = useState(null);
 
   // Live Timer/Session State
   const [session, setSession] = useState(null);
@@ -125,9 +129,24 @@ const Attendance = () => {
     }
   };
 
+  const fetchChartStats = async (period = chartPeriod) => {
+    try {
+      const res = await axios.get(`/api/attendance/me/stats?period=${period}`, {
+        headers: { Authorization: `Bearer ${token()}` }
+      });
+      setChartStats(res.data);
+    } catch (err) {
+      console.error('Error fetching chart stats:', err);
+    }
+  };
+
   useEffect(() => {
     fetchStats(statsPeriod);
   }, [statsPeriod]);
+
+  useEffect(() => {
+    fetchChartStats(chartPeriod);
+  }, [chartPeriod]);
 
   const loadData = async (showSkeleton = true) => {
     if (showSkeleton) setLoading(true);
@@ -135,7 +154,8 @@ const Attendance = () => {
       fetchAttendanceLogs(),
       fetchWeeklyChart(),
       fetchSessionStatus(),
-      fetchStats(statsPeriod)
+      fetchStats(statsPeriod),
+      fetchChartStats(chartPeriod)
     ]);
     setLoading(false);
   };
@@ -341,6 +361,22 @@ const Attendance = () => {
           </p>
         </div>
         <div className="flex items-center flex-wrap gap-2.5 w-full md:w-auto">
+          {/* View Mode Toggle */}
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <button
+              onClick={() => setViewMode('attendance')}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${viewMode === 'attendance' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            >
+              Attendance
+            </button>
+            <button
+              onClick={() => setViewMode('timeTracker')}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${viewMode === 'timeTracker' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            >
+              Time Tracker
+            </button>
+          </div>
+
           {/* Global Search Bar mockup */}
           <div className="relative flex-1 md:w-60 md:flex-none">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -367,7 +403,28 @@ const Attendance = () => {
         </div>
       </div>
 
-      {/* ── KPI METRIC CARDS ── */}
+      {viewMode === 'attendance' ? (
+        <>
+          {/* ── PERIOD TOGGLE ── */}
+          <div className="flex justify-end mb-2">
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+              {['week', 'month', 'year'].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setStatsPeriod(p)}
+                  className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
+                    statsPeriod === p
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* ── KPI METRIC CARDS ── */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           {
@@ -409,16 +466,7 @@ const Attendance = () => {
               <div className={`p-2.5 rounded-xl ${card.bg}`}>
                 {card.icon}
               </div>
-              <select
-                value={statsPeriod}
-                onChange={(e) => setStatsPeriod(e.target.value)}
-                className="text-[11px] font-bold px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all hover:border-emerald-500"
-                title="Select time period"
-              >
-                <option value="week">Week</option>
-                <option value="month">Month</option>
-                <option value="year">Year</option>
-              </select>
+              {/* Select removed from here */}
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{card.label}</p>
@@ -432,23 +480,44 @@ const Attendance = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Weekly Attendance — Donut Pie Chart (2/3 width) */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 flex flex-col">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 flex flex-col justify-between">
           {/* Header */}
-          <div className="mb-6">
-            <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Weekly Attendance</h3>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">This week's attendance breakdown</p>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
+                {chartPeriod === 'week' ? 'Weekly' : chartPeriod === 'month' ? 'Monthly' : 'Yearly'} Attendance
+              </h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                This {chartPeriod === 'week' ? "week's" : chartPeriod === 'month' ? "month's" : "year's"} attendance breakdown
+              </p>
+            </div>
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+              {['week', 'month', 'year'].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setChartPeriod(p)}
+                  className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
+                    chartPeriod === p
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Donut + Legend */}
           {(() => {
-            const totals = { Present: 0, Late: 0, 'Half Day': 0, Leave: 0, Absent: 0 };
-            (activeLogsChart || []).forEach(d => {
-              totals.Present += Number(d.Present) || 0;
-              totals.Late    += Number(d.Late)    || 0;
-              totals['Half Day'] += Number(d['Half Day'] || d.HalfDay || d.halfDay) || 0;
-              totals.Leave   += Number(d.Leave)   || 0;
-              totals.Absent  += Number(d.Absent)  || 0;
-            });
+            const activeData = chartStats || {};
+            const totals = {
+              Present: activeData.present || 0,
+              Late: activeData.late || 0,
+              'Half Day': activeData.halfDay || 0,
+              Leave: activeData.leave || 0,
+              Absent: activeData.absent || 0,
+            };
 
             const pieData = [
               { name: 'Present',  value: totals.Present,  color: '#10B981' },
@@ -509,7 +578,9 @@ const Attendance = () => {
                     ) : (
                       <>
                         <span className="text-4xl font-black text-slate-800 dark:text-white tabular-nums leading-none">{rate}%</span>
-                        <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1.5">Weekly Rate</span>
+                        <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1.5">
+                          {chartPeriod === 'week' ? 'Weekly' : chartPeriod === 'month' ? 'Monthly' : 'Yearly'} Rate
+                        </span>
                       </>
                     )}
                   </div>
@@ -546,7 +617,7 @@ const Attendance = () => {
                     );
                   })}
                   <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium ml-6 mt-1">
-                    Total this week (Mon - Sun): <span className="font-black text-slate-700 dark:text-slate-300">{total}</span> days
+                    Total this {statsPeriod === 'week' ? 'week' : statsPeriod === 'month' ? 'month' : 'year'}: <span className="font-black text-slate-700 dark:text-slate-300">{total}</span> days
                   </p>
                 </div>
 
@@ -688,6 +759,11 @@ const Attendance = () => {
             </form>
           </div>
         </div>
+      )}
+
+        </>
+      ) : (
+        <TimeTracker />
       )}
 
     </div>

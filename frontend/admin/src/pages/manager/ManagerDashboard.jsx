@@ -9,6 +9,7 @@ import {
   CheckCircle2, Clock, MoreHorizontal, Star, Bell, ArrowRight, Plus, Check, MapPin, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import QuickActionsRow from '../../components/QuickActionsRow';
 
 // ─── UTILS ─────────────────────────────────────────────────────────────
 const token = () => sessionStorage.getItem('token');
@@ -42,15 +43,61 @@ const SectionHeader = ({ title, action }) => (
   </div>
 );
 
-const Dropdown = ({ value, onChange, options }) => (
-  <select
-    value={value}
-    onChange={(e) => onChange(e.target.value)}
-    className="text-xs font-semibold text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-[#1f1b17] border border-gray-200 dark:border-[#28251e] rounded-lg px-2.5 py-1 outline-none cursor-pointer focus:border-[#00a76b]"
-  >
-    {options.map((opt) => <option key={opt.value} value={opt.value} className="bg-white dark:bg-[#1f1b17] text-gray-800 dark:text-gray-200">{opt.label}</option>)}
-  </select>
-);
+const Dropdown = ({ value, onChange, options }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = React.useRef(null);
+
+  const selectedOpt = options.find(o => o.value === value) || options[0];
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="relative inline-block" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-50 dark:bg-[#1f1b17] border border-slate-200 dark:border-[#28251e] text-slate-700 dark:text-slate-200 hover:border-[#00a76b] hover:bg-emerald-50/30 dark:hover:bg-[#28251e] transition-all cursor-pointer shadow-xs select-none"
+      >
+        <span>{selectedOpt?.label}</span>
+        <ChevronRight size={13} className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-90 text-[#00a76b]' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-1.5 w-36 bg-white dark:bg-[#1f1b17] border border-slate-200/80 dark:border-[#28251e] rounded-xl shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 select-none">
+          {options.map((opt) => {
+            const isSelected = opt.value === value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                  isSelected
+                    ? 'bg-emerald-50 dark:bg-[#28251e] text-[#00a76b] font-bold'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#28251e]/60 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <span>{opt.label}</span>
+                {isSelected && <Check size={13} className="text-[#00a76b]" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ─── MOCK DATA FALLBACKS ─────────────────────────────────────────────
 const MOCK_GOALS = [
@@ -93,6 +140,7 @@ const ManagerDashboard = () => {
 
   // ─ Filters ─
   const [attFilter, setAttFilter] = useState('weekly');
+  const [attTrendData, setAttTrendData] = useState([]);
   const [taskFilter, setTaskFilter] = useState('monthly');
   const [perfFilter, setPerfFilter] = useState('monthly');
   const [goalFilter, setGoalFilter] = useState('quarterly');
@@ -128,6 +176,32 @@ const ManagerDashboard = () => {
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  const fetchAttTrend = useCallback(async (filter = attFilter) => {
+    try {
+      const periodParam = filter === 'monthly' ? 'month' : 'week';
+      const res = await api(`/api/attendance/summary/weekly?period=${periodParam}`);
+      const list = res.data?.this_week || [];
+      const totalTeamCount = teamMembers.length || 1;
+      const formatted = list.map(item => {
+        const working = (item.Present || 0) + (item.Late || 0) + (item['Half Day'] || 0);
+        const rate = totalTeamCount > 0 ? Math.round((working / totalTeamCount) * 100) : 0;
+        return {
+          day: item.name,
+          att: Math.min(100, rate),
+          working,
+          total: totalTeamCount
+        };
+      });
+      setAttTrendData(formatted);
+    } catch (e) {
+      console.error('Error fetching attendance trend:', e);
+    }
+  }, [attFilter, teamMembers.length]);
+
+  useEffect(() => {
+    fetchAttTrend(attFilter);
+  }, [attFilter, fetchAttTrend]);
 
   // ─── COMPUTED DATA ────────────────────────────────────────────────────
   const managerName = profile?.name?.split(' ')[0] || profile?.profile?.firstName || 'Manager';
@@ -416,6 +490,9 @@ const ManagerDashboard = () => {
         })}
       </div>
 
+      {/* 3. QUICK ACTIONS ROW */}
+      <QuickActionsRow role="manager" />
+
       {/* 3. SECOND ROW (Attendance Trend & Task Status) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="min-h-[280px] flex flex-col">
@@ -425,7 +502,7 @@ const ManagerDashboard = () => {
           />
           <div className="flex-1 -mx-4 -mb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={MOCK_WEEKLY_TREND.map(d => ({ ...d, att: d.worked + Math.floor(Math.random() * 20) }))} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+              <AreaChart data={attTrendData.length > 0 ? attTrendData : MOCK_WEEKLY_TREND.map(d => ({ ...d, att: 0 }))} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorAtt" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />

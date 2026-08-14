@@ -45,7 +45,7 @@ const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 // ─── STYLED COMPONENTS ───────────────────────────────────────
 const Card = ({ children, className = '', onClick, ...props }) => (
   <div
-    className={`bg-white dark:bg-[#0f0d0a] border border-[#c5c0b1] dark:border-[#38352e] rounded-[20px] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.02)] transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.04)] ${className}`}
+    className={`bg-white dark:bg-[#0f0d0a] border border-[#c5c0b1] dark:border-[#38352e] rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.02)] transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.04)] ${className}`}
     onClick={onClick}
     {...props}
   >
@@ -733,47 +733,47 @@ const EmployeeDashboard = () => {
 
       {/* 5. QUICK ACTIONS */}
       <SectionHeader title="Quick Actions" />
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5">
         {isCheckedIn ? (
           <button
             onClick={handleCheckOut}
             disabled={checkInLoading}
-            className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-[#0f0d0a] border rounded-[20px] w-full h-28 transition-colors shadow-sm"
+            className="flex items-center justify-center gap-2.5 px-3 py-2.5 bg-white dark:bg-[#0f0d0a] border rounded-2xl w-full h-14 transition-all shadow-xs hover:shadow-md cursor-pointer"
             style={{ borderColor: '#fca5a5', color: '#ef4444' }}
             onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fef2f2'}
             onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
           >
-            <LogOut size={28} />
-            <span className="text-[13px] font-semibold mt-1">Check Out</span>
+            <LogOut size={20} className="shrink-0" />
+            <span className="text-xs font-bold whitespace-nowrap">Check Out</span>
           </button>
         ) : (
           <button
             onClick={handleCheckIn}
             disabled={checkInLoading}
-            className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-[#0f0d0a] border rounded-[20px] w-full h-28 transition-colors shadow-sm"
+            className="flex items-center justify-center gap-2.5 px-3 py-2.5 bg-white dark:bg-[#0f0d0a] border rounded-2xl w-full h-14 transition-all shadow-xs hover:shadow-md cursor-pointer"
             style={{ borderColor: '#86efac', color: '#00a76b' }}
             onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0fdf4'}
             onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
           >
-            <LogIn size={28} />
-            <span className="text-[13px] font-semibold mt-1">Check In</span>
+            <LogIn size={20} className="shrink-0" />
+            <span className="text-xs font-bold whitespace-nowrap">Check In</span>
           </button>
         )}
 
         {[
-          { icon: <CalendarPlus size={28} />, label: 'Apply Leave', color: '#3b82f6', border: '#bfdbfe', bgHover: '#eff6ff', to: '/employee/leave' },
-          { icon: <Briefcase size={28} />, label: 'My Tasks', color: '#8b5cf6', border: '#ddd6fe', bgHover: '#f5f3ff', to: '/employee/task-management' },
-          { icon: <Clock size={28} />, label: 'Time Tracker', color: '#f59e0b', border: '#fde68a', bgHover: '#fffbeb', to: '/employee/time-tracker' },
-          { icon: <FileText size={28} />, label: 'Payslip', color: '#ec4899', border: '#fbcfe8', bgHover: '#fdf2f8', to: '/employee/payslips' },
-          { icon: <User size={28} />, label: 'View Profile', color: '#10b981', border: '#a7f3d0', bgHover: '#ecfdf5', to: '/employee/profile' },
+          { icon: <CalendarPlus size={20} />, label: 'Apply Leave', color: '#3b82f6', border: '#bfdbfe', bgHover: '#eff6ff', to: '/employee/leave' },
+          { icon: <Briefcase size={20} />, label: 'My Tasks', color: '#8b5cf6', border: '#ddd6fe', bgHover: '#f5f3ff', to: '/employee/task-management' },
+          { icon: <Clock size={20} />, label: 'Time Tracker', color: '#f59e0b', border: '#fde68a', bgHover: '#fffbeb', to: '/employee/time-tracker' },
+          { icon: <FileText size={20} />, label: 'Payslip', color: '#ec4899', border: '#fbcfe8', bgHover: '#fdf2f8', to: '/employee/payslips' },
+          { icon: <User size={20} />, label: 'View Profile', color: '#10b981', border: '#a7f3d0', bgHover: '#ecfdf5', to: '/employee/profile' },
         ].map((act, i) => (
-          <button key={i} onClick={() => navigate(act.to)} className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-[#0f0d0a] border rounded-[20px] w-full h-28 transition-colors shadow-sm"
+          <button key={i} onClick={() => navigate(act.to)} className="flex items-center justify-center gap-2.5 px-3 py-2.5 bg-white dark:bg-[#0f0d0a] border rounded-2xl w-full h-14 transition-all shadow-xs hover:shadow-md cursor-pointer"
             style={{ borderColor: act.border, color: act.color }}
             onMouseEnter={e => e.currentTarget.style.backgroundColor = act.bgHover}
             onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
           >
-            {act.icon}
-            <span className="text-[13px] font-semibold mt-1">{act.label}</span>
+            <span className="shrink-0">{act.icon}</span>
+            <span className="text-xs font-bold whitespace-nowrap">{act.label}</span>
           </button>
         ))}
       </div>

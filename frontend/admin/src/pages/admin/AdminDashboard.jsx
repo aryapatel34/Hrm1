@@ -14,6 +14,10 @@ import {
   PieChart, Pie, Cell, Area, AreaChart, BarChart, Bar
 } from 'recharts';
 
+
+
+import QuickActionsRow from '../../components/QuickActionsRow';
+
 const COLORS = ['#00a76b', '#3b82f6', '#f43f5e', '#f59e0b', '#8b5cf6', '#64748b'];
 
 // Small generic card wrapper
@@ -129,237 +133,239 @@ const AdminDashboard = () => {
     } catch { }
   }, []);
 
-const checkIsToday = (celebDate, diffDays) => {
-  if (diffDays === 0) return true;
-  if (!celebDate) return false;
-  const d = new Date(celebDate);
-  const today = new Date();
-  return d.getDate() === today.getDate() && d.getMonth() === today.getMonth();
-};
+  const checkIsToday = (celebDate, diffDays) => {
+    if (diffDays === 0) return true;
+    if (!celebDate) return false;
+    const d = new Date(celebDate);
+    const today = new Date();
+    return d.getDate() === today.getDate() && d.getMonth() === today.getMonth();
+  };
 
-const handleOpenWishModal = (celeb) => {
-  setSelectedWishCeleb(celeb);
-  const isBday = celeb.type === 'Birthday';
-  const defaultMsg = isBday
-    ? `🎂 Wishing you a very Happy Birthday, ${celeb.name}! May your year ahead be filled with happiness, health, and great success! 🎉`
-    : `🌟 Happy Work Anniversary, ${celeb.name}! Thank you for your hard work, dedication, and valuable contributions! 🚀`;
-  setCustomWishMessage(defaultMsg);
-};
+  const handleOpenWishModal = (celeb) => {
+    setSelectedWishCeleb(celeb);
+    const isBday = celeb.type === 'Birthday';
+    const defaultMsg = isBday
+      ? `🎂 Wishing you a very Happy Birthday, ${celeb.name}! May your year ahead be filled with happiness, health, and great success! 🎉`
+      : `🌟 Happy Work Anniversary, ${celeb.name}! Thank you for your hard work, dedication, and valuable contributions! 🚀`;
+    setCustomWishMessage(defaultMsg);
+  };
 
-const handleSendWish = async () => {
-  if (!selectedWishCeleb) return;
-  setIsSendingWish(true);
-  try {
-    const token = sessionStorage.getItem('token');
-    if (selectedWishCeleb.userId) {
-      await axios.post('/api/notifications', {
-        targetUserId: selectedWishCeleb.userId,
-        message: customWishMessage,
-        type: selectedWishCeleb.type === 'Birthday' ? 'birthday' : 'anniversary',
-        targetLabel: selectedWishCeleb.name
-      }, { headers: { Authorization: `Bearer ${token}` } });
+  const handleSendWish = async () => {
+    if (!selectedWishCeleb) return;
+    setIsSendingWish(true);
+    try {
+      const token = sessionStorage.getItem('token');
+      if (selectedWishCeleb.userId) {
+        await axios.post('/api/notifications', {
+          targetUserId: selectedWishCeleb.userId,
+          message: customWishMessage,
+          type: selectedWishCeleb.type === 'Birthday' ? 'birthday' : 'anniversary',
+          targetLabel: selectedWishCeleb.name
+        }, { headers: { Authorization: `Bearer ${token}` } });
+      }
+      setWishedEvents(prev => [...prev, selectedWishCeleb._id]);
+      toast.success(`Wishes sent to ${selectedWishCeleb.name}! 🎉`);
+      setSelectedWishCeleb(null);
+    } catch (err) {
+      console.error('Error sending wish notification:', err);
+      toast.error(err.response?.data?.message || 'Failed to send wish notification');
+    } finally {
+      setIsSendingWish(false);
     }
-    setWishedEvents(prev => [...prev, selectedWishCeleb._id]);
-    toast.success(`Wishes sent to ${selectedWishCeleb.name}! 🎉`);
-    setSelectedWishCeleb(null);
-  } catch (err) {
-    console.error('Error sending wish notification:', err);
-    toast.error(err.response?.data?.message || 'Failed to send wish notification');
-  } finally {
-    setIsSendingWish(false);
-  }
-};
+  };
 
-useEffect(() => {
-  fetchData();
-}, []);
-
-const fetchData = async () => {
-  setLoading(true);
-  setError(null);
-  try {
-    const token = sessionStorage.getItem('token');
-    const headers = { Authorization: `Bearer ${token}` };
-
-    // Profile and dashboard summary are independent, so fetch them together
-    const [profRes, dashRes] = await Promise.all([
-      axios.get('/api/auth/me', { headers }),
-      axios.get('/api/hr-dashboard/summary', { headers })
-    ]);
-    setProfile(profRes.data);
-
-    const dData = dashRes.data.data;
-    setDashboardData(dData);
-
-    const serverWished = (dData?.upcomingCelebrations || [])
-      .filter(c => c.isWished)
-      .map(c => c._id);
-    setWishedEvents(serverWished);
-
-  } catch (err) {
-    console.error('Failed to fetch HR dashboard data:', err);
-    const errMsg = err.response?.data?.message || err.message || 'Unknown error';
-    setError(`Unable to load dashboard data. Details: ${errMsg}`);
-  } finally {
-    setLoading(false);
-  }
-};
-
-const handleApproveLeave = async (id) => {
-  try {
-    const token = sessionStorage.getItem('token');
-    await axios.put(`/api/leaves/hr-approve/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
-    toast.success('Leave approved successfully');
-    fetchData(); // refresh data
-  } catch (err) {
-    console.error('Error approving leave:', err);
-    toast.error(err.response?.data?.message || 'Failed to approve leave');
+  useEffect(() => {
     fetchData();
-  }
-};
+  }, []);
 
-const handleRejectLeave = async (id) => {
-  const reason = window.prompt("Enter rejection reason:");
-  if (reason === null) return;
-  try {
-    const token = sessionStorage.getItem('token');
-    await axios.put(`/api/leaves/reject/${id}`, { reason }, { headers: { Authorization: `Bearer ${token}` } });
-    toast.success('Leave request rejected');
-    fetchData(); // refresh data
-  } catch (err) {
-    console.error('Error rejecting leave:', err);
-    toast.error(err.response?.data?.message || 'Failed to reject leave');
-    fetchData();
-  }
-};
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = sessionStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
 
-const handleOverrideLeave = async (id, currentStatus) => {
-  const targetStatus = currentStatus === 'approved' ? 'rejected' : 'approved';
-  const confirmMsg = `Are you sure you want to override the decision from ${currentStatus.toUpperCase()} to ${targetStatus.toUpperCase()}?`;
-  if (!window.confirm(confirmMsg)) return;
+      // Fetch Profile
+      const profRes = await axios.get('/api/auth/me', { headers });
+      setProfile(profRes.data);
 
-  const reason = window.prompt("Enter reason for override:");
-  if (reason === null) return;
+      // Fetch Aggregated Dashboard Data
+      const dashRes = await axios.get('/api/hr-dashboard/summary', { headers });
+      const dData = dashRes.data.data;
+      setDashboardData(dData);
 
-  try {
-    const token = sessionStorage.getItem('token');
-    await axios.put(`/api/leaves/override/${id}`, { targetStatus, reason }, { headers: { Authorization: `Bearer ${token}` } });
-    toast.success('Leave status overridden successfully');
-    fetchData(); // refresh data
-  } catch (err) {
-    console.error('Error overriding leave:', err);
-    toast.error(err.response?.data?.message || 'Failed to override leave');
-    fetchData();
-  }
-};
+      const serverWished = (dData?.upcomingCelebrations || [])
+        .filter(c => c.isWished)
+        .map(c => c._id);
+      setWishedEvents(serverWished);
 
-const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
+    } catch (err) {
+      console.error('Failed to fetch HR dashboard data:', err);
+      const errMsg = err.response?.data?.message || err.message || 'Unknown error';
+      setError(`Unable to load dashboard data. Details: ${errMsg}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-if (loading) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[500px] bg-[#F8F9FB] dark:bg-[#110e0c] w-full h-full">
-      <div className="relative flex justify-center items-center h-20 w-20">
-         <div className="absolute animate-ping w-16 h-16 rounded-full bg-[#00a76b] opacity-20"></div>
-         <Activity className="animate-bounce text-[#00a76b] relative z-10" size={42} />
-      </div>
-      <p className="font-bold text-xl text-gray-800 dark:text-gray-200 mt-2 tracking-wide">
-        Loading Dashboard...
-      </p>
-    </div>
-  );
-}
+  const handleApproveLeave = async (id) => {
+    try {
+      const token = sessionStorage.getItem('token');
+      await axios.put(`/api/leaves/hr-approve/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Leave approved successfully');
+      fetchData(); // refresh data
+    } catch (err) {
+      console.error('Error approving leave:', err);
+      toast.error(err.response?.data?.message || 'Failed to approve leave');
+      fetchData();
+    }
+  };
 
-if (error) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[500px] text-red-500 bg-[#F8F9FB] dark:bg-[#110e0c]">
-      <ShieldAlert size={48} className="mb-4" />
-      <p className="font-semibold text-lg">{error}</p>
-      <button onClick={fetchData} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer">Retry</button>
-    </div>
-  );
-}
+  const handleRejectLeave = async (id) => {
+    const reason = window.prompt("Enter rejection reason:");
+    if (reason === null) return;
+    try {
+      const token = sessionStorage.getItem('token');
+      await axios.put(`/api/leaves/reject/${id}`, { reason }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Leave request rejected');
+      fetchData(); // refresh data
+    } catch (err) {
+      console.error('Error rejecting leave:', err);
+      toast.error(err.response?.data?.message || 'Failed to reject leave');
+      fetchData();
+    }
+  };
 
-const { stats, charts, leaveOverview, payrollSummary, recentJoiners, pendingApprovals, announcements, upcomingCelebrations = [] } = dashboardData;
-const getGreeting = () => {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good Morning';
-  if (h < 17) return 'Good Afternoon';
-  return 'Good Evening';
-};
-const displayName = profile?.fullName || profile?.name || (profile?.profile ? `${profile.profile.firstName || ''} ${profile.profile.lastName || ''}`.trim() : '') || sessionStorage.getItem('userName') || localStorage.getItem('userName') || 'Admin';
-const firstName = displayName.split(' ')[0] || 'Admin';
+  const handleOverrideLeave = async (id, currentStatus) => {
+    const targetStatus = currentStatus === 'approved' ? 'rejected' : 'approved';
+    const confirmMsg = `Are you sure you want to override the decision from ${currentStatus.toUpperCase()} to ${targetStatus.toUpperCase()}?`;
+    if (!window.confirm(confirmMsg)) return;
 
-const currentLeaveOverview = leaveOverview?.byPeriod?.[leavePeriod] || leaveOverview || {
-  total: 0,
-  approved: 0,
-  rejected: 0,
-  cancelled: 0,
-  pending: 0
-};
+    const reason = window.prompt("Enter reason for override:");
+    if (reason === null) return;
 
-return (
-  <div className="space-y-6 font-['Inter',sans-serif] text-gray-800">
+    try {
+      const token = sessionStorage.getItem('token');
+      await axios.put(`/api/leaves/override/${id}`, { targetStatus, reason }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Leave status overridden successfully');
+      fetchData(); // refresh data
+    } catch (err) {
+      console.error('Error overriding leave:', err);
+      toast.error(err.response?.data?.message || 'Failed to override leave');
+      fetchData();
+    }
+  };
 
-    {/* 1. Header Section */}
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div>
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">{getGreeting()}, {firstName}! 👋</h1>
-      </div>
-      <div className="flex flex-wrap md:flex-nowrap items-center gap-4 mt-4 md:mt-0">
-        <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-4 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 font-medium font-mono tabular-nums">
-          <Clock size={18} className="mr-2 text-[#00a76b] shrink-0 animate-pulse" />
-          {liveTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+  const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[500px] bg-[#F8F9FB] dark:bg-[#110e0c] w-full h-full">
+        <div className="relative flex justify-center items-center h-20 w-20">
+          <div className="absolute animate-ping w-16 h-16 rounded-full bg-[#00a76b] opacity-20"></div>
+          <Activity className="animate-bounce text-[#00a76b] relative z-10" size={42} />
         </div>
-        <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-4 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 font-medium">
-          <Calendar size={18} className="mr-2 text-[#00a76b] shrink-0" />
-          {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        <p className="font-bold text-xl text-gray-800 dark:text-gray-200 mt-2 tracking-wide">
+          Loading Dashboard...
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[500px] text-red-500 bg-[#F8F9FB] dark:bg-[#110e0c]">
+        <ShieldAlert size={48} className="mb-4" />
+        <p className="font-semibold text-lg">{error}</p>
+        <button onClick={fetchData} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer">Retry</button>
+      </div>
+    );
+  }
+
+  const { stats, charts, leaveOverview, payrollSummary, recentJoiners, pendingApprovals, announcements, upcomingCelebrations = [] } = dashboardData;
+  const getGreeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good Morning';
+    if (h < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+  const displayName = profile?.fullName || profile?.name || (profile?.profile ? `${profile.profile.firstName || ''} ${profile.profile.lastName || ''}`.trim() : '') || sessionStorage.getItem('userName') || localStorage.getItem('userName') || 'Admin';
+  const firstName = displayName.split(' ')[0] || 'Admin';
+
+  const currentLeaveOverview = leaveOverview?.byPeriod?.[leavePeriod] || leaveOverview || {
+    total: 0,
+    approved: 0,
+    rejected: 0,
+    cancelled: 0,
+    pending: 0
+  };
+
+  return (
+    <div className="space-y-6 font-['Inter',sans-serif] text-gray-800">
+
+      {/* 1. Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">{getGreeting()}, {firstName}! 👋</h1>
+        </div>
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-4 mt-4 md:mt-0">
+          <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-4 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 font-medium font-mono tabular-nums">
+            <Clock size={18} className="mr-2 text-[#00a76b] shrink-0 animate-pulse" />
+            {liveTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+          </div>
+          <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-4 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 font-medium">
+            <Calendar size={18} className="mr-2 text-[#00a76b] shrink-0" />
+            {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </div>
         </div>
       </div>
-    </div>
 
-    {/* 2. Stats Cards Row */}
-    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-      {[
-        { label: 'Total Employees', val: stats.totalEmployees, subtext: '+12 this month', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50', hoverBorder: 'hover:border-blue-400 hover:shadow-blue-500/10' },
-        { label: 'Active Employees', val: stats.activeEmployees, subtext: `${stats.activeEmployeesPercent}% of total`, icon: CheckCircle, color: 'text-[#00a76b]', bg: 'bg-green-50', hoverBorder: 'hover:border-[#00a76b] hover:shadow-green-500/10' },
-        { label: 'New Joiners', val: stats.newJoiners, subtext: '+3 this month', icon: UserPlus, color: 'text-indigo-500', bg: 'bg-indigo-50', hoverBorder: 'hover:border-indigo-400 hover:shadow-indigo-500/10' },
-        { label: 'Employees on Leave', val: stats.employeesOnLeave, subtext: `${stats.employeesOnLeavePercent}% of total`, icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50', hoverBorder: 'hover:border-orange-400 hover:shadow-orange-500/10' },
-        { label: 'Pending Leave', val: stats.pendingLeaveApprovals, subtext: 'Requires your action', icon: Clock, color: 'text-red-500', bg: 'bg-red-50', hoverBorder: 'hover:border-red-400 hover:shadow-red-500/10' },
-      ].map((stat, i) => (
-        <Card key={i} className={`py-3.5 px-4 flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md ${stat.hoverBorder}`}>
-          <div className="flex items-center gap-2.5 mb-2.5">
-            <div className={`inline-flex p-2 rounded-lg shrink-0 ${stat.bg} ${stat.color}`}>
-              <stat.icon size={20} strokeWidth={2.5} />
+      {/* 2. Stats Cards Row */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+        {[
+          { label: 'Total Employees', val: stats.totalEmployees, subtext: '+12 this month', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50', hoverBorder: 'hover:border-blue-400 hover:shadow-blue-500/10' },
+          { label: 'Active Employees', val: stats.activeEmployees, subtext: `${stats.activeEmployeesPercent}% of total`, icon: CheckCircle, color: 'text-[#00a76b]', bg: 'bg-green-50', hoverBorder: 'hover:border-[#00a76b] hover:shadow-green-500/10' },
+          { label: 'New Joiners', val: stats.newJoiners, subtext: '+3 this month', icon: UserPlus, color: 'text-indigo-500', bg: 'bg-indigo-50', hoverBorder: 'hover:border-indigo-400 hover:shadow-indigo-500/10' },
+          { label: 'Employees on Leave', val: stats.employeesOnLeave, subtext: `${stats.employeesOnLeavePercent}% of total`, icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50', hoverBorder: 'hover:border-orange-400 hover:shadow-orange-500/10' },
+          { label: 'Pending Leave', val: stats.pendingLeaveApprovals, subtext: 'Requires your action', icon: Clock, color: 'text-red-500', bg: 'bg-red-50', hoverBorder: 'hover:border-red-400 hover:shadow-red-500/10' },
+        ].map((stat, i) => (
+          <Card key={i} className={`py-3.5 px-4 flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md ${stat.hoverBorder}`}>
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <div className={`inline-flex p-2 rounded-lg shrink-0 ${stat.bg} ${stat.color}`}>
+                <stat.icon size={20} strokeWidth={2.5} />
+              </div>
+              <p className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider leading-tight">{stat.label}</p>
             </div>
-            <p className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider leading-tight">{stat.label}</p>
-          </div>
-          <div className="flex items-baseline gap-2.5 mt-0.5">
-            <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none">{stat.val}</h3>
-            <p className={`text-xs font-bold ${stat.subtext.includes('+') ? 'text-green-600 dark:text-green-500' : 'text-gray-400 dark:text-gray-500'}`}>
-              {stat.subtext}
-            </p>
-          </div>
-        </Card>
-      ))}
-    </div>
+            <div className="flex items-baseline gap-3 mt-1 flex-nowrap overflow-hidden">
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none shrink-0">{stat.val}</h3>
+              <p className={`text-[11px] font-bold whitespace-nowrap shrink-0 ${stat.subtext.includes('+') ? 'text-green-600 dark:text-green-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                {stat.subtext}
+              </p>
+            </div>
+          </Card>
+        ))}
+      </div>
 
-    {/* 3. Second Row (Charts) */}
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      {/* Attendance */}
-      <Card className="lg:col-span-1 p-4 sm:p-5">
-        <div className="flex flex-wrap justify-between items-center mb-8 gap-6">
-          <h3 className="font-bold text-gray-900 dark:text-white whitespace-nowrap tracking-wide">Attendance Overview</h3>
-          <CustomDropdown
-            value={attPeriod}
-            onChange={setAttPeriod}
-            options={['This Week', 'Last Week']}
-          />
-        </div>
-        <div className="h-48 w-full">
-          {(() => {
-            const isMock = !charts.attendanceOverview || charts.attendanceOverview.length === 0 || charts.attendanceOverview.every(d => d.present === 0 && d.absent === 0 && d.late === 0);
-            const displayData = isMock
-              ? [
+      {/* 3. Quick Actions Row */}
+      <QuickActionsRow role="admin" />
+
+      {/* 3. Second Row (Charts) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Attendance */}
+        <Card className="lg:col-span-1 p-4 sm:p-5">
+          <div className="flex flex-wrap justify-between items-center mb-8 gap-6">
+            <h3 className="font-bold text-gray-900 dark:text-white whitespace-nowrap tracking-wide">Attendance Overview</h3>
+            <CustomDropdown
+              value={attPeriod}
+              onChange={setAttPeriod}
+              options={['This Week', 'Last Week']}
+            />
+          </div>
+          <div className="h-48 w-full">
+            {(() => {
+              const isMock = !charts.attendanceOverview || charts.attendanceOverview.length === 0 || charts.attendanceOverview.every(d => d.present === 0 && d.absent === 0 && d.late === 0);
+              const displayData = isMock
+                ? [
                   { name: 'Mon', present: 85, absent: 5, late: 10 },
                   { name: 'Tue', present: 90, absent: 2, late: 8 },
                   { name: 'Wed', present: 88, absent: 4, late: 8 },
@@ -368,305 +374,305 @@ return (
                   { name: 'Sat', present: 40, absent: 50, late: 10 },
                   { name: 'Sun', present: 0, absent: 100, late: 0 }
                 ]
-              : charts.attendanceOverview;
+                : charts.attendanceOverview;
 
-          return (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={displayData} margin={{ top: 25, right: 20, left: 0, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600, letterSpacing: '1px' }} dy={15} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} tickMargin={12} allowDecimals={false} />
-              <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.5)' }} />
-              {displayData.some(d => d.present > 0) && <Line type="monotone" dataKey="present" stroke="#00a76b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />}
-              {displayData.some(d => d.absent > 0) && <Line type="monotone" dataKey="absent" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />}
-              {displayData.some(d => d.late > 0) && <Line type="monotone" dataKey="late" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />}
-            </LineChart>
-          </ResponsiveContainer>
-          );
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={displayData} margin={{ top: 25, right: 20, left: 0, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600, letterSpacing: '1px' }} dy={15} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} tickMargin={12} allowDecimals={false} />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.5)' }} />
+                    {displayData.some(d => d.present > 0) && <Line type="monotone" dataKey="present" stroke="#00a76b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />}
+                    {displayData.some(d => d.absent > 0) && <Line type="monotone" dataKey="absent" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />}
+                    {displayData.some(d => d.late > 0) && <Line type="monotone" dataKey="late" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />}
+                  </LineChart>
+                </ResponsiveContainer>
+              );
             })()}
-        </div>
-      </Card>
+          </div>
+        </Card>
 
-      {/* Role Distribution */}
-      <Card className="p-4 sm:p-5">
-        <h3 className="font-bold text-gray-900 dark:text-white mb-3">Role-wise Employees</h3>
-        <div className="flex flex-col items-center justify-center">
-          {charts.departmentDistribution.length > 0 ? (
-            <>
-              <div className="h-56 w-full relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie 
-                      data={charts.departmentDistribution} cx="50%" cy="50%" 
-                      innerRadius={75} outerRadius={105} paddingAngle={2} dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      labelLine={true}
-                      className="text-[10px] font-semibold"
-                    >
-                      {charts.departmentDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[18px] font-black text-gray-900 dark:text-white">{stats.totalEmployees}</span>
-                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total</span>
-                </div>
-              </div>
-              <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 w-full">
-                {charts.departmentDistribution.map((entry, index) => (
-                  <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
-                    {entry.name}: <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
+        {/* Role Distribution */}
+        <Card className="p-4 sm:p-5">
+          <h3 className="font-bold text-gray-900 dark:text-white mb-3">Role-wise Employees</h3>
+          <div className="flex flex-col items-center justify-center">
+            {charts.departmentDistribution.length > 0 ? (
+              <>
+                <div className="h-56 w-full relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={charts.departmentDistribution} cx="50%" cy="50%"
+                        innerRadius={75} outerRadius={105} paddingAngle={2} dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        labelLine={true}
+                        className="text-[10px] font-semibold"
+                      >
+                        {charts.departmentDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                      </Pie>
+                      <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-[18px] font-black text-gray-900 dark:text-white">{stats.totalEmployees}</span>
+                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total</span>
                   </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="text-gray-400 text-sm font-medium h-40 flex items-center">No department data</div>
-          )}
-        </div>
-      </Card>
-
-      {/* Gender Distribution */}
-      <Card className="p-4 sm:p-5">
-        <h3 className="font-bold text-gray-900 dark:text-white mb-3">Gender Distribution</h3>
-        <div className="flex flex-col items-center justify-center">
-          {charts.genderDistribution.length > 0 ? (
-            <>
-              <div className="h-56 w-full relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie 
-                      data={charts.genderDistribution} cx="50%" cy="50%" 
-                      innerRadius={75} outerRadius={105} paddingAngle={2} dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      labelLine={true}
-                      className="text-[10px] font-semibold"
-                    >
-                      {charts.genderDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={['#3b82f6', '#f43f5e', '#f59e0b'][index % 3]} />)}
-                    </Pie>
-                    <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[18px] font-black text-gray-900 dark:text-white">{stats.totalEmployees}</span>
-                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total</span>
                 </div>
-              </div>
-              <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 w-full">
-                {charts.genderDistribution.map((entry, index) => (
-                  <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ['#3b82f6', '#f43f5e', '#f59e0b'][index % 3] }}></span>
-                    {entry.name}: <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
+                <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 w-full">
+                  {charts.departmentDistribution.map((entry, index) => (
+                    <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
+                      {entry.name}: <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-gray-400 text-sm font-medium h-40 flex items-center">No department data</div>
+            )}
+          </div>
+        </Card>
+
+        {/* Gender Distribution */}
+        <Card className="p-4 sm:p-5">
+          <h3 className="font-bold text-gray-900 dark:text-white mb-3">Gender Distribution</h3>
+          <div className="flex flex-col items-center justify-center">
+            {charts.genderDistribution.length > 0 ? (
+              <>
+                <div className="h-56 w-full relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={charts.genderDistribution} cx="50%" cy="50%"
+                        innerRadius={75} outerRadius={105} paddingAngle={2} dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        labelLine={true}
+                        className="text-[10px] font-semibold"
+                      >
+                        {charts.genderDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={['#3b82f6', '#f43f5e', '#f59e0b'][index % 3]} />)}
+                      </Pie>
+                      <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-[18px] font-black text-gray-900 dark:text-white">{stats.totalEmployees}</span>
+                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total</span>
                   </div>
-                ))}
+                </div>
+                <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 w-full">
+                  {charts.genderDistribution.map((entry, index) => (
+                    <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ['#3b82f6', '#f43f5e', '#f59e0b'][index % 3] }}></span>
+                      {entry.name}: <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-gray-400 text-sm font-medium h-40 flex items-center">No gender data</div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* 4. Third Row (Leave, Payroll, Recruitment) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold text-gray-900 dark:text-white">Leave Overview</h3>
+              <CustomDropdown
+                value={leavePeriod}
+                onChange={setLeavePeriod}
+                options={['This Month', 'This Week', 'This Year', 'All Time', 'Today']}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2.5 mb-3">
+              <div className="p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                <p className="text-[11px] font-bold text-gray-500 mb-0.5">Total Leaves</p>
+                <p className="text-[18px] font-black text-gray-900 dark:text-white">{currentLeaveOverview.total || 0}</p>
               </div>
-            </>
-          ) : (
-            <div className="text-gray-400 text-sm font-medium h-40 flex items-center">No gender data</div>
-          )}
-        </div>
-      </Card>
-    </div>
-
-    {/* 4. Third Row (Leave, Payroll, Recruitment) */}
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Card className="p-6 flex flex-col justify-between">
-        <div>
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900 dark:text-white">Leave Overview</h3>
-            <CustomDropdown
-              value={leavePeriod}
-              onChange={setLeavePeriod}
-              options={['This Month', 'This Week', 'This Year', 'All Time', 'Today']}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2.5 mb-3">
-            <div className="p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-              <p className="text-[11px] font-bold text-gray-500 mb-0.5">Total Leaves</p>
-              <p className="text-[18px] font-black text-gray-900 dark:text-white">{currentLeaveOverview.total || 0}</p>
+              <div className="p-2.5 bg-green-50 dark:bg-green-900/30 rounded-xl">
+                <p className="text-[11px] font-bold text-green-700 dark:text-green-500 mb-0.5">Approved</p>
+                <p className="text-[18px] font-black text-green-800 dark:text-green-400">{currentLeaveOverview.approved || 0}</p>
+              </div>
+              <div className="p-2.5 bg-red-50 dark:bg-red-900/30 rounded-xl">
+                <p className="text-[11px] font-bold text-red-700 dark:text-red-500 mb-0.5">Rejected</p>
+                <p className="text-[18px] font-black text-red-800 dark:text-red-400">{currentLeaveOverview.rejected || 0}</p>
+              </div>
+              <div className="p-2.5 bg-orange-50 dark:bg-orange-900/30 rounded-xl">
+                <p className="text-[11px] font-bold text-orange-700 dark:text-orange-500 mb-0.5">Cancelled</p>
+                <p className="text-[18px] font-black text-orange-800 dark:text-orange-400">{currentLeaveOverview.cancelled || 0}</p>
+              </div>
             </div>
-            <div className="p-2.5 bg-green-50 dark:bg-green-900/30 rounded-xl">
-              <p className="text-[11px] font-bold text-green-700 dark:text-green-500 mb-0.5">Approved</p>
-              <p className="text-[18px] font-black text-green-800 dark:text-green-400">{currentLeaveOverview.approved || 0}</p>
-            </div>
-            <div className="p-2.5 bg-red-50 dark:bg-red-900/30 rounded-xl">
-              <p className="text-[11px] font-bold text-red-700 dark:text-red-500 mb-0.5">Rejected</p>
-              <p className="text-[18px] font-black text-red-800 dark:text-red-400">{currentLeaveOverview.rejected || 0}</p>
-            </div>
-            <div className="p-2.5 bg-orange-50 dark:bg-orange-900/30 rounded-xl">
-              <p className="text-[11px] font-bold text-orange-700 dark:text-orange-500 mb-0.5">Cancelled</p>
-              <p className="text-[18px] font-black text-orange-800 dark:text-orange-400">{currentLeaveOverview.cancelled || 0}</p>
+            {/* Segmented Approval Progress Bar */}
+            <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden flex">
+              <div className="bg-[#00a76b] h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.approved / currentLeaveOverview.total) * 100 : 0}%` }}></div>
+              <div className="bg-red-500 h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.rejected / currentLeaveOverview.total) * 100 : 0}%` }}></div>
+              <div className="bg-orange-500 h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.cancelled / currentLeaveOverview.total) * 100 : 0}%` }}></div>
             </div>
           </div>
-          {/* Segmented Approval Progress Bar */}
-          <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden flex">
-            <div className="bg-[#00a76b] h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.approved / currentLeaveOverview.total) * 100 : 0}%` }}></div>
-            <div className="bg-red-500 h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.rejected / currentLeaveOverview.total) * 100 : 0}%` }}></div>
-            <div className="bg-orange-500 h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.cancelled / currentLeaveOverview.total) * 100 : 0}%` }}></div>
-          </div>
-        </div>
-        <button onClick={() => navigate(`/${pathRole}/leave`)} className="w-full mt-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5">
-          View Leave Details <ChevronRight size={14} />
-        </button>
-      </Card>
+          <button onClick={() => navigate(`/${pathRole}/leave`)} className="w-full mt-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5">
+            View Leave Details <ChevronRight size={14} />
+          </button>
+        </Card>
 
-      <Card className="p-6 flex flex-col justify-between">
-        <div>
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900 dark:text-white">Payroll Summary</h3>
-            <CustomDropdown
-              value={payrollPeriod}
-              onChange={setPayrollPeriod}
-              options={[payrollPeriod]}
-            />
-          </div>
-          <h2 className="text-[18px] font-black text-gray-900 dark:text-white mb-0.5">{formatCurrency(payrollSummary.total)}</h2>
-          <p className="text-xs font-semibold text-gray-500 mb-3">Total Payroll Cost</p>
-
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
-            <div className="h-full bg-[#00a76b] rounded-full transition-all duration-500" style={{ width: `${payrollSummary.total ? (payrollSummary.processed / payrollSummary.total) * 100 : 0}%` }}></div>
-          </div>
-
-
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-[11px] font-bold text-gray-500">Processed</p>
-              <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(payrollSummary.processed)}</p>
+        <Card className="p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold text-gray-900 dark:text-white">Payroll Summary</h3>
+              <CustomDropdown
+                value={payrollPeriod}
+                onChange={setPayrollPeriod}
+                options={[payrollPeriod]}
+              />
             </div>
-            <div className="text-right">
-              <p className="text-[11px] font-bold text-gray-500">Pending</p>
-              <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(payrollSummary.pending)}</p>
+            <h2 className="text-[18px] font-black text-gray-900 dark:text-white mb-0.5">{formatCurrency(payrollSummary.total)}</h2>
+            <p className="text-xs font-semibold text-gray-500 mb-3">Total Payroll Cost</p>
+
+            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+              <div className="h-full bg-[#00a76b] rounded-full transition-all duration-500" style={{ width: `${payrollSummary.total ? (payrollSummary.processed / payrollSummary.total) * 100 : 0}%` }}></div>
+            </div>
+
+
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-[11px] font-bold text-gray-500">Processed</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(payrollSummary.processed)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[11px] font-bold text-gray-500">Pending</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(payrollSummary.pending)}</p>
+              </div>
             </div>
           </div>
-        </div>
-        <button onClick={() => navigate(`/${pathRole}/payroll`)} className="w-full mt-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5">
-          View Payroll Details <ChevronRight size={14} />
-        </button>
-      </Card>
+          <button onClick={() => navigate(`/${pathRole}/payroll`)} className="w-full mt-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5">
+            View Payroll Details <ChevronRight size={14} />
+          </button>
+        </Card>
 
-      <Card className="p-4 sm:p-5 flex flex-col justify-between">
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-gray-900 dark:text-white">Recruitment Overview</h3>
-            <select className="text-xs bg-gray-50 dark:bg-gray-800 rounded-lg font-bold text-gray-600 dark:text-gray-300 outline-none p-1.5">
-              <option>This Month</option>
-            </select>
+        <Card className="p-4 sm:p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-gray-900 dark:text-white">Recruitment Overview</h3>
+              <select className="text-xs bg-gray-50 dark:bg-gray-800 rounded-lg font-bold text-gray-600 dark:text-gray-300 outline-none p-1.5">
+                <option>This Month</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              {[
+                { label: 'New Applications', val: '0', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+                { label: 'Shortlisted', val: '0', icon: CheckCircle, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
+                { label: 'Interviews Scheduled', val: '0', icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/30' },
+                { label: 'Offers Issued', val: '0', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/30' },
+                { label: 'Hires This Month', val: '0', icon: UserPlus, color: 'text-[#00a76b]', bg: 'bg-green-50 dark:bg-green-900/30' }
+              ].map((r, i) => (
+                <div key={i} className="flex justify-between items-center py-1.5 px-2.5 rounded-lg border border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-md ${r.bg} ${r.color}`}>
+                      <r.icon size={14} />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{r.label}</span>
+                  </div>
+                  <span className="text-xs font-black text-gray-900 dark:text-white">{r.val}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="space-y-2">
+        </Card>
+      </div>
+
+      {/* 5. Fourth Row (Quick Actions, Pending Approvals) */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <h3 className="font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
+          <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
             {[
-              { label: 'New Applications', val: '0', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/30' },
-              { label: 'Shortlisted', val: '0', icon: CheckCircle, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
-              { label: 'Interviews Scheduled', val: '0', icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/30' },
-              { label: 'Offers Issued', val: '0', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/30' },
-              { label: 'Hires This Month', val: '0', icon: UserPlus, color: 'text-[#00a76b]', bg: 'bg-green-50 dark:bg-green-900/30' }
-            ].map((r, i) => (
-              <div key={i} className="flex justify-between items-center py-1.5 px-2.5 rounded-lg border border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                <div className="flex items-center gap-2">
-                  <div className={`p-1.5 rounded-md ${r.bg} ${r.color}`}>
-                    <r.icon size={14} />
-                  </div>
-                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{r.label}</span>
+              {
+                label: 'Add Employee',
+                icon: UserPlus,
+                color: 'text-blue-500',
+                bg: 'bg-blue-50 dark:bg-blue-950/40',
+                hoverBorder: 'hover:border-blue-400 dark:hover:border-blue-500',
+                hoverBg: 'hover:bg-blue-50/40 dark:hover:bg-blue-950/20',
+                hoverText: 'group-hover:text-blue-600 dark:group-hover:text-blue-400',
+                path: `/${pathRole}/create-user`
+              },
+              {
+                label: 'Add Department',
+                icon: Layers,
+                color: 'text-indigo-500',
+                bg: 'bg-indigo-50 dark:bg-indigo-950/40',
+                hoverBorder: 'hover:border-indigo-400 dark:hover:border-indigo-500',
+                hoverBg: 'hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20',
+                hoverText: 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400',
+                path: `/${pathRole}/departments`
+              },
+              {
+                label: 'Create Job',
+                icon: Briefcase,
+                color: 'text-purple-500',
+                bg: 'bg-purple-50 dark:bg-purple-950/40',
+                hoverBorder: 'hover:border-purple-400 dark:hover:border-purple-500',
+                hoverBg: 'hover:bg-purple-50/40 dark:hover:bg-purple-950/20',
+                hoverText: 'group-hover:text-purple-600 dark:group-hover:text-purple-400',
+                path: `/${pathRole}/jobs`
+              },
+              {
+                label: 'Approve Leave',
+                icon: CheckCircle,
+                color: 'text-[#00a76b]',
+                bg: 'bg-green-50 dark:bg-green-950/40',
+                hoverBorder: 'hover:border-[#00a76b] dark:hover:border-[#00a76b]',
+                hoverBg: 'hover:bg-green-50/40 dark:hover:bg-green-950/20',
+                hoverText: 'group-hover:text-[#00a76b] dark:group-hover:text-[#00a76b]',
+                path: `/${pathRole}/leave`
+              },
+              {
+                label: 'Run Payroll',
+                icon: Activity,
+                color: 'text-orange-500',
+                bg: 'bg-orange-50 dark:bg-orange-950/40',
+                hoverBorder: 'hover:border-orange-400 dark:hover:border-orange-500',
+                hoverBg: 'hover:bg-orange-50/40 dark:hover:bg-orange-950/20',
+                hoverText: 'group-hover:text-orange-600 dark:group-hover:text-orange-400',
+                path: `/${pathRole}/payroll`
+              },
+              {
+                label: 'Announcement',
+                icon: Bell,
+                color: 'text-red-500',
+                bg: 'bg-red-50 dark:bg-red-950/40',
+                hoverBorder: 'hover:border-red-400 dark:hover:border-red-500',
+                hoverBg: 'hover:bg-red-50/40 dark:hover:bg-red-950/20',
+                hoverText: 'group-hover:text-red-600 dark:group-hover:text-red-400',
+                path: `/${pathRole}/notifications`
+              },
+            ].map((action, i) => (
+              <button
+                key={i}
+                onClick={() => navigate(action.path)}
+                className={`flex flex-col items-center justify-center py-4 px-3 border border-gray-100 dark:border-[#2b2722] bg-white dark:bg-[#1a1714] rounded-2xl ${action.hoverBorder} ${action.hoverBg} transition-all group cursor-pointer shadow-2xs hover:shadow-md`}
+              >
+                <div className={`p-2.5 rounded-2xl mb-2 ${action.bg} ${action.color} group-hover:scale-110 transition-transform`}>
+                  <action.icon size={20} />
                 </div>
-                <span className="text-xs font-black text-gray-900 dark:text-white">{r.val}</span>
-              </div>
+                <span className={`text-[11px] font-bold text-gray-600 dark:text-gray-300 ${action.hoverText} text-center uppercase tracking-wider transition-colors`}>{action.label}</span>
+              </button>
             ))}
           </div>
-        </div>
-      </Card>
-    </div>
+        </Card>
 
-    {/* 5. Fourth Row (Quick Actions, Pending Approvals) */}
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <Card className="p-6">
-        <h3 className="font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
-          {[
-            {
-              label: 'Add Employee',
-              icon: UserPlus,
-              color: 'text-blue-500',
-              bg: 'bg-blue-50 dark:bg-blue-950/40',
-              hoverBorder: 'hover:border-blue-400 dark:hover:border-blue-500',
-              hoverBg: 'hover:bg-blue-50/40 dark:hover:bg-blue-950/20',
-              hoverText: 'group-hover:text-blue-600 dark:group-hover:text-blue-400',
-              path: `/${pathRole}/create-user`
-            },
-            {
-              label: 'Add Department',
-              icon: Layers,
-              color: 'text-indigo-500',
-              bg: 'bg-indigo-50 dark:bg-indigo-950/40',
-              hoverBorder: 'hover:border-indigo-400 dark:hover:border-indigo-500',
-              hoverBg: 'hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20',
-              hoverText: 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400',
-              path: `/${pathRole}/departments`
-            },
-            {
-              label: 'Create Job',
-              icon: Briefcase,
-              color: 'text-purple-500',
-              bg: 'bg-purple-50 dark:bg-purple-950/40',
-              hoverBorder: 'hover:border-purple-400 dark:hover:border-purple-500',
-              hoverBg: 'hover:bg-purple-50/40 dark:hover:bg-purple-950/20',
-              hoverText: 'group-hover:text-purple-600 dark:group-hover:text-purple-400',
-              path: `/${pathRole}/jobs`
-            },
-            {
-              label: 'Approve Leave',
-              icon: CheckCircle,
-              color: 'text-[#00a76b]',
-              bg: 'bg-green-50 dark:bg-green-950/40',
-              hoverBorder: 'hover:border-[#00a76b] dark:hover:border-[#00a76b]',
-              hoverBg: 'hover:bg-green-50/40 dark:hover:bg-green-950/20',
-              hoverText: 'group-hover:text-[#00a76b] dark:group-hover:text-[#00a76b]',
-              path: `/${pathRole}/leave`
-            },
-            {
-              label: 'Run Payroll',
-              icon: Activity,
-              color: 'text-orange-500',
-              bg: 'bg-orange-50 dark:bg-orange-950/40',
-              hoverBorder: 'hover:border-orange-400 dark:hover:border-orange-500',
-              hoverBg: 'hover:bg-orange-50/40 dark:hover:bg-orange-950/20',
-              hoverText: 'group-hover:text-orange-600 dark:group-hover:text-orange-400',
-              path: `/${pathRole}/payroll`
-            },
-            {
-              label: 'Announcement',
-              icon: Bell,
-              color: 'text-red-500',
-              bg: 'bg-red-50 dark:bg-red-950/40',
-              hoverBorder: 'hover:border-red-400 dark:hover:border-red-500',
-              hoverBg: 'hover:bg-red-50/40 dark:hover:bg-red-950/20',
-              hoverText: 'group-hover:text-red-600 dark:group-hover:text-red-400',
-              path: `/${pathRole}/notifications`
-            },
-          ].map((action, i) => (
-            <button
-              key={i}
-              onClick={() => navigate(action.path)}
-              className={`flex flex-col items-center justify-center p-4 border border-gray-100 dark:border-[#2b2722] bg-white dark:bg-[#1a1714] rounded-xl ${action.hoverBorder} ${action.hoverBg} transition-all group cursor-pointer shadow-xs hover:shadow-md`}
-            >
-              <div className={`p-2 rounded-xl mb-3 ${action.bg} ${action.color} group-hover:scale-110 transition-transform`}>
-                <action.icon size={18} />
-              </div>
-              <span className={`text-[11px] font-bold text-gray-600 dark:text-gray-300 ${action.hoverText} text-center uppercase tracking-wider transition-colors`}>{action.label}</span>
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="p-6 flex flex-col">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-gray-900 dark:text-white">Pending Approvals</h3>
-          <button onClick={() => navigate(`/${pathRole}/leave`)} className="text-xs font-bold text-[#00a76b] hover:underline cursor-pointer">View All</button>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {pendingApprovals.length > 0 ? (
-            <div className="space-y-3">
-              {pendingApprovals.map((approval) => (
+        <Card className="p-6 flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-bold text-gray-900 dark:text-white">Pending Approvals</h3>
+            <button onClick={() => navigate(`/${pathRole}/leave`)} className="text-xs font-bold text-[#00a76b] hover:underline cursor-pointer">View All</button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {pendingApprovals.length > 0 ? (
+              <div className="space-y-3">
+                {pendingApprovals.map((approval) => (
                   <div
                     key={approval._id}
                     onClick={() => setSelectedLeaveApproval(approval)}
@@ -721,19 +727,19 @@ return (
                     </div>
                   </div>
                 ))}
-    </div>
-    ) : (
-    <div className="flex flex-col items-center justify-center h-full text-gray-400">
-      <ShieldCheck size={48} className="mb-3 text-gray-200 dark:text-neutral-700" />
-      <p className="font-medium text-sm">No pending approvals required.</p>
-    </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                <ShieldCheck size={48} className="mb-3 text-gray-200 dark:text-neutral-700" />
+                <p className="font-medium text-sm">No pending approvals required.</p>
+              </div>
             )}
-  </div>
+          </div>
         </Card >
       </div >
 
-  {/* 6. Fifth Row (Recent Joiners, Birthdays, Announcements) */ }
-  < div className = "grid grid-cols-1 lg:grid-cols-3 gap-6" >
+      {/* 6. Fifth Row (Recent Joiners, Birthdays, Announcements) */}
+      < div className="grid grid-cols-1 lg:grid-cols-3 gap-6" >
         <Card className="p-6 h-[380px] flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-gray-900 dark:text-white">Recent Joiners</h3>
@@ -886,8 +892,8 @@ return (
         </Card>
       </div >
 
-  {/* 7. Bottom Row (Analytics) */ }
-  < Card className = "p-6" >
+      {/* 7. Bottom Row (Analytics) */}
+      < Card className="p-6" >
         <div className="flex justify-between items-center mb-6">
           <h3 className="font-bold text-gray-900 dark:text-white">HR Analytics</h3>
           <CustomDropdown
@@ -929,7 +935,7 @@ return (
         </div>
       </Card >
 
-  {/* Leave Details Modal */ }
+      {/* Leave Details Modal */}
       {selectedLeaveApproval && createPortal(
         <div
           className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -1072,140 +1078,140 @@ return (
             </div>
           </div>
         </div>,
-    document.body
-  )
-}
+        document.body
+      )
+      }
 
-{/* Send Wish Greeting Modal */ }
-{
-  selectedWishCeleb && createPortal(
-    <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-      onClick={() => setSelectedWishCeleb(null)}
-    >
-      <div
-        className="bg-white dark:bg-[#161311] rounded-3xl max-w-lg w-full shadow-2xl border border-gray-100 dark:border-[#28251e] relative my-auto flex flex-col max-h-[90vh] overflow-hidden transform animate-in zoom-in-95 duration-200 text-gray-800 dark:text-gray-200"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100 dark:border-[#28251e] shrink-0 bg-gradient-to-r from-emerald-50 to-teal-50/30 dark:from-emerald-950/40 dark:to-teal-950/20">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-[#00a76b] flex items-center justify-center font-bold text-xl shadow-xs">
-              {selectedWishCeleb.type === 'Birthday' ? '🎂' : '🌟'}
-            </div>
-            <div>
-              <h3 className="text-lg font-black text-gray-900 dark:text-white leading-tight">
-                {selectedWishCeleb.type === 'Birthday' ? 'Send Birthday Wishes 🎉' : 'Send Anniversary Wishes 🌟'}
-              </h3>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
-                Express your greetings to <span className="text-gray-900 dark:text-white font-bold">{selectedWishCeleb.name}</span>
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
+      {/* Send Wish Greeting Modal */}
+      {
+        selectedWishCeleb && createPortal(
+          <div
+            className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setSelectedWishCeleb(null)}
-            className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#25201b] rounded-full transition-colors cursor-pointer"
           >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="p-6 space-y-4 overflow-y-auto flex-1">
-          {/* Employee Preview Badge */}
-          <div className="p-3.5 bg-gray-50 dark:bg-[#1f1b17] rounded-2xl border border-gray-100 dark:border-[#28251e] flex items-center gap-3">
-            <img
-              src={selectedWishCeleb.profileImage ? `http://localhost:5000${selectedWishCeleb.profileImage}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedWishCeleb.name)}&background=random`}
-              alt={selectedWishCeleb.name}
-              className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-[#28251e] shadow-xs"
-            />
-            <div>
-              <h4 className="font-bold text-gray-900 dark:text-white text-sm">{selectedWishCeleb.name}</h4>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                {selectedWishCeleb.type === 'Birthday' ? '🎂 Celebrating Birthday Today' : `🌟 Celebrating ${selectedWishCeleb.type} Today`}
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Template Chips */}
-          <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2">
-              Quick Message Templates:
-            </label>
-            <div className="flex flex-col gap-2">
-              {(selectedWishCeleb.type === 'Birthday' ? [
-                `🎂 Wishing you a very Happy Birthday, ${selectedWishCeleb.name}! May your year ahead be filled with happiness and great success! 🎉`,
-                `🎉 Happy Birthday ${selectedWishCeleb.name}! Hope you have a wonderful celebration today! 🌟`,
-                `🎈 Warmest wishes on your special day! Thank you for being an amazing part of our team!`
-              ] : [
-                `🌟 Happy Work Anniversary, ${selectedWishCeleb.name}! Thank you for your dedication and contributions! 🚀`,
-                `🎉 Congratulations on your Work Anniversary! Wishing you continued growth and success with us! 💼`,
-                `✨ Cheers to another great milestone! Thank you for all your hard work!`
-              ]).map((template, idx) => (
+            <div
+              className="bg-white dark:bg-[#161311] rounded-3xl max-w-lg w-full shadow-2xl border border-gray-100 dark:border-[#28251e] relative my-auto flex flex-col max-h-[90vh] overflow-hidden transform animate-in zoom-in-95 duration-200 text-gray-800 dark:text-gray-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100 dark:border-[#28251e] shrink-0 bg-gradient-to-r from-emerald-50 to-teal-50/30 dark:from-emerald-950/40 dark:to-teal-950/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-[#00a76b] flex items-center justify-center font-bold text-xl shadow-xs">
+                    {selectedWishCeleb.type === 'Birthday' ? '🎂' : '🌟'}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white leading-tight">
+                      {selectedWishCeleb.type === 'Birthday' ? 'Send Birthday Wishes 🎉' : 'Send Anniversary Wishes 🌟'}
+                    </h3>
+                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
+                      Express your greetings to <span className="text-gray-900 dark:text-white font-bold">{selectedWishCeleb.name}</span>
+                    </p>
+                  </div>
+                </div>
                 <button
-                  key={idx}
                   type="button"
-                  onClick={() => setCustomWishMessage(template)}
-                  className={`text-left p-2.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${customWishMessage === template
-                    ? 'bg-emerald-50 border-[#00a76b] text-[#00a76b] font-bold shadow-xs'
-                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
-                    }`}
+                  onClick={() => setSelectedWishCeleb(null)}
+                  className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#25201b] rounded-full transition-colors cursor-pointer"
                 >
-                  {template}
+                  <X size={20} />
                 </button>
-              ))}
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                {/* Employee Preview Badge */}
+                <div className="p-3.5 bg-gray-50 dark:bg-[#1f1b17] rounded-2xl border border-gray-100 dark:border-[#28251e] flex items-center gap-3">
+                  <img
+                    src={selectedWishCeleb.profileImage ? `http://localhost:5000${selectedWishCeleb.profileImage}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedWishCeleb.name)}&background=random`}
+                    alt={selectedWishCeleb.name}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-[#28251e] shadow-xs"
+                  />
+                  <div>
+                    <h4 className="font-bold text-gray-900 dark:text-white text-sm">{selectedWishCeleb.name}</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                      {selectedWishCeleb.type === 'Birthday' ? '🎂 Celebrating Birthday Today' : `🌟 Celebrating ${selectedWishCeleb.type} Today`}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Template Chips */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2">
+                    Quick Message Templates:
+                  </label>
+                  <div className="flex flex-col gap-2">
+                    {(selectedWishCeleb.type === 'Birthday' ? [
+                      `🎂 Wishing you a very Happy Birthday, ${selectedWishCeleb.name}! May your year ahead be filled with happiness and great success! 🎉`,
+                      `🎉 Happy Birthday ${selectedWishCeleb.name}! Hope you have a wonderful celebration today! 🌟`,
+                      `🎈 Warmest wishes on your special day! Thank you for being an amazing part of our team!`
+                    ] : [
+                      `🌟 Happy Work Anniversary, ${selectedWishCeleb.name}! Thank you for your dedication and contributions! 🚀`,
+                      `🎉 Congratulations on your Work Anniversary! Wishing you continued growth and success with us! 💼`,
+                      `✨ Cheers to another great milestone! Thank you for all your hard work!`
+                    ]).map((template, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setCustomWishMessage(template)}
+                        className={`text-left p-2.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${customWishMessage === template
+                          ? 'bg-emerald-50 border-[#00a76b] text-[#00a76b] font-bold shadow-xs'
+                          : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+                          }`}
+                      >
+                        {template}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Message Area */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                    Your Personalized Message:
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={customWishMessage}
+                    onChange={(e) => setCustomWishMessage(e.target.value)}
+                    placeholder="Write your wishes here..."
+                    className="w-full p-3.5 text-sm bg-gray-50/70 dark:bg-[#1f1b17] border border-gray-200 dark:border-[#28251e] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#00a76b]/20 focus:border-[#00a76b] resize-none text-gray-800 dark:text-gray-100 font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 pt-4 border-t border-gray-100 dark:border-[#28251e] shrink-0 bg-gray-50/50 dark:bg-[#1a1714] rounded-b-3xl flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedWishCeleb(null)}
+                  className="flex-1 py-3 px-4 rounded-xl bg-gray-100 dark:bg-[#25201b] hover:bg-gray-200 dark:hover:bg-[#302a24] text-gray-700 dark:text-gray-300 font-bold text-sm transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isSendingWish || !customWishMessage.trim()}
+                  onClick={handleSendWish}
+                  className="flex-1 py-3 px-4 rounded-xl bg-[#00a76b] hover:bg-[#00915c] disabled:opacity-50 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md shadow-[#00a76b]/20 cursor-pointer active:scale-95"
+                >
+                  {isSendingWish ? (
+                    <>
+                      <Activity size={16} className="animate-spin" />
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} />
+                      <span>Send Wish 🚀</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
-
-          {/* Custom Message Area */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
-              Your Personalized Message:
-            </label>
-            <textarea
-              rows={4}
-              value={customWishMessage}
-              onChange={(e) => setCustomWishMessage(e.target.value)}
-              placeholder="Write your wishes here..."
-              className="w-full p-3.5 text-sm bg-gray-50/70 dark:bg-[#1f1b17] border border-gray-200 dark:border-[#28251e] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#00a76b]/20 focus:border-[#00a76b] resize-none text-gray-800 dark:text-gray-100 font-medium"
-            />
-          </div>
-        </div>
-
-        {/* Modal Footer */}
-        <div className="p-6 pt-4 border-t border-gray-100 dark:border-[#28251e] shrink-0 bg-gray-50/50 dark:bg-[#1a1714] rounded-b-3xl flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setSelectedWishCeleb(null)}
-            className="flex-1 py-3 px-4 rounded-xl bg-gray-100 dark:bg-[#25201b] hover:bg-gray-200 dark:hover:bg-[#302a24] text-gray-700 dark:text-gray-300 font-bold text-sm transition-colors cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={isSendingWish || !customWishMessage.trim()}
-            onClick={handleSendWish}
-            className="flex-1 py-3 px-4 rounded-xl bg-[#00a76b] hover:bg-[#00915c] disabled:opacity-50 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md shadow-[#00a76b]/20 cursor-pointer active:scale-95"
-          >
-            {isSendingWish ? (
-              <>
-                <Activity size={16} className="animate-spin" />
-                <span>Sending...</span>
-              </>
-            ) : (
-              <>
-                <Send size={16} />
-                <span>Send Wish 🚀</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
-  )
-}
+          </div>,
+          document.body
+        )
+      }
 
     </div >
   );
