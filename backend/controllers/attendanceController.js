@@ -279,21 +279,117 @@ exports.getAttendance = async (req, res) => {
 
     let query = {};
 
-    if (role === 'admin' || role === 'hr') {
+    if (role === 'admin') {
       query = {};
+    } else if (role === 'hr') {
+      const User = require('../models/User');
+      const nonAdminUsers = await User.find({ role: { $nin: ['admin', 'superadmin'] } }).select('_id');
+      const hrUserIds = nonAdminUsers.map(u => u._id.toString());
+      query = { user: { $in: hrUserIds } };
     } else if (role === 'manager') {
-      const Employee = require('../models/Employee');
-      const myTeam = await Employee.find({ managerId: userId }).select('userId');
-      const teamUserIds = myTeam.map(emp => emp.userId).filter(id => id);
-      teamUserIds.push(userId);
-      query = { user: { $in: teamUserIds } };
+      const User = require('../models/User');
+      const allTeamAndEmployees = await User.find({
+        role: { $nin: ['admin', 'hr', 'superadmin'] },
+        $or: [
+          { role: { $in: ['employee', 'staff'] } },
+          { reportingManager: userId },
+          { managerId: userId }
+        ]
+      }).select('_id');
+      const empIds = allTeamAndEmployees.map(u => u._id.toString());
+      query = { user: { $in: empIds } };
     }
 
     const records = await Attendance.find(query)
       .populate('user', 'name role email')
-      .sort({ date: -1 });
+      .lean();
 
-    res.json(records);
+    const Leave = require('../models/Leave');
+    let leaveQuery = { status: 'approved' };
+    if (role === 'manager') {
+      const User = require('../models/User');
+      const allTeamAndEmployees = await User.find({
+        role: { $nin: ['admin', 'hr', 'superadmin'] },
+        $or: [
+          { role: { $in: ['employee', 'staff'] } },
+          { reportingManager: userId },
+          { managerId: userId }
+        ]
+      }).select('_id');
+      const empIds = allTeamAndEmployees.map(u => u._id.toString());
+      leaveQuery.user = { $in: empIds };
+    } else if (role === 'hr') {
+      const User = require('../models/User');
+      const users = await User.find({ role: { $nin: ['admin', 'superadmin'] } }).select('_id');
+      const hrUserIds = users.map(u => u._id.toString());
+      leaveQuery.user = { $in: hrUserIds };
+    }
+
+    const approvedLeaves = await Leave.find(leaveQuery)
+      .populate('user', 'name role email')
+      .lean();
+
+    const formatLocalDate = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const leaveRecords = [];
+    approvedLeaves.forEach(leave => {
+      if (!leave.user) return;
+      const start = new Date(leave.startDate);
+      const end = new Date(leave.endDate);
+
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = formatLocalDate(d);
+        const leaveUserId = leave.user?._id ? leave.user._id.toString() : leave.user?.toString();
+
+        const hasInAttendance = records.some(r => {
+          const rUserId = r.user?._id ? r.user._id.toString() : r.user?.toString();
+          return rUserId === leaveUserId && r.date === dateStr;
+        });
+
+        const hasInLeaveRecords = leaveRecords.some(r => {
+          const rUserId = r.user?._id ? r.user._id.toString() : r.user?.toString();
+          return rUserId === leaveUserId && r.date === dateStr;
+        });
+
+        if (!hasInAttendance && !hasInLeaveRecords) {
+          leaveRecords.push({
+            _id: `leave_${leave._id}_${dateStr}`,
+            user: leave.user,
+            date: dateStr,
+            status: 'Leave',
+            clockIn: '--',
+            clockOut: '--',
+            totalHours: '--',
+            reason: leave.reason || 'Approved Leave'
+          });
+        }
+      }
+    });
+
+    const uniqueCombinedMap = new Map();
+    for (const rec of records) {
+      const uId = rec.user?._id ? rec.user._id.toString() : (rec.user ? rec.user.toString() : '');
+      const key = `${uId}_${rec.date}`;
+      if (uId && !uniqueCombinedMap.has(key)) {
+        uniqueCombinedMap.set(key, rec);
+      }
+    }
+    for (const rec of leaveRecords) {
+      const uId = rec.user?._id ? rec.user._id.toString() : (rec.user ? rec.user.toString() : '');
+      const key = `${uId}_${rec.date}`;
+      if (uId && !uniqueCombinedMap.has(key)) {
+        uniqueCombinedMap.set(key, rec);
+      }
+    }
+    const combined = Array.from(uniqueCombinedMap.values());
+    combined.sort((a, b) => b.date.localeCompare(a.date));
+
+    res.json(combined);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -301,97 +397,155 @@ exports.getAttendance = async (req, res) => {
 
 // @desc    Get Weekly Attendance Summary (for Employee/Admin Dashboard Chart)
 // @route   GET /api/attendance/summary/weekly
+// @desc    Get Weekly/Monthly/Yearly Attendance Summary (for Employee/Admin/Manager/HR Dashboard Chart)
+// @route   GET /api/attendance/summary/weekly
 exports.getWeeklySummary = async (req, res) => {
   try {
     const now = new Date();
-    const currentDay = now.getDay();
-    const mondayDiff = currentDay === 0 ? -6 : 1 - currentDay;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + mondayDiff);
-
-    const weekdays = [];
-    const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      weekdays.push({
-        dateStr: d.toISOString().split('T')[0],
-        name: weekdayNames[i]
-      });
-    }
-
-    const dateStrings = weekdays.map(w => w.dateStr);
+    const period = (req.query.period || 'week').toLowerCase();
     const isEmployee = req.user.role === 'employee' || req.query.scope === 'personal';
 
-    let attendanceRecords, approvedLeaves, totalEmployees;
     const Leave = require('../models/Leave');
     const User = require('../models/User');
+    const Employee = require('../models/Employee');
 
-    const startOfWeek = new Date(monday);
-    startOfWeek.setHours(0, 0, 0, 0);
-    const endOfWeek = new Date(monday);
-    endOfWeek.setDate(monday.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
-
+    let eligibleUserIds = [];
     if (isEmployee) {
-      attendanceRecords = await Attendance.find({ user: req.user.id, date: { $in: dateStrings } });
-      approvedLeaves = await Leave.find({
-        user: req.user.id,
-        status: 'approved',
-        $or: [
-          { startDate: { $gte: startOfWeek, $lte: endOfWeek } },
-          { endDate: { $gte: startOfWeek, $lte: endOfWeek } },
-          { startDate: { $lte: startOfWeek }, endDate: { $gte: endOfWeek } }
-        ]
-      });
-      totalEmployees = 1;
+      eligibleUserIds = [req.user.id.toString()];
+    } else if (req.user.role === 'manager') {
+      const myTeam = await Employee.find({ managerId: req.user.id }).select('userId');
+      let teamUserIds = myTeam.map(emp => emp.userId ? emp.userId.toString() : null).filter(Boolean);
+      const userTeam = await User.find({ $or: [{ reportingManager: req.user.id }, { managerId: req.user.id }] }).select('_id');
+      userTeam.forEach(u => teamUserIds.push(u._id.toString()));
+      eligibleUserIds = [...new Set(teamUserIds)];
+      
+      if (eligibleUserIds.length === 0) {
+        const allEmployees = await User.find({ role: { $in: ['employee', 'staff'] } }).select('_id');
+        eligibleUserIds = allEmployees.map(u => u._id.toString());
+      }
+      if (!eligibleUserIds.includes(req.user.id.toString())) {
+        eligibleUserIds.push(req.user.id.toString());
+      }
+    } else if (req.user.role === 'hr') {
+      const users = await User.find({ role: { $ne: 'admin' } }).select('_id');
+      eligibleUserIds = users.map(u => u._id.toString());
     } else {
-      attendanceRecords = await Attendance.find({ date: { $in: dateStrings } });
-      totalEmployees = await User.countDocuments({ role: 'employee' });
-      approvedLeaves = await Leave.find({
-        status: 'approved',
-        $or: [
-          { startDate: { $gte: startOfWeek, $lte: endOfWeek } },
-          { endDate: { $gte: startOfWeek, $lte: endOfWeek } },
-          { startDate: { $lte: startOfWeek }, endDate: { $gte: endOfWeek } }
-        ]
-      });
+      const users = await User.find().select('_id');
+      eligibleUserIds = users.map(u => u._id.toString());
     }
 
-    const weeklyData = weekdays.map(day => {
-      const dayRecords = attendanceRecords.filter(r => r.date === day.dateStr);
+    const totalEmployees = eligibleUserIds.length || 1;
+
+    const formatLocalDate = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    let intervals = [];
+
+    if (period === 'month') {
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      let startDay = 1;
+      let weekNum = 1;
+      while (startDay <= daysInMonth) {
+        let endDay = Math.min(startDay + 6, daysInMonth);
+        const sDate = new Date(year, month, startDay, 0, 0, 0, 0);
+        const eDate = new Date(year, month, endDay, 23, 59, 59, 999);
+        intervals.push({
+          name: `Week ${weekNum}`,
+          startStr: formatLocalDate(sDate),
+          endStr: formatLocalDate(eDate),
+          startDate: sDate,
+          endDate: eDate
+        });
+        startDay += 7;
+        weekNum++;
+      }
+    } else if (period === 'year') {
+      const year = now.getFullYear();
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      for (let m = 0; m < 12; m++) {
+        const sDate = new Date(year, m, 1, 0, 0, 0, 0);
+        const eDate = new Date(year, m + 1, 0, 23, 59, 59, 999);
+        intervals.push({
+          name: monthNames[m],
+          startStr: formatLocalDate(sDate),
+          endStr: formatLocalDate(eDate),
+          startDate: sDate,
+          endDate: eDate
+        });
+      }
+    } else {
+      const currentDay = now.getDay();
+      const mondayDiff = currentDay === 0 ? -6 : 1 - currentDay;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() + mondayDiff);
+
+      const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        const sDate = new Date(d);
+        sDate.setHours(0, 0, 0, 0);
+        const eDate = new Date(d);
+        eDate.setHours(23, 59, 59, 999);
+        const dStr = formatLocalDate(d);
+        intervals.push({
+          name: weekdayNames[i],
+          startStr: dStr,
+          endStr: dStr,
+          startDate: sDate,
+          endDate: eDate
+        });
+      }
+    }
+
+    const overallStart = intervals[0].startStr;
+    const overallEnd = intervals[intervals.length - 1].endStr;
+
+    const attendanceRecords = await Attendance.find({
+      user: { $in: eligibleUserIds },
+      date: { $gte: overallStart, $lte: overallEnd }
+    });
+
+    const approvedLeaves = await Leave.find({
+      user: { $in: eligibleUserIds },
+      status: 'approved',
+      $or: [
+        { startDate: { $gte: intervals[0].startDate, $lte: intervals[intervals.length - 1].endDate } },
+        { endDate: { $gte: intervals[0].startDate, $lte: intervals[intervals.length - 1].endDate } },
+        { startDate: { $lte: intervals[0].startDate }, endDate: { $gte: intervals[intervals.length - 1].endDate } }
+      ]
+    });
+
+    const chartData = intervals.map(interval => {
+      const periodRecords = attendanceRecords.filter(r => r.date >= interval.startStr && r.date <= interval.endStr);
 
       if (isEmployee) {
-        // Find single employee's status for this exact day (1 status per day)
-        const primaryRecord = dayRecords[0];
-        const hasApprovedLeave = approvedLeaves.some(l => {
-          const start = new Date(l.startDate);
-          const end = new Date(l.endDate);
-          const dStr = day.dateStr + 'T12:00:00Z';
-          const dObj = new Date(dStr);
-          return dObj >= start && dObj <= end;
+        let present = 0, late = 0, halfDay = 0, leave = 0, absent = 0;
+        periodRecords.forEach(r => {
+          if (r.status === 'Present') present++;
+          else if (r.status === 'Late') late++;
+          else if (r.status === 'Half Day') halfDay++;
+          else if (r.status === 'Absent') absent++;
+          else if (r.status === 'Leave') leave++;
         });
 
-        let present = 0;
-        let late = 0;
-        let halfDay = 0;
-        let leave = 0;
-        let absent = 0;
-
-        if (primaryRecord) {
-          if (primaryRecord.status === 'Late') late = 1;
-          else if (primaryRecord.status === 'Half Day') halfDay = 1;
-          else present = 1;
-        } else if (hasApprovedLeave) {
-          leave = 1;
-        } else if (day.name !== 'Sun' && day.name !== 'Sat') {
-          absent = 1;
-        }
+        const hasLeave = approvedLeaves.some(l => {
+          const s = new Date(l.startDate);
+          const e = new Date(l.endDate);
+          return (s <= interval.endDate && e >= interval.startDate);
+        });
+        if (hasLeave && leave === 0) leave = 1;
 
         return {
-          name: day.name,
-          date: day.dateStr,
+          name: interval.name,
+          date: interval.startStr,
           Present: present,
           Late: late,
           'Half Day': halfDay,
@@ -399,97 +553,51 @@ exports.getWeeklySummary = async (req, res) => {
           Absent: absent
         };
       } else {
-        const presentCount = dayRecords.filter(r => r.status === 'Present').length;
-        const lateCount = dayRecords.filter(r => r.status === 'Late').length;
-        const halfDayCount = dayRecords.filter(r => r.status === 'Half Day').length;
+        const presentCount = periodRecords.filter(r => r.status === 'Present').length;
+        const lateCount = periodRecords.filter(r => r.status === 'Late').length;
+        const halfDayCount = periodRecords.filter(r => r.status === 'Half Day').length;
 
-        // Count unique employees on approved leave on this date
         const employeesOnLeave = new Set(
           approvedLeaves.filter(l => {
-            const start = new Date(l.startDate);
-            const end = new Date(l.endDate);
-            const dStr = day.dateStr + 'T12:00:00Z';
-            const dObj = new Date(dStr);
-            return dObj >= start && dObj <= end;
+            const s = new Date(l.startDate);
+            const e = new Date(l.endDate);
+            return (s <= interval.endDate && e >= interval.startDate);
           }).map(l => String(l.user?._id || l.user))
         ).size;
 
-        const totalWorking = presentCount + lateCount + halfDayCount;
-        const finalAbsent = Math.max(0, totalEmployees - (totalWorking + employeesOnLeave));
+        const recordedAbsent = periodRecords.filter(r => r.status === 'Absent').length;
+        const isSingleDay = interval.startStr === interval.endStr;
+
+        let finalAbsent = recordedAbsent;
+        if (isSingleDay) {
+          const totalWorking = presentCount + lateCount + halfDayCount;
+          const dayName = interval.name;
+          const isWeekend = dayName === 'Sat' || dayName === 'Sun';
+          finalAbsent = isWeekend ? 0 : Math.max(0, totalEmployees - (totalWorking + employeesOnLeave));
+        }
 
         return {
-          name: day.name,
-          date: day.dateStr,
+          name: interval.name,
+          date: interval.startStr,
           Present: presentCount,
           Late: lateCount,
           'Half Day': halfDayCount,
           Leave: employeesOnLeave,
-          Absent: (day.name === 'Sun' || day.name === 'Sat') ? 0 : finalAbsent
+          Absent: finalAbsent
         };
       }
     });
 
-    let lastWeekData = [];
-    if (isEmployee) {
-      // For employee, we can just return empty last week or zeros for now, since graph mostly uses this_week
-      lastWeekData = weekdays.map(day => {
-        const currentD = new Date(day.dateStr);
-        currentD.setDate(currentD.getDate() - 7);
-        return {
-          name: day.name,
-          date: currentD.toISOString().split('T')[0],
-          Present: 0,
-          Late: 0,
-          'Half Day': 0,
-          Leave: 0,
-          Absent: 0
-        };
-      });
-    } else {
-      lastWeekData = weekdays.map(day => {
-        const currentD = new Date(day.dateStr);
-        const lastWeekD = new Date(currentD);
-        lastWeekD.setDate(currentD.getDate() - 7);
-        const lastWeekDateStr = lastWeekD.toISOString().split('T')[0];
-        const daySeed = lastWeekD.getDate();
-
-        let basePresent = 138 + (day.name === 'Sat' ? -83 : day.name === 'Sun' ? -138 : Math.floor(Math.sin(daySeed) * 4));
-        let baseLeave = (day.name === 'Sun' || day.name === 'Sat') ? 0 : 10 + Math.floor(Math.sin(daySeed + 2) * 2);
-
-        if (day.name === 'Sun' || day.name === 'Sat') {
-          return {
-            name: day.name,
-            date: lastWeekDateStr,
-            Present: 0,
-            Late: 0,
-            'Half Day': 0,
-            Leave: 0,
-            Absent: 0
-          };
-        }
-
-        let finalAbsent = totalEmployees - (basePresent + baseLeave);
-
-        return {
-          name: day.name,
-          date: lastWeekDateStr,
-          Present: basePresent,
-          Late: 0,
-          'Half Day': 0,
-          Leave: baseLeave,
-          Absent: Math.max(0, finalAbsent)
-        };
-      });
-    }
-
     res.json({
-      this_week: weeklyData,
-      last_week: lastWeekData
+      period,
+      this_week: chartData,
+      last_week: []
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // @desc    Clock In
 // @route   POST /api/attendance/clock-in
@@ -878,7 +986,15 @@ exports.getTeamStats = async (req, res) => {
       eligibleUserIds = users.map(u => u._id.toString());
     } else if (role === 'manager') {
       const myTeam = await Employee.find({ managerId: userId }).select('userId');
-      eligibleUserIds = myTeam.map(emp => emp.userId.toString()).filter(id => id);
+      let teamUserIds = myTeam.map(emp => emp.userId ? emp.userId.toString() : null).filter(Boolean);
+      const userTeam = await User.find({ $or: [{ reportingManager: userId }, { managerId: userId }] }).select('_id');
+      userTeam.forEach(u => teamUserIds.push(u._id.toString()));
+      eligibleUserIds = [...new Set(teamUserIds)];
+      
+      if (eligibleUserIds.length === 0) {
+        const allEmployees = await User.find({ role: { $in: ['employee', 'staff'] } }).select('_id');
+        eligibleUserIds = allEmployees.map(u => u._id.toString());
+      }
     } else {
       return res.status(403).json({ message: 'Not authorized for team stats' });
     }
@@ -940,6 +1056,41 @@ exports.getTeamStats = async (req, res) => {
     const totalPossibleDays = (workingDays + absentCount + leaveCount) || 1;
     const pct = Math.round((workingDays / totalPossibleDays) * 100);
 
+    // Calculate TODAY'S specific stats for Today's Attendance Rate banner
+    let tPresent = 0;
+    let tLate = 0;
+    let tHalfDay = 0;
+    let tLeave = 0;
+    let tAbsent = 0;
+
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    for (const uid of eligibleUserIds) {
+      const record = attendanceRecords.find(r => r.date === todayStr && r.user.toString() === uid);
+      if (record) {
+        if (record.status === 'Late') tLate++;
+        else if (record.status === 'Half Day') tHalfDay++;
+        else tPresent++;
+      } else {
+        const hasLeave = leaves.some(l => {
+          return l.user.toString() === uid &&
+            (new Date(l.startDate) <= todayEnd && new Date(l.endDate) >= todayStart);
+        });
+        if (hasLeave) {
+          tLeave++;
+        } else {
+          tAbsent++;
+        }
+      }
+    }
+
+    const tWorking = tPresent + tLate + tHalfDay;
+    const tTotal = eligibleUserIds.length || 1;
+    const tPct = Math.round((tWorking / tTotal) * 100);
+
     res.json({
       present: presentCount,
       late: lateCount,
@@ -947,8 +1098,33 @@ exports.getTeamStats = async (req, res) => {
       leave: leaveCount,
       absent: absentCount,
       total: eligibleUserIds.length,
-      pct
+      pct,
+      today: {
+        present: tPresent,
+        late: tLate,
+        halfDay: tHalfDay,
+        working: tWorking,
+        leave: tLeave,
+        absent: tAbsent,
+        total: eligibleUserIds.length,
+        pct: tPct
+      }
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get Today's Attendance for Logged In User
+// @route   GET /api/attendance/today
+exports.getTodayAttendance = async (req, res) => {
+  try {
+    const now = new Date();
+    const formatLocalDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const todayStr = formatLocalDate(now);
+
+    const attendance = await Attendance.findOne({ user: req.user.id, date: todayStr });
+    res.json({ attendance });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -6,7 +6,6 @@ const {
   pauseTracking,
   resumeTracking,
   stopTracking,
-  desktopLogout,
   updateActivity,
   getMyTime,
   getHRTime,
@@ -28,7 +27,6 @@ router.post('/start', protect, startTracking);
 router.post('/pause', protect, pauseTracking);
 router.post('/resume', protect, resumeTracking);
 router.post('/stop', protect, stopTracking);
-router.post('/desktop-logout', protect, desktopLogout);
 
 // 🔄 Monitoring
 router.post('/activity', protect, updateActivity);
@@ -49,9 +47,9 @@ router.get('/daily-summary/:employeeId', protect, getDailySummaryLogs);
 router.get('/dashboard', protect, getDashboardData);
 
 // 👨‍💼 Role-Based Views
-router.get('/hr', protect, authorize('hr', 'admin'), getHRTime);
-router.get('/all', protect, authorize('admin'), getAllTime);
-router.get('/all-logs', protect, authorize('hr', 'admin', 'superadmin'), getAllTimeLogs);
-router.get('/export', protect, authorize('hr', 'admin', 'superadmin'), exportTimeLogs);
+router.get('/hr', protect, authorize('hr', 'admin', 'manager'), getHRTime);
+router.get('/all', protect, authorize('admin', 'hr', 'manager'), getAllTime);
+router.get('/all-logs', protect, authorize('hr', 'admin', 'superadmin', 'manager'), getAllTimeLogs);
+router.get('/export', protect, authorize('hr', 'admin', 'superadmin', 'manager'), exportTimeLogs);
 
 module.exports = router;

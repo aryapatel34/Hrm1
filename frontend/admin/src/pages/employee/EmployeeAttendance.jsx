@@ -16,9 +16,8 @@ import DesktopAppRequiredModal from '@shared/components/DesktopAppRequiredModal'
 const CustomWeeklyTooltip = ({ active, payload, label, isDark }) => {
   if (active && payload && payload.length) {
     return (
-      <div className={`p-4 rounded-2xl border shadow-xl transition-all ${
-        isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'
-      }`}>
+      <div className={`p-4 rounded-2xl border shadow-xl transition-all ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'
+        }`}>
         <p className="font-bold text-xs uppercase tracking-wider mb-2.5 text-slate-400">{label}</p>
         <div className="space-y-1.5 min-w-[120px]">
           {payload.map((item, idx) => (
@@ -335,7 +334,7 @@ const EmployeeAttendance = () => {
 
   return (
     <div className="min-h-screen pb-16 space-y-6" style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
-      
+
       {/* ── TOP CONTROL PANEL ── */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-[#050c0a] p-4 md:p-6 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-[#1a2d29] backdrop-blur-md">
         <div>
@@ -354,7 +353,7 @@ const EmployeeAttendance = () => {
               className="w-full pl-9 pr-4 py-2 text-xs font-semibold rounded-full border border-slate-200 dark:border-[#1a2d29] bg-slate-55 dark:bg-slate-950 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none transition-all"
             />
           </div>
-          
+
           {/* Filter Button mockup */}
           <button className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 dark:border-[#1a2d29] hover:bg-slate-50 dark:hover:bg-slate-950 text-xs font-bold rounded-full text-slate-700 dark:text-[#a3b3af] transition-colors bg-transparent cursor-pointer">
             <Filter size={12} />
@@ -372,61 +371,61 @@ const EmployeeAttendance = () => {
       </div>
 
       {/* ── KPI METRIC CARDS ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-4 pb-2 hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {[
           {
-            label: `Present (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+            label: `PRESENT (${statsPeriod})`,
             value: periodStats?.present || 0,
-            icon: <CheckCircle size={20} className="text-[#00a76b]" />,
-            bg: 'bg-emerald-55 dark:bg-emerald-955/20'
+            icon: <CheckCircle size={18} className="text-emerald-500" />,
+            bg: 'bg-emerald-50 dark:bg-emerald-900/30',
+            hoverBorder: 'hover:border-emerald-500'
           },
           {
-            label: `Late (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+            label: `LATE (${statsPeriod})`,
             value: periodStats?.late || 0,
-            icon: <Clock size={20} className="text-amber-500" />,
-            bg: 'bg-amber-50 dark:bg-amber-950/20'
+            icon: <Clock size={18} className="text-amber-500" />,
+            bg: 'bg-amber-50 dark:bg-amber-900/30',
+            hoverBorder: 'hover:border-amber-500'
           },
           {
-            label: `Absent (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+            label: `ABSENT (${statsPeriod})`,
             value: periodStats?.absent || 0,
-            icon: <XCircle size={20} className="text-red-500" />,
-            bg: 'bg-red-50 dark:bg-red-950/20'
+            icon: <XCircle size={18} className="text-red-500" />,
+            bg: 'bg-red-50 dark:bg-red-900/30',
+            hoverBorder: 'hover:border-red-500'
           },
           {
-            label: `Half Day (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+            label: `HALF DAY (${statsPeriod})`,
             value: periodStats?.halfDay || 0,
-            icon: <Sun size={20} className="text-blue-500" />,
-            bg: 'bg-blue-50 dark:bg-blue-950/20'
+            icon: <Sun size={18} className="text-blue-500" />,
+            bg: 'bg-blue-50 dark:bg-blue-900/30',
+            hoverBorder: 'hover:border-blue-500'
           },
           {
-            label: `Leave (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+            label: `LEAVE (${statsPeriod})`,
             value: periodStats?.leave || 0,
-            icon: <CalendarIcon size={20} className="text-purple-500" />,
-            bg: 'bg-purple-50 dark:bg-purple-950/20'
+            icon: <CalendarIcon size={18} className="text-purple-500" />,
+            bg: 'bg-purple-50 dark:bg-purple-900/30',
+            hoverBorder: 'hover:border-purple-500'
           }
         ].map((card, i) => (
           <div
             key={i}
-            className="group bg-white dark:bg-[#050c0a] p-5 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-[#1a2d29] hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 flex flex-col justify-between"
+            className={`group min-w-[210px] bg-white dark:bg-[#050c0a] p-4 rounded-2xl shadow-sm border border-slate-200/60 dark:border-[#1a2d29] ${card.hoverBorder} hover:shadow-md transition-all duration-300 flex items-center justify-between flex-1`}
           >
-            <div className="flex justify-between items-center mb-6">
-              <div className={`p-2.5 rounded-xl ${card.bg}`}>
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className={`p-2.5 rounded-xl shrink-0 ${card.bg}`}>
                 {card.icon}
               </div>
-              <select
-                value={statsPeriod}
-                onChange={(e) => setStatsPeriod(e.target.value)}
-                className="text-[11px] font-bold px-2 py-1 rounded-lg border border-slate-200 dark:border-[#1a2d29] bg-slate-50 dark:bg-[#0d1c18] text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all hover:border-emerald-500"
-                title="Select time period"
-              >
-                <option value="week">Week</option>
-                <option value="month">Month</option>
-                <option value="year">Year</option>
-              </select>
+              <span className="text-[10px] font-bold text-slate-500 dark:text-[#a3b3af] uppercase tracking-wider truncate" title={card.label}>
+                {card.label}
+              </span>
             </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-400 dark:text-[#a3b3af] uppercase tracking-wider">{card.label}</p>
-              <h2 className="text-[20px] font-black text-slate-800 dark:text-slate-100 mt-1 tabular-nums">{card.value}</h2>
+            <div className="flex items-baseline gap-1 pl-3 shrink-0">
+              <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tabular-nums leading-none">
+                {card.value}
+              </h2>
+              <span className="text-[9px] font-bold text-slate-400 capitalize">Days</span>
             </div>
           </div>
         ))}
@@ -434,7 +433,7 @@ const EmployeeAttendance = () => {
 
       {/* ── MAIN CONTENT AREA ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Weekly Attendance — Donut Pie Chart (2/3 width) */}
         <div className="lg:col-span-2 bg-white dark:bg-[#050c0a] p-5 md:p-6 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-[#1a2d29] flex flex-col justify-between">
           <div className="flex justify-between items-center mb-4">
@@ -451,11 +450,10 @@ const EmployeeAttendance = () => {
                 <button
                   key={p}
                   onClick={() => setStatsPeriod(p)}
-                  className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
-                    statsPeriod === p
+                  className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${statsPeriod === p
                       ? 'bg-emerald-600 text-white shadow-sm'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                    }`}
                 >
                   {p}
                 </button>
@@ -475,14 +473,14 @@ const EmployeeAttendance = () => {
 
             const pieData = [
               { name: 'Present', value: totals.Present, color: '#00a76b' },
-              { name: 'Late',    value: totals.Late,    color: '#F59E0B' },
+              { name: 'Late', value: totals.Late, color: '#F59E0B' },
               { name: 'Half Day', value: totals['Half Day'], color: '#3b82f6' },
-              { name: 'Leave',   value: totals.Leave,   color: '#8b5cf6' },
-              { name: 'Absent',  value: totals.Absent,  color: '#EF4444' },
+              { name: 'Leave', value: totals.Leave, color: '#8b5cf6' },
+              { name: 'Absent', value: totals.Absent, color: '#EF4444' },
             ];
 
             const total = totals.Present + totals.Late + totals['Half Day'] + totals.Leave + totals.Absent;
-            const rate  = total > 0 ? Math.round(((totals.Present + totals.Late + totals['Half Day']) / total) * 100) : 0;
+            const rate = total > 0 ? Math.round(((totals.Present + totals.Late + totals['Half Day']) / total) * 100) : 0;
             const activePie = pieData.filter(d => d.value > 0);
             const displayPie = activePie.length > 0 ? activePie : [{ name: 'No Data', value: 1, color: isDark ? '#142420' : '#e2eae7' }];
 
@@ -589,7 +587,7 @@ const EmployeeAttendance = () => {
               <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Quick Actions</h3>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 uppercase tracking-wider">Attendance console</p>
             </div>
-            
+
             <div className="flex flex-col gap-3">
               <button
                 onClick={handleCheckIn}
@@ -599,7 +597,7 @@ const EmployeeAttendance = () => {
                 <Play size={15} fill="currentColor" />
                 <span>Check In</span>
               </button>
-              
+
               <button
                 onClick={handleCheckOut}
                 disabled={!session?.isRunning || actionLoading}
@@ -608,7 +606,7 @@ const EmployeeAttendance = () => {
                 <Square size={12} fill="currentColor" />
                 <span>Check Out</span>
               </button>
-              
+
               <button
                 onClick={() => setIsCorrectionModalOpen(true)}
                 className="flex items-center justify-center gap-2.5 h-12 w-full rounded-xl border border-[#eceae3] dark:border-[#1a2d29] hover:bg-slate-55 dark:hover:bg-[#111c18]/50 text-slate-700 dark:text-[#a3b3af] transition-all font-bold text-xs cursor-pointer bg-slate-50 dark:bg-slate-950/20 hover:scale-[1.01]"
@@ -625,9 +623,8 @@ const EmployeeAttendance = () => {
               <h4 className="font-mono text-3xl font-black tracking-widest text-slate-900 dark:text-white tabular-nums">
                 {session ? formatTimer(timerSeconds) : '00:00:00'}
               </h4>
-              <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wide ${
-                session ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-[#00a76b]' : 'bg-slate-200/60 text-slate-500 dark:bg-slate-900 dark:text-slate-400'
-              }`}>
+              <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wide ${session ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-[#00a76b]' : 'bg-slate-200/60 text-slate-500 dark:bg-slate-900 dark:text-slate-400'
+                }`}>
                 {session ? 'Active' : 'Inactive'}
               </span>
             </div>
@@ -643,7 +640,7 @@ const EmployeeAttendance = () => {
       {isCorrectionModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setIsCorrectionModalOpen(false)} />
-          
+
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-50 animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
               <h3 className="text-sm font-bold text-slate-800 dark:text-slate-105">Request Clock Correction</h3>

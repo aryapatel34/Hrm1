@@ -14,6 +14,10 @@ import {
   PieChart, Pie, Cell, Area, AreaChart, BarChart, Bar
 } from 'recharts';
 
+
+
+import QuickActionsRow from '../../components/QuickActionsRow';
+
 const COLORS = ['#00a76b', '#3b82f6', '#f43f5e', '#f59e0b', '#8b5cf6', '#64748b'];
 
 // Small generic card wrapper
@@ -245,8 +249,8 @@ const HRDashboard = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] bg-[#F8F9FB] dark:bg-[#110e0c] w-full h-full">
         <div className="relative flex justify-center items-center h-20 w-20">
-           <div className="absolute animate-ping w-16 h-16 rounded-full bg-[#00a76b] opacity-20"></div>
-           <Activity className="animate-bounce text-[#00a76b] relative z-10" size={42} />
+          <div className="absolute animate-ping w-16 h-16 rounded-full bg-[#00a76b] opacity-20"></div>
+          <Activity className="animate-bounce text-[#00a76b] relative z-10" size={42} />
         </div>
         <p className="font-bold text-xl text-gray-800 dark:text-gray-200 mt-2 tracking-wide">
           Loading Dashboard...
@@ -374,15 +378,15 @@ const HRDashboard = () => {
               } : undefined}
               className="p-4 flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm"
             >
-              <div className="mb-3">
-                <div className={`inline-flex p-2 rounded-lg ${stat.bg} ${stat.color}`}>
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <div className={`inline-flex p-2 rounded-lg ${stat.bg} ${stat.color} shrink-0`}>
                   <stat.icon size={18} strokeWidth={2.5} />
                 </div>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider leading-tight">{stat.label}</p>
               </div>
-              <div className="flex-1 flex flex-col justify-end">
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 leading-tight">{stat.label}</p>
-                <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none">{stat.val}</h3>
-                <p className={`text-sm mt-1.5 font-medium ${stat.subtext.includes('+') ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+              <div className="flex-1 flex items-baseline gap-3 mt-1 flex-nowrap overflow-hidden">
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none shrink-0">{stat.val}</h3>
+                <p className={`text-[11px] font-bold whitespace-nowrap shrink-0 ${stat.subtext.includes('+') ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
                   {stat.subtext}
                 </p>
               </div>
@@ -390,6 +394,9 @@ const HRDashboard = () => {
           );
         })}
       </div>
+
+      {/* 3. Quick Actions Row */}
+      <QuickActionsRow role="hr" />
 
       {/* 3. Second Row (Charts) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -495,33 +502,44 @@ const HRDashboard = () => {
 
       {/* 4. Third Row (Leave, Payroll, Recruitment) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900 dark:text-white">Leave Overview</h3>
-            <CustomDropdown
-              value={leavePeriod}
-              onChange={setLeavePeriod}
-              options={['This Month', 'This Week', 'This Year', 'All Time', 'Today']}
-            />
+        <Card className="p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold text-gray-900 dark:text-white">Leave Overview</h3>
+              <CustomDropdown
+                value={leavePeriod}
+                onChange={setLeavePeriod}
+                options={['This Month', 'This Week', 'This Year', 'All Time', 'Today']}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2.5 mb-3">
+              <div className="p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-0.5">Total Leaves</p>
+                <p className="text-[18px] font-black text-gray-900 dark:text-white">{currentLeaveOverview.total || 0}</p>
+              </div>
+              <div className="p-2.5 bg-green-50 dark:bg-green-900/30 rounded-xl">
+                <p className="text-[11px] font-bold text-green-700 dark:text-green-500 mb-0.5">Approved</p>
+                <p className="text-[18px] font-black text-green-800 dark:text-green-400">{currentLeaveOverview.approved || 0}</p>
+              </div>
+              <div className="p-2.5 bg-red-50 dark:bg-red-900/30 rounded-xl">
+                <p className="text-[11px] font-bold text-red-700 dark:text-red-500 mb-0.5">Rejected</p>
+                <p className="text-[18px] font-black text-red-800 dark:text-red-400">{currentLeaveOverview.rejected || 0}</p>
+              </div>
+              <div className="p-2.5 bg-orange-50 dark:bg-orange-900/30 rounded-xl">
+                <p className="text-[11px] font-bold text-orange-700 dark:text-orange-500 mb-0.5">Cancelled</p>
+                <p className="text-[18px] font-black text-orange-800 dark:text-orange-400">{currentLeaveOverview.cancelled || 0}</p>
+              </div>
+            </div>
+            {/* Segmented Approval Progress Bar */}
+            <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden flex">
+              <div className="bg-[#00a76b] h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.approved / currentLeaveOverview.total) * 100 : 0}%` }}></div>
+              <div className="bg-red-500 h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.rejected / currentLeaveOverview.total) * 100 : 0}%` }}></div>
+              <div className="bg-orange-500 h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.cancelled / currentLeaveOverview.total) * 100 : 0}%` }}></div>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-2.5 bg-gray-50 dark:bg-[#1a1714] border border-transparent dark:border-[#2b2722] rounded-xl">
-              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Total Leaves</p>
-              <p className="text-2xl font-black text-gray-900 dark:text-white">{currentLeaveOverview.total || 0}</p>
-            </div>
-            <div className="p-2.5 bg-green-50 dark:bg-green-950/30 border border-transparent dark:border-green-900/30 rounded-xl">
-              <p className="text-xs font-bold text-green-700 dark:text-green-300 mb-1">Approved</p>
-              <p className="text-2xl font-black text-green-800 dark:text-green-200">{currentLeaveOverview.approved || 0}</p>
-            </div>
-            <div className="p-2.5 bg-red-50 dark:bg-red-950/30 border border-transparent dark:border-red-900/30 rounded-xl">
-              <p className="text-xs font-bold text-red-700 dark:text-red-300 mb-1">Rejected</p>
-              <p className="text-2xl font-black text-red-800 dark:text-red-200">{currentLeaveOverview.rejected || 0}</p>
-            </div>
-            <div className="p-2.5 bg-orange-50 dark:bg-orange-950/30 border border-transparent dark:border-orange-900/30 rounded-xl">
-              <p className="text-xs font-bold text-orange-700 dark:text-orange-300 mb-1">Cancelled</p>
-              <p className="text-2xl font-black text-orange-800 dark:text-orange-200">{currentLeaveOverview.cancelled || 0}</p>
-            </div>
-          </div>
+          <button onClick={() => navigate('/hr/leave')} className="w-full mt-3 bg-gray-50 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+            View Leave Details <ChevronRight size={14} />
+          </button>
         </Card>
 
         <Card className="p-6 flex flex-col justify-between">
@@ -534,26 +552,26 @@ const HRDashboard = () => {
                 options={[payrollPeriod]}
               />
             </div>
-            <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-1">{formatCurrency(payrollSummary.total)}</h2>
-            <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">Total Payroll Cost</p>
+            <h2 className="text-[18px] font-black text-gray-900 dark:text-white mb-0.5">{formatCurrency(payrollSummary.total)}</h2>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Total Payroll Cost</p>
 
-            <div className="w-full h-3 bg-gray-100 dark:bg-[#2b2722] rounded-full overflow-hidden mb-3">
+            <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-3">
               <div className="h-full bg-[#00a76b] rounded-full transition-all duration-500" style={{ width: `${payrollSummary.total ? (payrollSummary.processed / payrollSummary.total) * 100 : 0}%` }}></div>
             </div>
 
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400">Processed</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(payrollSummary.processed)}</p>
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400">Processed</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(payrollSummary.processed)}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400">Pending</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(payrollSummary.pending)}</p>
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400">Pending</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(payrollSummary.pending)}</p>
               </div>
             </div>
           </div>
-          <button onClick={() => navigate('/hr/payroll')} className="w-full mt-3 bg-gray-50 dark:bg-[#1e1a17] hover:bg-gray-100 dark:hover:bg-[#28231e] text-gray-700 dark:text-gray-200 border border-transparent dark:border-[#38332c] font-bold py-2 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer">
-            View Payroll Details <ChevronRight size={16} />
+          <button onClick={() => navigate('/hr/payroll')} className="w-full mt-3 bg-gray-50 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+            View Payroll Details <ChevronRight size={14} />
           </button>
         </Card>
 
@@ -565,7 +583,7 @@ const HRDashboard = () => {
               options={['This Month', 'Last Month', 'This Year']}
             />
           </div>
-          <div className="space-y-4">
+          <div className="space-y-2">
             {[
               { label: 'New Applications', val: '0', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/40' },
               { label: 'Shortlisted', val: '0', icon: CheckCircle, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950/40' },
@@ -573,22 +591,101 @@ const HRDashboard = () => {
               { label: 'Offers Issued', val: '0', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950/40' },
               { label: 'Hires This Month', val: '0', icon: UserPlus, color: 'text-[#00a76b]', bg: 'bg-green-50 dark:bg-green-950/40' }
             ].map((r, i) => (
-              <div key={i} className="flex justify-between items-center p-3 rounded-xl border border-gray-50 dark:border-[#2b2722] hover:bg-gray-50 dark:hover:bg-[#1a1714] transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${r.bg} ${r.color}`}>
-                    <r.icon size={16} />
+              <div key={i} className="flex justify-between items-center py-2 px-2.5 rounded-lg border border-gray-50 dark:border-[#2b2722] hover:bg-gray-50 dark:hover:bg-[#1a1714] transition-colors">
+                <div className="flex items-center gap-2">
+                  <div className={`p-1.5 rounded-md ${r.bg} ${r.color}`}>
+                    <r.icon size={14} />
                   </div>
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{r.label}</span>
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{r.label}</span>
                 </div>
-                <span className="font-black text-gray-900 dark:text-white">{r.val}</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-white">{r.val}</span>
               </div>
             ))}
           </div>
         </Card>
       </div>
 
-      {/* 5. Fourth Row (Pending Approvals, Quick Actions) */}
+      {/* 5. Fourth Row (Quick Actions, Pending Approvals) */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <Card className="p-6 flex flex-col h-[420px]">
+          <h3 className="font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              {
+                label: 'Add Employee',
+                icon: UserPlus,
+                color: 'text-blue-500',
+                bg: 'bg-blue-50 dark:bg-blue-950/40',
+                hoverBorder: 'hover:border-blue-400 dark:hover:border-blue-500',
+                hoverBg: 'hover:bg-blue-50/40 dark:hover:bg-blue-950/20',
+                hoverText: 'group-hover:text-blue-600 dark:group-hover:text-blue-400',
+                path: '/hr/create-user'
+              },
+              {
+                label: 'Add Department',
+                icon: Layers,
+                color: 'text-indigo-500',
+                bg: 'bg-indigo-50 dark:bg-indigo-950/40',
+                hoverBorder: 'hover:border-indigo-400 dark:hover:border-indigo-500',
+                hoverBg: 'hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20',
+                hoverText: 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400',
+                path: '/hr/departments'
+              },
+              {
+                label: 'Create Job',
+                icon: Briefcase,
+                color: 'text-purple-500',
+                bg: 'bg-purple-50 dark:bg-purple-950/40',
+                hoverBorder: 'hover:border-purple-400 dark:hover:border-purple-500',
+                hoverBg: 'hover:bg-purple-50/40 dark:hover:bg-purple-950/20',
+                hoverText: 'group-hover:text-purple-600 dark:group-hover:text-purple-400',
+                path: '/hr/jobs'
+              },
+              {
+                label: 'Approve Leave',
+                icon: CheckCircle,
+                color: 'text-[#00a76b]',
+                bg: 'bg-green-50 dark:bg-green-950/40',
+                hoverBorder: 'hover:border-[#00a76b] dark:hover:border-[#00a76b]',
+                hoverBg: 'hover:bg-green-50/40 dark:hover:bg-green-950/20',
+                hoverText: 'group-hover:text-[#00a76b] dark:group-hover:text-[#00a76b]',
+                path: '/hr/leave'
+              },
+              {
+                label: 'Run Payroll',
+                icon: Activity,
+                color: 'text-orange-500',
+                bg: 'bg-orange-50 dark:bg-orange-950/40',
+                hoverBorder: 'hover:border-orange-400 dark:hover:border-orange-500',
+                hoverBg: 'hover:bg-orange-50/40 dark:hover:bg-orange-950/20',
+                hoverText: 'group-hover:text-orange-600 dark:group-hover:text-orange-400',
+                path: '/hr/payroll'
+              },
+              {
+                label: 'Announcement',
+                icon: Bell,
+                color: 'text-red-500',
+                bg: 'bg-red-50 dark:bg-red-950/40',
+                hoverBorder: 'hover:border-red-400 dark:hover:border-red-500',
+                hoverBg: 'hover:bg-red-50/40 dark:hover:bg-red-950/20',
+                hoverText: 'group-hover:text-red-600 dark:group-hover:text-red-400',
+                path: '/hr/notifications'
+              },
+            ].map((action, i) => (
+              <button
+                key={i}
+                onClick={() => navigate(action.path)}
+                className={`flex flex-col items-center justify-center py-4 px-3 border border-gray-100 dark:border-[#2b2722] bg-white dark:bg-[#1a1714] rounded-2xl ${action.hoverBorder} ${action.hoverBg} transition-all group cursor-pointer shadow-2xs hover:shadow-md`}
+              >
+                <div className={`p-2.5 rounded-2xl mb-2 ${action.bg} ${action.color} group-hover:scale-110 transition-transform`}>
+                  <action.icon size={20} />
+                </div>
+                <span className={`text-[11px] font-bold text-gray-600 dark:text-gray-300 ${action.hoverText} text-center uppercase tracking-wider transition-colors`}>{action.label}</span>
+              </button>
+            ))}
+          </div>
+        </Card>
+
         <Card className="p-6 flex flex-col h-[420px]">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-gray-900 dark:text-white">Pending Approvals</h3>
@@ -659,85 +756,6 @@ const HRDashboard = () => {
                 <p className="font-medium text-sm">No pending approvals required.</p>
               </div>
             )}
-          </div>
-        </Card>
-
-        <Card className="p-6 flex flex-col h-[420px]">
-          <h3 className="font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto">
-            {[
-              {
-                label: 'Add Employee',
-                icon: UserPlus,
-                color: 'text-blue-500',
-                bg: 'bg-blue-50 dark:bg-blue-950/40',
-                hoverBorder: 'hover:border-blue-400 dark:hover:border-blue-500',
-                hoverBg: 'hover:bg-blue-50/40 dark:hover:bg-blue-950/20',
-                hoverText: 'group-hover:text-blue-600 dark:group-hover:text-blue-400',
-                path: '/hr/create-user'
-              },
-              {
-                label: 'Add Department',
-                icon: Layers,
-                color: 'text-indigo-500',
-                bg: 'bg-indigo-50 dark:bg-indigo-950/40',
-                hoverBorder: 'hover:border-indigo-400 dark:hover:border-indigo-500',
-                hoverBg: 'hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20',
-                hoverText: 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400',
-                path: '/hr/departments'
-              },
-              {
-                label: 'Create Job',
-                icon: Briefcase,
-                color: 'text-purple-500',
-                bg: 'bg-purple-50 dark:bg-purple-950/40',
-                hoverBorder: 'hover:border-purple-400 dark:hover:border-purple-500',
-                hoverBg: 'hover:bg-purple-50/40 dark:hover:bg-purple-950/20',
-                hoverText: 'group-hover:text-purple-600 dark:group-hover:text-purple-400',
-                path: '/hr/jobs'
-              },
-              {
-                label: 'Approve Leave',
-                icon: CheckCircle,
-                color: 'text-[#00a76b]',
-                bg: 'bg-green-50 dark:bg-green-950/40',
-                hoverBorder: 'hover:border-[#00a76b] dark:hover:border-[#00a76b]',
-                hoverBg: 'hover:bg-green-50/40 dark:hover:bg-green-950/20',
-                hoverText: 'group-hover:text-[#00a76b] dark:group-hover:text-[#00a76b]',
-                path: '/hr/leave'
-              },
-              {
-                label: 'Run Payroll',
-                icon: Activity,
-                color: 'text-orange-500',
-                bg: 'bg-orange-50 dark:bg-orange-950/40',
-                hoverBorder: 'hover:border-orange-400 dark:hover:border-orange-500',
-                hoverBg: 'hover:bg-orange-50/40 dark:hover:bg-orange-950/20',
-                hoverText: 'group-hover:text-orange-600 dark:group-hover:text-orange-400',
-                path: '/hr/payroll'
-              },
-              {
-                label: 'Announcement',
-                icon: Bell,
-                color: 'text-red-500',
-                bg: 'bg-red-50 dark:bg-red-950/40',
-                hoverBorder: 'hover:border-red-400 dark:hover:border-red-500',
-                hoverBg: 'hover:bg-red-50/40 dark:hover:bg-red-950/20',
-                hoverText: 'group-hover:text-red-600 dark:group-hover:text-red-400',
-                path: '/hr/notifications'
-              },
-            ].map((action, i) => (
-              <button
-                key={i}
-                onClick={() => navigate(action.path)}
-                className={`flex flex-col items-center justify-center p-4 border border-gray-100 dark:border-[#2b2722] bg-white dark:bg-[#1a1714] rounded-xl ${action.hoverBorder} ${action.hoverBg} transition-all group cursor-pointer shadow-xs hover:shadow-md`}
-              >
-                <div className={`p-2 rounded-xl mb-3 ${action.bg} ${action.color} group-hover:scale-110 transition-transform`}>
-                  <action.icon size={18} />
-                </div>
-                <span className={`text-[11px] font-bold text-gray-600 dark:text-gray-300 ${action.hoverText} text-center uppercase tracking-wider transition-colors`}>{action.label}</span>
-              </button>
-            ))}
           </div>
         </Card>
       </div>

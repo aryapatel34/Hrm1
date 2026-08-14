@@ -498,10 +498,80 @@ exports.getAllTimeLogs = async (req, res) => {
     if (role) filter.employeeRole = role;
 
     const logs = await TimeTrack.find(filter)
-      .populate('employeeId', 'name fullName email')
+      .populate('employeeId', 'name fullName email role')
       .sort({ date: -1, createdAt: -1 });
-      
-    res.json(logs);
+
+    // Deduplicate logs by employeeId + date (keeping the latest record)
+    const uniqueMap = new Map();
+    for (const log of logs) {
+      const empId = log.employeeId?._id ? log.employeeId._id.toString() : (log.employeeId ? log.employeeId.toString() : '');
+      const key = `${empId}_${log.date}`;
+      if (empId && !uniqueMap.has(key)) {
+        uniqueMap.set(key, log);
+      }
+    }
+
+    // Also include checked-in Attendance records if no TimeTrack log exists for that user+date
+    const Attendance = require('../models/Attendance');
+    let attFilter = {};
+    if (startDate && endDate) {
+      attFilter.date = { $gte: startDate, $lte: endDate };
+    } else if (startDate) {
+      attFilter.date = startDate;
+    }
+
+    const attRecords = await Attendance.find(attFilter).populate('user', 'name fullName email role').lean();
+    for (const att of attRecords) {
+      if (!att.user) continue;
+      const empId = att.user._id ? att.user._id.toString() : att.user.toString();
+      const key = `${empId}_${att.date}`;
+      if (!uniqueMap.has(key)) {
+        const formatTimeStr = (dStr) => {
+          if (!dStr) return '--';
+          const d = new Date(dStr);
+          if (isNaN(d.getTime())) return String(dStr);
+          return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        };
+
+        const activeSecs = (att.totalHours || 0) * 3600;
+        uniqueMap.set(key, {
+          _id: att._id.toString(),
+          employeeId: att.user,
+          date: att.date,
+          activeTime: activeSecs,
+          idleTime: 0,
+          totalTime: activeSecs,
+          startTime: att.checkInTime ? formatTimeStr(att.checkInTime) : '--',
+          endTime: att.checkOutTime ? formatTimeStr(att.checkOutTime) : '--',
+          status: att.status === 'Present' || att.status === 'Half Day' || att.status === 'Late' ? 'completed' : 'not_started',
+          pauses: 0,
+          breakTime: 0,
+          logs: []
+        });
+      }
+    }
+
+    let uniqueLogs = Array.from(uniqueMap.values());
+
+    if (req.user && req.user.role === 'manager') {
+      uniqueLogs = uniqueLogs.filter(log => {
+        const empRole = (log.employeeId?.role || '').toLowerCase();
+        const empName = (log.employeeId?.name || log.employeeId?.fullName || '').toLowerCase();
+        if (empRole === 'admin' || empRole === 'hr' || empRole === 'superadmin') return false;
+        if (empName.includes('admin') || empName.includes('hr manager')) return false;
+        return true;
+      });
+    } else if (req.user && req.user.role === 'hr') {
+      uniqueLogs = uniqueLogs.filter(log => {
+        const empRole = (log.employeeId?.role || '').toLowerCase();
+        const empName = (log.employeeId?.name || log.employeeId?.fullName || '').toLowerCase();
+        if (empRole === 'admin' || empRole === 'superadmin') return false;
+        if (empName.includes('admin')) return false;
+        return true;
+      });
+    }
+
+    res.json(uniqueLogs);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch all logs', error: err.message });
   }
@@ -671,7 +741,7 @@ exports.getDailySummaryLogs = async (req, res) => {
     const { employeeId } = req.params;
     const { range, startDate, endDate, month } = req.query;
 
-    if (req.user.id !== employeeId && req.user.role !== 'admin' && req.user.role !== 'hr') {
+    if (req.user.id !== employeeId && req.user.role !== 'admin' && req.user.role !== 'hr' && req.user.role !== 'manager') {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
@@ -685,9 +755,16 @@ exports.getDailySummaryLogs = async (req, res) => {
       filter.date = { $gte: startDate };
     }
 
-    const sessions = await TimeTrack.find(filter).sort({ date: 1 });
+    const sessions = await TimeTrack.find(filter).sort({ date: -1, createdAt: -1 });
 
-    const summary = sessions.map(track => {
+    const uniqueMap = new Map();
+    for (const track of sessions) {
+      if (!uniqueMap.has(track.date)) {
+        uniqueMap.set(track.date, track);
+      }
+    }
+
+    const summary = Array.from(uniqueMap.values()).map(track => {
       const isToday = track.date === getToday();
       const isLive = isToday && track.status === 'active';
       return {

@@ -15,7 +15,7 @@ import {
 import SmartTimeTracker from './SmartTimeTracker';
 
 // ─── ATTRACTIVE CUSTOM DATE PICKER ─────────────────────────
-const AttendanceDatePicker = ({ value, onChange, placeholder = 'dd-mm-yyyy' }) => {
+export const AttendanceDatePicker = ({ value, onChange, placeholder = 'dd-mm-yyyy' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -187,10 +187,10 @@ const AttendanceDatePicker = ({ value, onChange, placeholder = 'dd-mm-yyyy' }) =
                   key={day}
                   onClick={() => handleDateSelect(day)}
                   className={`h-8 w-8 mx-auto flex items-center justify-center rounded-xl text-xs font-semibold transition-all cursor-pointer ${isSelected
-                      ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/30 font-bold scale-105'
-                      : isToday
-                        ? 'border border-emerald-500/60 text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-50 dark:hover:bg-[#133029]'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#133029]'
+                    ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/30 font-bold scale-105'
+                    : isToday
+                      ? 'border border-emerald-500/60 text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-50 dark:hover:bg-[#133029]'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#133029]'
                     }`}
                 >
                   {day}
@@ -204,7 +204,7 @@ const AttendanceDatePicker = ({ value, onChange, placeholder = 'dd-mm-yyyy' }) =
             <button
               type="button"
               onClick={handleClear}
-              className="px-2 py-1 text-[111px] font-bold text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+              className="px-2 py-1 text-[11px] font-bold text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
             >
               Clear
             </button>
@@ -294,7 +294,7 @@ const StatusFilterDropdown = ({ value, onChange, statusColors }) => {
 
 // Card component
 const Card = ({ children, className = '' }) => (
-  <div className={`bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] rounded-[20px] p-5 shadow-[0_2px_16px_rgba(0,0,0,0.02)] transition-all ${className}`}>
+  <div className={`bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] hover:border-emerald-500/70 dark:hover:border-emerald-500/70 rounded-2xl p-5 shadow-[0_2px_16px_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-300 ${className}`}>
     {children}
   </div>
 );
@@ -366,31 +366,70 @@ const STATUS_COLORS = {
 const PIE_COLORS = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'];
 
 // ────────────────────────────── HELPERS ──────────────────────────────
-const getWorkingHours = (clockIn, clockOut, totalHours) => {
-  if (totalHours && typeof totalHours === 'number' && !isNaN(totalHours) && totalHours > 0) {
-    let totalMins = Math.round(totalHours * 60);
+const getWorkingHours = (clockIn, clockOut, totalHours, record) => {
+  // 1. Priority 1: Actual tracked active seconds (timer logs excluding breaks)
+  const activeSecs = record?.totalActiveTime || record?.activeTime || record?.trackedTime;
+  if (activeSecs && typeof activeSecs === 'number' && activeSecs > 0) {
+    const h = Math.floor(activeSecs / 3600);
+    const m = Math.floor((activeSecs % 3600) / 60);
+    return `${h}h ${m}m`;
+  }
+
+  // 2. Priority 2: Actual recorded totalHours in backend DB
+  const hoursVal = totalHours || record?.totalHours;
+  if (hoursVal && typeof hoursVal === 'number' && !isNaN(hoursVal) && hoursVal > 0) {
+    const totalMins = Math.round(hoursVal * 60);
     const h = Math.floor(totalMins / 60);
     const m = totalMins % 60;
     return `${h}h ${m}m`;
   }
-  if (!clockIn || !clockOut || clockIn === '--' || clockOut === '--') return '--';
 
-  const inParts = String(clockIn).split(':').map(Number);
-  const outParts = String(clockOut).split(':').map(Number);
-
-  if (inParts.length < 2 || outParts.length < 2 || isNaN(inParts[0]) || isNaN(inParts[1]) || isNaN(outParts[0]) || isNaN(outParts[1])) {
-    return '--';
+  // 3. Priority 3: Direct timestamp calculation if checkInTime & checkOutTime exist
+  if (record && record.checkInTime && record.checkOutTime) {
+    const start = new Date(record.checkInTime).getTime();
+    const end = new Date(record.checkOutTime).getTime();
+    if (!isNaN(start) && !isNaN(end) && end >= start) {
+      const diffSecs = Math.floor((end - start) / 1000);
+      const h = Math.floor(diffSecs / 3600);
+      const m = Math.floor((diffSecs % 3600) / 60);
+      return `${h}h ${m}m`;
+    }
   }
 
-  const inMin = inParts[0] * 60 + inParts[1];
-  const outMin = outParts[0] * 60 + outParts[1];
-  const diff = outMin - inMin;
+  // 4. Fallback: Parse time strings (e.g., "11:44", "12:12")
+  if (clockIn && clockOut && clockIn !== '--' && clockOut !== '--') {
+    const parseTimeToMins = (tStr) => {
+      const str = String(tStr).trim();
+      if (str.includes('T')) {
+        const d = new Date(str);
+        if (!isNaN(d.getTime())) return d.getHours() * 60 + d.getMinutes();
+      }
+      const match = str.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (match) {
+        let hrs = parseInt(match[1], 10);
+        const mins = parseInt(match[2], 10);
+        const ampm = match[3];
+        if (ampm) {
+          if (ampm.toUpperCase() === 'PM' && hrs < 12) hrs += 12;
+          if (ampm.toUpperCase() === 'AM' && hrs === 12) hrs = 0;
+        }
+        return hrs * 60 + mins;
+      }
+      return null;
+    };
 
-  if (isNaN(diff) || diff <= 0) return '--';
+    const inMins = parseTimeToMins(clockIn);
+    const outMins = parseTimeToMins(clockOut);
 
-  const h = Math.floor(diff / 60);
-  const m = diff % 60;
-  return `${h}h ${m}m`;
+    if (inMins !== null && outMins !== null && outMins >= inMins) {
+      const diff = outMins - inMins;
+      const h = Math.floor(diff / 60);
+      const m = diff % 60;
+      return `${h}h ${m}m`;
+    }
+  }
+
+  return '--';
 };
 
 const getInitials = (name) => {
@@ -445,7 +484,7 @@ const Attendance = () => {
   const [teamStatsLoading, setTeamStatsLoading] = useState(false);
 
   const location = useLocation();
-  const userRole = sessionStorage.getItem('role') || 'employee';
+  const userRole = (sessionStorage.getItem('role') || 'employee').toLowerCase();
   const isEmployeeRoute = location.pathname.includes('/employee');
   const [viewContext, setViewContext] = useState(isEmployeeRoute || userRole === 'employee' ? 'employee' : 'team');
   const [hoveredWeeklySlice, setHoveredWeeklySlice] = useState(null);
@@ -468,7 +507,7 @@ const Attendance = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 7;
 
   // Calendar
   const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -520,6 +559,23 @@ const Attendance = () => {
     }
   }, [teamStatsPeriod]);
 
+  const fetchSummaryChart = useCallback(async (period = chartPeriod) => {
+    const token = sessionStorage.getItem('token');
+    try {
+      const url = viewContext === 'employee'
+        ? `/api/attendance/summary/weekly?scope=personal&period=${period}`
+        : `/api/attendance/summary/weekly?period=${period}`;
+      const summaryRes = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+      setWeeklyChartData(summaryRes.data.this_week || []);
+    } catch (e) {
+      console.error('Error fetching summary chart:', e);
+    }
+  }, [viewContext, chartPeriod]);
+
+  useEffect(() => {
+    fetchSummaryChart(chartPeriod);
+  }, [chartPeriod, fetchSummaryChart]);
+
   useEffect(() => {
     if (viewContext === 'employee') {
       fetchEmployeeStats(statsPeriod);
@@ -540,7 +596,10 @@ const Attendance = () => {
 
   // Fetch data
   const fetchAttendance = useCallback(async () => {
-    setLoading(true);
+    // Only show full loading spinner on initial load if no records exist yet
+    if (records.length === 0) {
+      setLoading(true);
+    }
     setError(null);
     const token = sessionStorage.getItem('token');
     try {
@@ -548,19 +607,18 @@ const Attendance = () => {
         viewContext === 'employee' ? '/api/attendance?scope=personal' : '/api/attendance',
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const summaryRes = await axios.get(
-        viewContext === 'employee' ? '/api/attendance/summary/weekly?scope=personal' : '/api/attendance/summary/weekly',
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setWeeklyChartData(summaryRes.data.this_week || []);
+      fetchSummaryChart(chartPeriod);
 
       const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-      if (data.length > 0) {
-        setRecords(data);
-      } else {
-        setRecords(SAMPLE_RECORDS);
+      const uniqueRecordsMap = new Map();
+      for (const item of data) {
+        const uId = item.user?._id ? item.user._id.toString() : (item.user ? item.user.toString() : item._id);
+        const key = `${uId}_${item.date}`;
+        if (uId && !uniqueRecordsMap.has(key)) {
+          uniqueRecordsMap.set(key, item);
+        }
       }
+      setRecords(Array.from(uniqueRecordsMap.values()));
 
       if (viewContext === 'employee') {
         fetchEmployeeStats(statsPeriod);
@@ -569,12 +627,12 @@ const Attendance = () => {
         fetchTeamStats(teamStatsPeriod);
       }
     } catch (err) {
-      console.warn('Using sample data:', err.message);
-      setRecords(SAMPLE_RECORDS);
+      console.warn('Error fetching attendance data:', err.message);
+      setRecords([]);
     } finally {
       setLoading(false);
     }
-  }, [viewContext, statsPeriod, chartPeriod, teamStatsPeriod, fetchEmployeeStats, fetchChartStats, fetchTeamStats]);
+  }, [viewContext, statsPeriod, chartPeriod, teamStatsPeriod, fetchEmployeeStats, fetchChartStats, fetchTeamStats, records.length]);
 
   useEffect(() => { fetchAttendance(); }, [fetchAttendance]);
 
@@ -585,6 +643,18 @@ const Attendance = () => {
   const todaySummaryFromBackend = useMemo(() => weeklyChartData.find(d => d.date === todayStr), [weeklyChartData, todayStr]);
 
   const summaryStats = useMemo(() => {
+    if (viewContext === 'team' && teamStats) {
+      const src = teamStats.today || teamStats;
+      const present = src.present || 0;
+      const late = src.late || 0;
+      const halfDay = src.halfDay || 0;
+      const absent = src.absent || 0;
+      const leave = src.leave || 0;
+      const total = src.total || (present + late + halfDay + absent + leave) || 1;
+      const pct = src.pct !== undefined ? src.pct : Math.round(((present + late + halfDay) / total) * 100);
+      return { present, late, absent, halfDay, leave, total, pct };
+    }
+
     const present = todayRecords.filter(r => r.status === 'Present').length;
     const late = todayRecords.filter(r => r.status === 'Late').length;
     const halfDay = todayRecords.filter(r => r.status === 'Half Day').length;
@@ -595,11 +665,29 @@ const Attendance = () => {
     const total = present + late + halfDay + absent + leave || 1;
     const pct = Math.round(((present + late + halfDay) / total) * 100);
     return { present, late, absent, halfDay, leave, total, pct };
-  }, [todayRecords, todaySummaryFromBackend]);
+  }, [todayRecords, todaySummaryFromBackend, viewContext, teamStats]);
 
   // ── Filtered & Sorted ──
   const filteredRecords = useMemo(() => {
     let filtered = [...records];
+
+    if (userRole === 'hr') {
+      filtered = filtered.filter(r => {
+        const role = (r.user?.role || '').toLowerCase();
+        const name = (r.user?.name || '').toLowerCase();
+        if (role === 'admin' || role === 'superadmin') return false;
+        if (name.includes('admin')) return false;
+        return true;
+      });
+    } else if (userRole === 'manager') {
+      filtered = filtered.filter(r => {
+        const role = (r.user?.role || '').toLowerCase();
+        const name = (r.user?.name || '').toLowerCase();
+        if (role === 'admin' || role === 'hr' || role === 'superadmin') return false;
+        if (name.includes('admin') || name.includes('hr manager')) return false;
+        return true;
+      });
+    }
 
     const today = new Date();
 
@@ -762,148 +850,232 @@ const Attendance = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-[26px] font-extrabold text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Attendance
+            {appViewMode === 'attendance' ? 'Attendance' : 'Smart Time Tracker'}
           </h1>
-          <p className="text-sm text-slate-500 dark:text-[#829e92] mt-1">
-            {viewContext === 'employee' ? 'Track your daily attendance, working hours and weekly breakdown' : 'Monitor and manage organization-wide employee attendance and shifts'}
-          </p>
+          {appViewMode === 'timeTracker' && (
+            <p className="text-xs text-slate-500 dark:text-[#829e92] mt-0.5">Manage your working hours efficiently.</p>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-slate-100 dark:bg-[#133029] p-1 rounded-xl mr-2">
+        {appViewMode === 'attendance' && (
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setAppViewMode('attendance')}
-              className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${appViewMode === 'attendance' ? 'bg-white dark:bg-[#0a1f1a] text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+              onClick={fetchAttendance}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] text-xs font-bold text-slate-600 dark:text-slate-300 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all cursor-pointer"
             >
-              Attendance
+              <RefreshCw size={14} />
+              Refresh
             </button>
             <button
-              onClick={() => setAppViewMode('timeTracker')}
-              className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${appViewMode === 'timeTracker' ? 'bg-white dark:bg-[#0a1f1a] text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+              onClick={exportCSV}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
             >
-              Time Tracker
+              <Download size={14} />
+              Export CSV
             </button>
           </div>
-          {userRole !== 'employee' && (
-            <div className="flex items-center bg-slate-100 dark:bg-[#133029] p-1 rounded-xl mr-2">
+        )}
+      </div>
+
+      {/* ── TAB NAVIGATION & PERIOD TOGGLE ROW ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        {/* Left: View Mode Navigation Tabs */}
+        <div>
+          {userRole === 'employee' ? (
+            <div className="inline-flex items-center bg-slate-100/90 dark:bg-[#112822] p-1.5 rounded-2xl border border-slate-200/70 dark:border-[#1a3830] shadow-xs gap-1">
               <button
-                onClick={() => setViewContext('employee')}
-                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${viewContext === 'employee' ? 'bg-white dark:bg-[#0a1f1a] text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                type="button"
+                onClick={() => setAppViewMode('attendance')}
+                className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${appViewMode === 'attendance'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
               >
-                You
+                <Calendar size={14} className={appViewMode === 'attendance' ? 'text-white' : 'text-emerald-500'} />
+                <span>My Attendance</span>
               </button>
               <button
-                onClick={() => setViewContext('team')}
-                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${viewContext === 'team' ? 'bg-white dark:bg-[#0a1f1a] text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                type="button"
+                onClick={() => setAppViewMode('timeTracker')}
+                className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${appViewMode === 'timeTracker'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
               >
-                My Team
+                <Timer size={14} className={appViewMode === 'timeTracker' ? 'text-white' : 'text-teal-500'} />
+                <span>My Time Tracker</span>
+              </button>
+            </div>
+          ) : (
+            <div className="inline-flex items-center bg-slate-100/90 dark:bg-[#112822] p-1.5 rounded-2xl border border-slate-200/70 dark:border-[#1a3830] shadow-xs gap-1 flex-wrap sm:flex-nowrap">
+              <button
+                type="button"
+                onClick={() => {
+                  setAppViewMode('attendance');
+                  setViewContext('employee');
+                }}
+                className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${appViewMode === 'attendance' && viewContext === 'employee'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+              >
+                <Calendar size={14} className={appViewMode === 'attendance' && viewContext === 'employee' ? 'text-white' : 'text-emerald-500'} />
+                <span>My Attendance</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAppViewMode('attendance');
+                  setViewContext('team');
+                }}
+                className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${appViewMode === 'attendance' && viewContext === 'team'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+              >
+                <Users size={14} className={appViewMode === 'attendance' && viewContext === 'team' ? 'text-white' : 'text-emerald-500'} />
+                <span>My Team Attendance</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAppViewMode('timeTracker');
+                  setViewContext('employee');
+                }}
+                className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${appViewMode === 'timeTracker' && viewContext === 'employee'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+              >
+                <Timer size={14} className={appViewMode === 'timeTracker' && viewContext === 'employee' ? 'text-white' : 'text-teal-500'} />
+                <span>My Time Tracker</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAppViewMode('timeTracker');
+                  setViewContext('team');
+                }}
+                className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${appViewMode === 'timeTracker' && viewContext === 'team'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+              >
+                <Clock size={14} className={appViewMode === 'timeTracker' && viewContext === 'team' ? 'text-white' : 'text-teal-500'} />
+                <span>My Team Time Tracker</span>
               </button>
             </div>
           )}
-          <button
-            onClick={fetchAttendance}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-[#0a1f1a] border border-[#e2eae7] dark:border-[#133029] text-sm font-bold text-slate-600 dark:text-slate-300 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all"
-          >
-            <RefreshCw size={15} />
-            Refresh
-          </button>
-          <button
-            onClick={exportCSV}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-all shadow-sm"
-          >
-            <Download size={15} />
-            Export CSV
-          </button>
         </div>
+
+        {/* Right: Period Toggle (Week/Month/Year) */}
+        {appViewMode === 'attendance' && (
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#133029] p-1 rounded-xl shrink-0">
+            {['week', 'month', 'year'].map((p) => {
+              const isEmployee = viewContext === 'employee';
+              const currentPeriod = isEmployee ? statsPeriod : teamStatsPeriod;
+              const setPeriod = isEmployee ? setStatsPeriod : setTeamStatsPeriod;
+              return (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${currentPeriod === p
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                >
+                  {p}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {appViewMode === 'attendance' ? (
         <>
-          {/* ── PERIOD TOGGLE ── */}
-          <div className="flex justify-end mb-4">
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#133029] p-1 rounded-xl">
-              {['week', 'month', 'year'].map((p) => {
-                const isEmployee = viewContext === 'employee';
-                const currentPeriod = isEmployee ? statsPeriod : teamStatsPeriod;
-                const setPeriod = isEmployee ? setStatsPeriod : setTeamStatsPeriod;
-                return (
-                  <button
-                    key={p}
-                    onClick={() => setPeriod(p)}
-                    className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${currentPeriod === p
-                        ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                  >
-                    {p}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           {/* ── SUMMARY CARDS ── */}
-          <div className={`grid grid-cols-2 sm:grid-cols-3 gap-4 ${viewContext === 'employee' ? 'lg:grid-cols-5' : 'lg:grid-cols-6'}`}>
-            {(viewContext === 'employee' ? [
-              { label: `Present (${periodLabel})`, value: activeStats?.present || 0, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30' },
-              { label: `Late (${periodLabel})`, value: activeStats?.late || 0, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/30' },
-              { label: `Absent (${periodLabel})`, value: activeStats?.absent || 0, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-red-50 dark:bg-red-950/30' },
-              { label: `Half Day (${periodLabel})`, value: activeStats?.halfDay || 0, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30' },
-              { label: `Leave (${periodLabel})`, value: activeStats?.leave || 0, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30' },
-            ] : [
-              { label: `Total (${teamStatsPeriod})`, value: teamStats?.total || 0, icon: Users, color: 'text-slate-700 dark:text-white', bgIcon: 'bg-slate-100 dark:bg-slate-800/40', isLoading: teamStatsLoading },
-              { label: 'Present', value: teamStats?.present || 0, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30', trend: teamStats?.pct ? `${teamStats.pct}%` : '0%', isLoading: teamStatsLoading },
-              { label: 'Late', value: teamStats?.late || 0, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/30', isLoading: teamStatsLoading },
-              { label: 'Absent', value: teamStats?.absent || 0, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-red-50 dark:bg-red-950/30', isLoading: teamStatsLoading },
-              { label: 'Half Day', value: teamStats?.halfDay || 0, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30', isLoading: teamStatsLoading },
-              { label: 'On Leave', value: teamStats?.leave || 0, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30', isLoading: teamStatsLoading },
-            ]).map((card, i) => (
-              <Card key={i} className="flex flex-col justify-between">
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${card.bgIcon}`}>
-                    <card.icon size={17} className={card.color} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+            {(() => {
+              const empPresent = activeStats?.present || 0;
+              const empLate = activeStats?.late || 0;
+              const empHalfDay = activeStats?.halfDay || 0;
+              const empAbsent = activeStats?.absent || 0;
+              const empLeave = activeStats?.leave || 0;
+              const empTotal = empPresent + empLate + empHalfDay + empAbsent + empLeave;
+              const empRate = empTotal > 0 ? Math.round(((empPresent + empLate + empHalfDay) / empTotal) * 100) : 0;
+
+              const cards = viewContext === 'employee' ? [
+                { label: `Total (${statsPeriod})`, value: empTotal, icon: Users, color: 'text-slate-700 dark:text-white', bgIcon: 'bg-slate-100 dark:bg-slate-800/40', hoverBorder: 'hover:border-indigo-500' },
+                { label: 'Present', value: empPresent, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30', trend: `${empRate}%`, hoverBorder: 'hover:border-emerald-500' },
+                { label: 'Late', value: empLate, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/30', hoverBorder: 'hover:border-amber-500' },
+                { label: 'Absent', value: empAbsent, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-red-50 dark:bg-red-950/30', hoverBorder: 'hover:border-rose-500' },
+                { label: 'Half Day', value: empHalfDay, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30', hoverBorder: 'hover:border-sky-500' },
+                { label: 'On Leave', value: empLeave, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30', hoverBorder: 'hover:border-purple-500' },
+              ] : [
+                { label: `Total (${teamStatsPeriod})`, value: teamStats?.total || 0, icon: Users, color: 'text-slate-700 dark:text-white', bgIcon: 'bg-slate-100 dark:bg-slate-800/40', isLoading: teamStatsLoading, hoverBorder: 'hover:border-indigo-500' },
+                { label: 'Present', value: teamStats?.present || 0, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30', trend: teamStats?.pct ? `${teamStats.pct}%` : '0%', isLoading: teamStatsLoading, hoverBorder: 'hover:border-emerald-500' },
+                { label: 'Late', value: teamStats?.late || 0, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/30', isLoading: teamStatsLoading, hoverBorder: 'hover:border-amber-500' },
+                { label: 'Absent', value: teamStats?.absent || 0, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-red-50 dark:bg-red-950/30', isLoading: teamStatsLoading, hoverBorder: 'hover:border-rose-500' },
+                { label: 'Half Day', value: teamStats?.halfDay || 0, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30', isLoading: teamStatsLoading, hoverBorder: 'hover:border-sky-500' },
+                { label: 'On Leave', value: teamStats?.leave || 0, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30', isLoading: teamStatsLoading, hoverBorder: 'hover:border-purple-500' },
+              ];
+
+              return cards.map((card, i) => (
+                <Card key={i} className={`!py-2.5 !px-3.5 flex items-center justify-between hover:shadow-xs transition-all duration-300 border border-slate-200/60 dark:border-[#1a2d29] ${card.hoverBorder}`}>
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <div className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center shrink-0 ${card.bgIcon}`}>
+                      <card.icon size={15} className={card.color} />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10.5px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-tight truncate" title={card.label}>
+                        {card.label}
+                      </span>
+                      {card.trend && (
+                        <span className="text-[9.5px] font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                          <ArrowUpRight size={9} /> {card.trend}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  {viewContext !== 'employee' && card.trend && (
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">
-                      <ArrowUpRight size={10} /> {card.trend}
-                    </span>
-                  )}
-                </div>
-                {card.isLoading ? (
-                  <div className="h-6 w-16 bg-slate-200 dark:bg-[#133029] rounded animate-pulse mb-1"></div>
-                ) : (
-                  <h3 className={`text-[18px] font-extrabold ${card.color} leading-none mb-1`}>{card.value}</h3>
-                )}
-                <p className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">{card.label}</p>
-              </Card>
-            ))}
+                  <div className="shrink-0 pl-1.5 text-right">
+                    {card.isLoading ? (
+                      <div className="h-5 w-10 bg-slate-200 dark:bg-[#133029] rounded animate-pulse"></div>
+                    ) : (
+                      <h3 className={`text-[18px] font-black ${card.color} leading-none`}>{card.value}</h3>
+                    )}
+                  </div>
+                </Card>
+              ));
+            })()}
           </div>
 
           {/* ── ATTENDANCE RATE BANNER (Hidden for employee since it's company-wide) ── */}
           {viewContext !== 'employee' && (
-            <Card className="!p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                  <TrendingUp size={24} className="text-white" />
+            <Card className="!py-2.5 !px-4 flex flex-col sm:flex-row items-center justify-between gap-3 !hover:border-teal-500 hover:border-teal-500">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-md shadow-emerald-500/20 shrink-0">
+                  <TrendingUp size={18} className="text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-slate-500 dark:text-[#829e92]">Today's Attendance Rate</p>
-                  <h2 className="text-[18px] font-black text-slate-900 dark:text-white tracking-tight">{summaryStats.pct}%</h2>
+                  <p className="text-xs font-bold text-slate-500 dark:text-[#829e92]">Today's Attendance Rate</p>
+                  <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tight leading-none mt-0.5">{summaryStats.pct}%</h2>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <p className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{summaryStats.present + summaryStats.late + summaryStats.halfDay}</p>
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">Working</p>
+              <div className="flex items-center gap-6 sm:gap-8 px-2">
+                <div className="text-center px-1">
+                  <p className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 leading-tight">{summaryStats.present + summaryStats.late + summaryStats.halfDay}</p>
+                  <p className="text-[9.5px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">Working</p>
                 </div>
-                <div className="w-px h-8 bg-slate-200 dark:bg-[#133029]" />
-                <div className="text-center">
-                  <p className="text-lg font-extrabold text-red-500 dark:text-red-400">{summaryStats.absent}</p>
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">Absent</p>
+                <div className="w-px h-6 bg-slate-200 dark:bg-[#133029] shrink-0" />
+                <div className="text-center px-1">
+                  <p className="text-base font-extrabold text-red-500 dark:text-red-400 leading-tight">{summaryStats.absent}</p>
+                  <p className="text-[9.5px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">Absent</p>
                 </div>
-                <div className="w-px h-8 bg-slate-200 dark:bg-[#133029]" />
-                <div className="text-center">
-                  <p className="text-lg font-extrabold text-purple-500 dark:text-purple-400">{summaryStats.leave}</p>
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">Leave</p>
+                <div className="w-px h-6 bg-slate-200 dark:bg-[#133029] shrink-0" />
+                <div className="text-center px-1">
+                  <p className="text-base font-extrabold text-purple-500 dark:text-purple-400 leading-tight">{summaryStats.leave}</p>
+                  <p className="text-[9.5px] font-bold text-slate-400 dark:text-[#829e92] uppercase tracking-wider">Leave</p>
                 </div>
               </div>
             </Card>
@@ -912,32 +1084,32 @@ const Attendance = () => {
           {/* ── CHARTS GRID ── */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Weekly Attendance Chart */}
-            <Card className="col-span-12 lg:col-span-7 flex flex-col justify-between">
+            <Card className="col-span-12 lg:col-span-7 flex flex-col justify-between !hover:border-blue-500 hover:border-blue-500">
               <div className="flex justify-between items-center mb-4">
                 <div>
                   <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-white tracking-tight">
-                    {viewContext === 'employee' ? `${chartPeriod === 'week' ? 'Weekly' : chartPeriod === 'month' ? 'Monthly' : 'Yearly'} Attendance` : 'Weekly Attendance'}
+                    {chartPeriod === 'week' ? 'Weekly' : chartPeriod === 'month' ? 'Monthly' : 'Yearly'} Attendance
                   </h3>
                   <p className="text-xs text-slate-400 dark:text-[#829e92] mt-0.5">
-                    {viewContext === 'employee' ? `This ${chartPeriod === 'week' ? "week's" : chartPeriod === 'month' ? "month's" : "year's"} attendance breakdown` : 'Weekly team attendance overview'}
+                    {viewContext === 'employee'
+                      ? `This ${chartPeriod === 'week' ? "week's" : chartPeriod === 'month' ? "month's" : "year's"} attendance breakdown`
+                      : `${chartPeriod === 'week' ? "Weekly" : chartPeriod === 'month' ? "Monthly" : "Yearly"} team attendance overview`}
                   </p>
                 </div>
-                {viewContext === 'employee' && (
-                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#133029] p-0.5 rounded-lg">
-                    {['week', 'month', 'year'].map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => setChartPeriod(p)}
-                        className={`px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider rounded-md transition-all ${chartPeriod === p
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'text-slate-500 dark:text-[#829e92] hover:text-slate-900 dark:hover:text-white'
-                          }`}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#133029] p-0.5 rounded-lg">
+                  {['week', 'month', 'year'].map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setChartPeriod(p)}
+                      className={`px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider rounded-md transition-all ${chartPeriod === p
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-500 dark:text-[#829e92] hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {viewContext === 'employee' ? (
@@ -1107,7 +1279,7 @@ const Attendance = () => {
 
             {/* Right Column: Attendance Calendar */}
             <div className="col-span-12 lg:col-span-5 flex flex-col">
-              <Card className="h-full flex flex-col justify-between p-5">
+              <Card className="h-full flex flex-col justify-between p-5 !hover:border-emerald-500 hover:border-emerald-500">
                 {/* Calendar Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -1187,9 +1359,8 @@ const Attendance = () => {
                       <div
                         key={day.dateStr}
                         onClick={() => setDateFilter(dateFilter === day.dateStr ? '' : day.dateStr)}
-                        className={`h-8 md:h-9 rounded-lg p-0.5 flex flex-col items-center justify-center transition-all cursor-pointer relative text-xs ${dayBg} ${isToday ? 'ring-2 ring-emerald-500 shadow-xs' : ''
+                        className={`group relative h-8 md:h-9 rounded-lg p-0.5 flex flex-col items-center justify-center transition-all cursor-pointer text-xs ${dayBg} ${isToday ? 'ring-2 ring-emerald-500 shadow-xs' : ''
                           } ${dateFilter === day.dateStr ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/40' : ''}`}
-                        title={`${day.dateStr}: ${day.present ? 'Present' : day.late ? 'Late' : day.halfDay ? 'Half Day' : day.absent ? 'Absent' : day.leave ? 'Leave' : isSunday ? 'Sunday Off' : 'No record'}`}
                       >
                         <span className="leading-none text-[11px] font-bold">{day.day}</span>
                         {dotColor && (
@@ -1198,6 +1369,45 @@ const Attendance = () => {
                             style={{ backgroundColor: dotColor }}
                           />
                         )}
+
+                        {/* Interactive Hover Popover Tooltip */}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col z-50 w-44 bg-white dark:bg-[#181612] border border-slate-200 dark:border-[#38352e] rounded-xl p-2.5 shadow-xl text-left pointer-events-none transition-all">
+                          <p className="text-[11px] font-black text-slate-800 dark:text-white border-b border-slate-100 dark:border-[#282520] pb-1 mb-1.5">
+                            {new Date(day.dateStr).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                          <div className="space-y-1 text-[10px] font-bold">
+                            <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Present
+                              </span>
+                              <span className="font-extrabold">{day.present}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Late
+                              </span>
+                              <span className="font-extrabold">{day.late}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-blue-600 dark:text-blue-400">
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Half Day
+                              </span>
+                              <span className="font-extrabold">{day.halfDay}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-purple-600 dark:text-purple-400">
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-purple-500" /> Leave
+                              </span>
+                              <span className="font-extrabold">{day.leave}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-red-600 dark:text-red-400">
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Absent
+                              </span>
+                              <span className="font-extrabold">{day.absent}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
@@ -1231,15 +1441,15 @@ const Attendance = () => {
           </div>
 
           {/* ── ATTENDANCE HISTORY TABLE ── */}
-          <Card>
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
-              <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-white tracking-tight shrink-0">
+          <Card className="!p-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-2.5">
+              <h3 className="text-[14px] font-extrabold text-slate-900 dark:text-white tracking-tight shrink-0">
                 Attendance History
                 <span className="ml-2 text-xs font-bold text-slate-400 dark:text-[#829e92]">({filteredRecords.length} records)</span>
               </h3>
 
               {/* Filters & View Mode Tabs in Same Row */}
-              <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex flex-wrap items-center gap-2">
                 {/* Status Filter */}
                 <StatusFilterDropdown
                   value={statusFilter}
@@ -1258,21 +1468,21 @@ const Attendance = () => {
                 {(searchQuery || statusFilter !== 'All' || dateFilter) && (
                   <button
                     onClick={() => { setSearchQuery(''); setStatusFilter('All'); setDateFilter(''); }}
-                    className="px-2.5 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-all cursor-pointer"
+                    className="px-2 py-1 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-all cursor-pointer"
                   >
                     Clear
                   </button>
                 )}
 
                 {/* View Mode Tabs */}
-                <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#133029] rounded-xl p-1 shadow-xs">
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#133029] rounded-xl p-0.5 shadow-xs">
                   {['daily', 'weekly', 'monthly'].map(mode => (
                     <button
                       key={mode}
                       onClick={() => setViewMode(mode)}
-                      className={`px-3 py-1 text-xs font-bold rounded-lg capitalize transition-all cursor-pointer ${viewMode === mode
-                          ? 'bg-white dark:bg-[#0a1f1a] text-emerald-600 dark:text-emerald-400 shadow-sm'
-                          : 'text-slate-500 dark:text-[#829e92] hover:text-slate-700 dark:hover:text-white'
+                      className={`px-2.5 py-0.5 text-xs font-bold rounded-lg capitalize transition-all cursor-pointer ${viewMode === mode
+                        ? 'bg-white dark:bg-[#0a1f1a] text-emerald-600 dark:text-emerald-400 shadow-sm'
+                        : 'text-slate-500 dark:text-[#829e92] hover:text-slate-700 dark:hover:text-white'
                         }`}
                     >
                       {mode}
@@ -1284,25 +1494,25 @@ const Attendance = () => {
 
             {/* Search Bar for Non-Employee roles */}
             {viewContext !== 'employee' && (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2.5">
                 <div className="flex-1 relative">
-                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#829e92]" />
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#829e92]" />
                   <input
                     type="text"
                     placeholder="Search employees, dates, departments..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl bg-slate-50 dark:bg-[#0d2a22] border border-[#e2eae7] dark:border-[#133029] text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-[#829e92] focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-[#0d2a22] border border-[#e2eae7] dark:border-[#133029] text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-[#829e92] focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
                   />
                 </div>
               </div>
             )}
 
             {/* Table */}
-            <div className="overflow-x-auto rounded-xl border border-[#e2eae7] dark:border-[#133029]">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50/80 dark:bg-[#0d2a22]">
+            <div className="h-[310px] min-h-[310px] max-h-[310px] overflow-x-auto overflow-y-hidden rounded-xl border border-[#e2eae7] dark:border-[#133029]">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-slate-100 dark:bg-[#0d2a22] border-b border-[#e2eae7] dark:border-[#133029]">
                     {[
                       { key: 'name', label: 'Employee' },
                       { key: 'date', label: 'Date' },
@@ -1313,7 +1523,7 @@ const Attendance = () => {
                     ].map(col => (
                       <th key={col.key}
                         onClick={() => col.key !== 'hours' && col.key !== 'clockOut' && handleSort(col.key)}
-                        className={`px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-[#829e92] uppercase tracking-wider ${col.key !== 'hours' && col.key !== 'clockOut' ? 'cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 select-none' : ''
+                        className={`px-3 py-1.5 text-left text-[9.5px] font-bold text-slate-500 dark:text-[#829e92] uppercase tracking-wider ${col.key !== 'hours' && col.key !== 'clockOut' ? 'cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 select-none' : ''
                           }`}>
                         <div className="flex items-center gap-1">
                           {col.label}
@@ -1328,11 +1538,11 @@ const Attendance = () => {
                 <tbody className="divide-y divide-[#e2eae7] dark:divide-[#133029]">
                   {paginatedRecords.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-16 text-center">
-                        <div className="flex flex-col items-center gap-3">
-                          <Calendar size={36} className="text-slate-300 dark:text-slate-600" />
-                          <p className="text-sm font-semibold text-slate-400 dark:text-slate-500">No attendance records found</p>
-                          <p className="text-xs text-slate-400 dark:text-slate-600">Try adjusting your search or filters</p>
+                      <td colSpan={6} className="py-8 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <Calendar size={28} className="text-slate-300 dark:text-slate-600" />
+                          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">No attendance records found</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-600">Try adjusting your search or filters</p>
                         </div>
                       </td>
                     </tr>
@@ -1340,29 +1550,29 @@ const Attendance = () => {
                     const sc = STATUS_COLORS[record.status] || STATUS_COLORS['Present'];
                     return (
                       <tr key={record._id || i} className="hover:bg-slate-50/50 dark:hover:bg-[#0d2a22]/50 transition-colors">
-                        <td className="px-4 py-3.5">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-[#133029] text-emerald-600 dark:text-emerald-400 font-bold text-[11px] flex items-center justify-center shrink-0">
+                        <td className="px-3 py-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6.5 h-6.5 rounded-full bg-emerald-50 dark:bg-[#133029] text-emerald-600 dark:text-emerald-400 font-bold text-[9.5px] flex items-center justify-center shrink-0">
                               {getInitials(record.user?.name)}
                             </div>
                             <div>
-                              <p className="font-bold text-slate-800 dark:text-white text-sm leading-tight">{record.user?.name || 'Unknown'}</p>
-                              <p className="text-[11px] text-slate-400 dark:text-[#829e92]">{record.department || record.user?.role || ''}</p>
+                              <p className="font-bold text-slate-800 dark:text-white text-[11.5px] leading-tight">{record.user?.name || 'Unknown'}</p>
+                              <p className="text-[9.5px] text-slate-400 dark:text-[#829e92] leading-none mt-0.5">{record.department || record.user?.role || ''}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3.5">
-                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{record.date}</span>
+                        <td className="px-3 py-1.5">
+                          <span className="text-[11.5px] font-semibold text-slate-700 dark:text-slate-300">{record.date}</span>
                         </td>
-                        <td className="px-4 py-3.5">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-full border ${sc.bg} ${sc.text} ${sc.border}`}>
+                        <td className="px-3 py-1.5">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full border ${sc.bg} ${sc.text} ${sc.border}`}>
                             <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sc.dot }} />
                             {record.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5">
-                          <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                            <LogIn size={13} className="text-emerald-500" />
+                        <td className="px-3 py-1.5">
+                          <div className="flex items-center gap-1 text-[11.5px] font-semibold text-slate-700 dark:text-slate-300">
+                            <LogIn size={11.5} className="text-emerald-500" />
                             {(() => {
                               if (record.clockIn) return record.clockIn;
                               if (record.clock_in) return record.clock_in;
@@ -1374,9 +1584,9 @@ const Attendance = () => {
                             })()}
                           </div>
                         </td>
-                        <td className="px-4 py-3.5">
-                          <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                            <LogOut size={13} className="text-red-400" />
+                        <td className="px-3 py-1.5">
+                          <div className="flex items-center gap-1 text-[11.5px] font-semibold text-slate-700 dark:text-slate-300">
+                            <LogOut size={11.5} className="text-red-400" />
                             {(() => {
                               if (record.clockOut) return record.clockOut;
                               if (record.clock_out) return record.clock_out;
@@ -1388,12 +1598,12 @@ const Attendance = () => {
                             })()}
                           </div>
                         </td>
-                        <td className="px-4 py-3.5">
-                          <span className="text-sm font-bold text-slate-800 dark:text-white">
+                        <td className="px-3 py-1.5">
+                          <span className="text-[11.5px] font-bold text-slate-800 dark:text-white">
                             {(() => {
                               const cIn = record.clockIn || record.clock_in || (record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : null);
                               const cOut = record.clockOut || record.clock_out || (record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : null);
-                              return getWorkingHours(cIn, cOut, record.totalHours);
+                              return getWorkingHours(cIn, cOut, record.totalHours, record);
                             })()}
                           </span>
                         </td>
@@ -1404,16 +1614,18 @@ const Attendance = () => {
               </table>
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-5">
-                <p className="text-xs font-semibold text-slate-400 dark:text-[#829e92]">
-                  Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredRecords.length)} of {filteredRecords.length}
-                </p>
+            {/* Pagination Footer - Always Reserved Height to Keep Container Fixed */}
+            <div className="flex items-center justify-between mt-3.5 min-h-[36px]">
+              <p className="text-xs font-semibold text-slate-400 dark:text-[#829e92]">
+                {filteredRecords.length > 0
+                  ? `Showing ${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, filteredRecords.length)} of ${filteredRecords.length}`
+                  : 'Showing 0 records'}
+              </p>
+              {totalPages > 1 ? (
                 <div className="flex items-center gap-1.5">
                   <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
-                    className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#133029] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                    <ChevronLeft size={15} className="text-slate-500 dark:text-[#829e92]" />
+                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[#133029] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                    <ChevronLeft size={14} className="text-slate-500 dark:text-[#829e92]" />
                   </button>
                   {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                     let page;
@@ -1423,7 +1635,7 @@ const Attendance = () => {
                     else page = currentPage - 2 + i;
                     return (
                       <button key={page} onClick={() => setCurrentPage(page)}
-                        className={`w-8 h-8 text-xs font-bold rounded-lg transition-all ${currentPage === page
+                        className={`w-7 h-7 text-xs font-bold rounded-lg transition-all ${currentPage === page
                           ? 'bg-emerald-600 text-white shadow-sm'
                           : 'text-slate-500 dark:text-[#829e92] hover:bg-slate-100 dark:hover:bg-[#133029]'
                           }`}>
@@ -1432,16 +1644,18 @@ const Attendance = () => {
                     );
                   })}
                   <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
-                    className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#133029] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                    <ChevronRight size={15} className="text-slate-500 dark:text-[#829e92]" />
+                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[#133029] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                    <ChevronRight size={14} className="text-slate-500 dark:text-[#829e92]" />
                   </button>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="h-7 w-1 shrink-0" />
+              )}
+            </div>
           </Card>
         </>
       ) : (
-        <SmartTimeTracker />
+        <SmartTimeTracker isPersonal={viewContext === 'employee'} hideHeader={true} />
       )}
     </div>
   );

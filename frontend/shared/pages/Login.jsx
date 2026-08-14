@@ -61,7 +61,13 @@ const Login = () => {
         navigate(`/${role}/dashboard`);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password');
+      if (!err.response) {
+        setError('Network error: Unable to connect to the server. Please check if the backend is running.');
+      } else if (err.response.status >= 500) {
+        setError(`Server error (${err.response.status}): ${err.response.data?.message || 'The server encountered an error.'}`);
+      } else {
+        setError(err.response?.data?.message || 'Invalid email or password');
+      }
     } finally {
       setLoading(false);
     }

@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import {
-  Play, Square, Clock, Users, Search, Filter, RefreshCw, Pause, ChevronLeft, ChevronRight, Calendar as CalendarIcon, FileDown, X
+  Play, Square, Clock, Users, Search, Filter, RefreshCw, Pause, ChevronLeft, ChevronRight, Calendar as CalendarIcon, FileDown, X, Activity, Coffee
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { AttendanceDatePicker } from './Attendance';
 
 const API_BASE = '/api/time';
 
@@ -24,7 +25,7 @@ const formatMinutes = (seconds) => {
   return `${m}m`;
 };
 
-const SmartTimeTracker = () => {
+const SmartTimeTracker = ({ isPersonal = false, hideHeader = false }) => {
   const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [timer, setTimer] = useState(0);
@@ -48,6 +49,8 @@ const SmartTimeTracker = () => {
       }
     }
   }, []);
+
+  const isAdmin = !isPersonal && ['admin', 'hr', 'manager'].includes(userRole.toLowerCase());
 
   const getLocalDate = (date) => {
     const d = new Date(date);
@@ -138,7 +141,7 @@ const SmartTimeTracker = () => {
       if (!auth) return;
 
       let url = '';
-      if (userRole === 'admin' || userRole === 'hr') {
+      if (isAdmin) {
         const queryParams = [];
         if (dateRange.start && dateRange.end) {
           queryParams.push(`startDate=${dateRange.start}&endDate=${dateRange.end}`);
@@ -220,15 +223,15 @@ const SmartTimeTracker = () => {
     const d = new Date(date);
     const day = d.getDay();
     const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday start
-    const start = new Date(d.setDate(diff));
-    const end = new Date(d.setDate(start.getDate() + 6));
+    const start = new Date(d.getFullYear(), d.getMonth(), diff);
+    const end = new Date(d.getFullYear(), d.getMonth(), diff + 6);
     return { start: getLocalDate(start), end: getLocalDate(end) };
   };
 
   const fetchSummaryData = useCallback(async () => {
     try {
       const auth = getAuth();
-      if (!auth || !userId || userRole === 'admin' || userRole === 'hr') return;
+      if (!auth || !userId) return;
 
       setSummaryLoading(true);
       let query = '';
@@ -247,15 +250,15 @@ const SmartTimeTracker = () => {
     } finally {
       setSummaryLoading(false);
     }
-  }, [summaryRange, summaryDateRef, userId, userRole]);
+  }, [summaryRange, summaryDateRef, userId]);
 
   useEffect(() => {
     if (userId) fetchData();
     const interval = setInterval(() => {
       if (userId) fetchData();
-    }, 10000);
+    }, 5000);
     return () => clearInterval(interval);
-  }, [selectedDate, dateRange, userId, userRole]);
+  }, [selectedDate, dateRange, userId, userRole, isPersonal]);
 
   useEffect(() => {
     fetchSummaryData();
@@ -335,230 +338,342 @@ const SmartTimeTracker = () => {
     }
   };
 
+  const isManagerRole = userRole.toLowerCase() === 'manager';
+  const displayTableData = useMemo(() => {
+    if (!isManagerRole) return tableData;
+    return tableData.filter(item => {
+      const r = (item.employeeId?.role || item.employeeRole || '').toLowerCase();
+      const n = (item.employeeId?.fullName || item.employeeId?.name || '').toLowerCase();
+      if (r === 'admin' || r === 'hr' || r === 'superadmin') return false;
+      if (n.includes('admin') || n.includes('hr manager')) return false;
+      return true;
+    });
+  }, [tableData, isManagerRole]);
+
+  // Summary logic for admin
+  const todayDateStr = getLocalDate(new Date());
+  const todayLogs = displayTableData.filter(d => d.date === todayDateStr);
+  const totalEmployeesPresent = isAdmin ? new Set(todayLogs.map(d => d.employeeId?._id || d.employeeId)).size : 0;
+  const totalHoursLogged = isAdmin ? todayLogs.reduce((acc, curr) => acc + (curr.totalActiveTime || curr.activeTime || 0), 0) : 0;
+  const avgTimeLogged = isAdmin && totalEmployeesPresent > 0 ? Math.round(totalHoursLogged / totalEmployeesPresent) : 0;
+  const currentlyActive = isAdmin ? todayLogs.filter(d => d.status === 'active' || d.isRunning).length : 0;
+  const onBreak = isAdmin ? todayLogs.filter(d => d.status === 'paused' || d.status === 'idle').length : 0;
+
+  const filteredData = (() => {
+    const rawFiltered = displayTableData.filter(item => {
+      if (!searchTerm) return true;
+      const searchLower = searchTerm.toLowerCase();
+      const name = item.employeeId?.fullName || item.employeeId?.name || '';
+      return name.toLowerCase().includes(searchLower);
+    });
+
+    const seen = new Set();
+    const unique = [];
+    for (const item of rawFiltered) {
+      const empId = item.employeeId?._id || item.employeeId || item._id;
+      const key = `${empId}_${item.date}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(item);
+      }
+    }
+    return unique;
+  })();
+
   if (loading) return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0f0d0a] flex flex-col items-center justify-center gap-6">
-      <Clock size={36} className="text-[#10B981] animate-spin" />
-      <p className="text-gray-500 dark:text-[#a3a094] font-medium uppercase tracking-widest text-sm">Loading Time Tracker...</p>
+    <div className="min-h-[400px] w-full flex flex-col items-center justify-center gap-4 py-16">
+      <Clock size={32} className="text-[#10B981] animate-spin" />
+      <p className="text-gray-500 dark:text-[#a3a094] font-medium uppercase tracking-widest text-xs">Loading Time Tracker...</p>
     </div>
   );
 
-  const isAdmin = userRole === 'admin' || userRole === 'hr';
-
-  // Summary logic for admin
-  const totalEmployeesPresent = isAdmin ? new Set(tableData.map(d => d.employeeId?._id)).size : 0;
-  const totalHoursLogged = isAdmin ? tableData.reduce((acc, curr) => acc + (curr.totalActiveTime || curr.activeTime || 0), 0) : 0;
-  const currentlyActive = isAdmin ? tableData.filter(d => d.status === 'active' || d.isRunning).length : 0;
-  const onBreak = isAdmin ? tableData.filter(d => d.status === 'paused').length : 0;
-
-  const filteredData = tableData.filter(item => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    const name = item.employeeId?.fullName || item.employeeId?.name || '';
-    return name.toLowerCase().includes(searchLower);
-  });
-
   return (
-    <div className="min-h-screen bg-[#F0F2F5] dark:bg-[#0f0d0a] p-6 font-sans text-gray-900 dark:text-gray-100 transition-colors">
+    <div className="bg-transparent font-sans text-gray-900 dark:text-gray-100 transition-colors">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 border-b border-gray-200 dark:border-[#38352e] pb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-white tracking-tight">Smart Time Tracker</h1>
-          <p className="text-sm text-gray-500 dark:text-[#a3a094] mt-1">Manage your working hours efficiently.</p>
-        </div>
-        <div className="flex items-center gap-4">
-          {isAdmin && (
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-[#a3a094]" size={16} />
-              <input
-                type="text"
-                placeholder="Search personnel..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-gray-300 dark:border-[#38352e] rounded-lg text-sm bg-white dark:bg-[#181612] text-gray-900 dark:text-white focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] shadow-sm w-64"
-              />
-            </div>
-          )}
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-[#282520] border border-gray-300 dark:border-[#38352e] shadow-sm rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-[#38352e] transition-colors text-gray-700 dark:text-white disabled:opacity-50">
-            <RefreshCw size={16} className={syncing ? 'animate-spin text-[#10B981]' : (loading ? 'animate-spin' : '')} />
-            {syncing ? 'Syncing...' : 'Sync Registry'}
-          </button>
-        </div>
-      </div>
-
-      {/* TOP ROW: 70/30 SPLIT */}
-      <div className="flex flex-col lg:flex-row gap-6 mb-6 items-stretch">
-
-        {/* TIME TRACKER CARD (70%) */}
-        <div className="lg:w-[70%] bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm px-6 py-4 flex flex-col justify-between relative overflow-hidden">
-          <div className="flex justify-between items-start mb-3 relative z-10">
-            <div>
-              <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-1">Current Session</h2>
-              <div className="flex items-center gap-2">
-                <div className={`w-2.5 h-2.5 rounded-full ${session?.isRunning ? (session.status === 'active' ? 'bg-[#10B981] animate-pulse' : 'bg-amber-500 animate-pulse') : 'bg-gray-400 dark:bg-gray-600'}`}></div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600 dark:text-[#a3a094]">
-                  {session?.isRunning ? (session.status === 'active' ? 'Working' : 'On Break') : (session?.status === 'completed' ? 'Stopped' : 'Not Started')}
-                </span>
-              </div>
-            </div>
-            <Clock size={24} className="text-gray-300 dark:text-gray-600" />
+      {!hideHeader && (
+        <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 border-b border-gray-200 dark:border-[#38352e] pb-6">
+          <div>
+            <h1 className="text-xl font-bold text-gray-800 dark:text-white tracking-tight">Smart Time Tracker</h1>
+            <p className="text-xs text-gray-500 dark:text-[#a3a094] mt-0.5">Manage your working hours efficiently.</p>
           </div>
-
-          <div className="text-center my-auto py-2 relative z-10">
-            <div className="text-7xl leading-none font-black text-gray-900 dark:text-white font-mono tracking-tighter mb-1">
-              {formatTime(timer)}
-            </div>
-            <p className="text-[10px] text-gray-400 dark:text-[#a3a094] font-bold tracking-[0.2em] uppercase">Total Time Tracked</p>
-          </div>
-
-        </div>
-
-        {/* DYNAMIC CALENDAR (30%) */}
-        <div className="lg:w-[30%] bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm p-4 flex flex-col">
-          <div className="flex justify-between items-center mb-3 relative">
-            <button 
-              className="text-md font-bold text-gray-800 dark:text-white flex items-center gap-1 hover:text-[#10B981] transition-colors cursor-pointer select-none bg-transparent border-none"
-              onClick={() => {
-                setShowMonthYearPicker(!showMonthYearPicker);
-                if (!showMonthYearPicker) {
-                  setTempYear(currentMonth.getFullYear());
-                  setPickerMode('month');
-                }
-              }}
-            >
-              <CalendarIcon size={16} className={showMonthYearPicker ? "text-[#10B981] mr-1" : "text-[#10B981] mr-1 opacity-70"} />
-              {fullMonthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-            </button>
-
-            {/* Custom Month-Year Picker Popup */}
-            {showMonthYearPicker && (
-              <div 
-                ref={pickerRef} 
-                className="absolute top-9 left-1/2 -translate-x-1/2 z-50 w-60 bg-white dark:bg-[#1E2026] border border-gray-200 dark:border-[#38352e] rounded-xl shadow-2xl p-3 flex flex-col"
-              >
-                {/* Selected Year Header (Clickable) */}
-                <button
-                  type="button"
-                  onClick={() => setPickerMode(pickerMode === 'year' ? 'month' : 'year')}
-                  className="w-full bg-gray-100 dark:bg-[#2A2D35] hover:bg-gray-200 dark:hover:bg-[#32363F] text-gray-800 dark:text-white font-bold py-1.5 px-3 rounded-lg transition-colors mb-2 flex justify-center items-center text-sm"
-                >
-                  {tempYear}
-                  <svg className={`w-3.5 h-3.5 ml-1.5 transition-transform ${pickerMode === 'year' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {pickerMode === 'year' ? (
-                  <div className="max-h-48 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1">
-                    {Array.from({ length: 60 }, (_, i) => new Date().getFullYear() - 30 + i).map((y) => (
-                      <button
-                        key={y}
-                        id="admin-selected-year-btn"
-                        onClick={() => {
-                          setTempYear(y);
-                          setPickerMode('month');
-                        }}
-                        className={`w-full py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                          tempYear === y 
-                            ? 'bg-[#E0F2FE] dark:bg-[#10B981]/20 text-[#0284C7] dark:text-[#10B981]' 
-                            : 'hover:bg-gray-50 dark:hover:bg-[#2A2D35] text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        {y}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {monthNames.map((m, i) => {
-                      const isSelected = currentMonth.getFullYear() === tempYear && currentMonth.getMonth() === i;
-                      return (
-                        <button
-                          key={m}
-                          onClick={() => {
-                            setCurrentMonth(new Date(tempYear, i, 1));
-                            setShowMonthYearPicker(false);
-                          }}
-                          className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-                            isSelected 
-                              ? 'bg-[#10B981] text-white shadow-md' 
-                              : 'hover:bg-gray-50 dark:hover:bg-[#2A2D35] text-gray-700 dark:text-gray-300'
-                          }`}
-                        >
-                          {m}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+          <div className="flex items-center gap-4">
+            {isAdmin && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-[#a3a094]" size={16} />
+                <input
+                  type="text"
+                  placeholder="Search personnel..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 pr-4 py-2 border border-gray-300 dark:border-[#38352e] rounded-lg text-sm bg-white dark:bg-[#181612] text-gray-900 dark:text-white focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] shadow-sm w-64"
+                />
               </div>
             )}
-
-            <div className="flex gap-1">
-              <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-[#282520] rounded-lg transition-colors bg-transparent border-none cursor-pointer"><ChevronLeft size={16} className="text-gray-600 dark:text-[#a3a094]" /></button>
-              <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-[#282520] rounded-lg transition-colors bg-transparent border-none cursor-pointer"><ChevronRight size={16} className="text-gray-600 dark:text-[#a3a094]" /></button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-7 gap-1 text-center mb-1">
-            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-              <div key={d} className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{d}</div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7 gap-y-1 gap-x-0.5 text-center flex-1 content-start">
-            {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`empty-${i}`} className="w-8 h-8 mx-auto" />)}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1;
-              const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-              const dayData = calendarData.find(d => d.date === dateStr);
-              const hasLog = !!dayData;
-              const isSelected = dateStr === selectedDate;
-              const isToday = dateStr === getLocalDate(new Date());
-
-              return (
-                <button
-                  key={day}
-                  onClick={() => setSelectedDate(dateStr)}
-                  className={`
-                    relative w-8 h-8 mx-auto flex items-center justify-center text-xs font-semibold rounded-full transition-all border-none cursor-pointer
-                    ${isSelected ? 'bg-[#10B981] text-white shadow-md' : 'hover:bg-gray-100 dark:hover:bg-[#282520] text-gray-700 dark:text-gray-300 bg-transparent'}
-                    ${isToday && !isSelected ? 'border-2 border-[#10B981] text-[#10B981]' : ''}
-                  `}
-                >
-                  {day}
-                </button>
-              );
-            })}
-          </div>
-
-
-        </div>
-      </div>
-
-      {/* SUMMARY CARDS (ADMIN ONLY) */}
-      {isAdmin && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-[#181612] rounded-xl border border-gray-200 dark:border-[#38352e] p-6 shadow-sm">
-            <p className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase tracking-widest mb-1">Present Today</p>
-            <p className="text-[18px] font-black text-gray-800 dark:text-white">{totalEmployeesPresent}</p>
-          </div>
-          <div className="bg-white dark:bg-[#181612] rounded-xl border border-gray-200 dark:border-[#38352e] p-6 shadow-sm">
-            <p className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase tracking-widest mb-1">Total Hours</p>
-            <p className="text-[18px] font-black text-gray-800 dark:text-white">{formatMinutes(totalHoursLogged)}</p>
-          </div>
-          <div className="bg-white dark:bg-[#181612] rounded-xl border border-gray-200 dark:border-[#38352e] p-6 shadow-sm">
-            <p className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase tracking-widest mb-1">Currently Active</p>
-            <p className="text-[18px] font-black text-[#10B981]">{currentlyActive}</p>
-          </div>
-          <div className="bg-white dark:bg-[#181612] rounded-xl border border-gray-200 dark:border-[#38352e] p-6 shadow-sm">
-            <p className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase tracking-widest mb-1">On Break</p>
-            <p className="text-[18px] font-black text-amber-500">{onBreak}</p>
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-[#282520] border border-gray-300 dark:border-[#38352e] shadow-sm rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-[#38352e] transition-colors text-gray-700 dark:text-white disabled:opacity-50">
+              <RefreshCw size={16} className={syncing ? 'animate-spin text-[#10B981]' : (loading ? 'animate-spin' : '')} />
+              {syncing ? 'Syncing...' : 'Sync Registry'}
+            </button>
           </div>
         </div>
       )}
+
+      {/* TOP ROW: 70/30 SPLIT (PERSONAL TIME TRACKER ONLY) */}
+      {!isAdmin && (
+        <div className="flex flex-col lg:flex-row gap-6 mb-6 items-stretch">
+
+          {/* TIME TRACKER CARD (70%) */}
+          <div className="lg:w-[70%] bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm px-6 py-4 flex flex-col justify-between relative overflow-hidden">
+            <div className="flex justify-between items-start mb-3 relative z-10">
+              <div>
+                <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-1">Current Session</h2>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2.5 h-2.5 rounded-full ${session?.isRunning ? (session.status === 'active' ? 'bg-[#10B981] animate-pulse' : 'bg-amber-500 animate-pulse') : 'bg-gray-400 dark:bg-gray-600'}`}></div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600 dark:text-[#a3a094]">
+                    {session?.isRunning ? (session.status === 'active' ? 'Working' : 'On Break') : (session?.status === 'completed' ? 'Stopped' : 'Not Started')}
+                  </span>
+                </div>
+              </div>
+              <Clock size={24} className="text-gray-300 dark:text-gray-600" />
+            </div>
+
+            <div className="text-center my-auto py-2 relative z-10">
+              <div className="text-7xl leading-none font-black text-gray-900 dark:text-white font-mono tracking-tighter mb-1">
+                {formatTime(timer)}
+              </div>
+              <p className="text-[10px] text-gray-400 dark:text-[#a3a094] font-bold tracking-[0.2em] uppercase">Total Time Tracked</p>
+            </div>
+
+          </div>
+
+          {/* DYNAMIC CALENDAR (30%) */}
+          <div className="lg:w-[30%] bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm p-4 flex flex-col">
+            <div className="flex justify-between items-center mb-3 relative">
+              <button
+                className="text-md font-bold text-gray-800 dark:text-white flex items-center gap-1 hover:text-[#10B981] transition-colors cursor-pointer select-none bg-transparent border-none"
+                onClick={() => {
+                  setShowMonthYearPicker(!showMonthYearPicker);
+                  if (!showMonthYearPicker) {
+                    setTempYear(currentMonth.getFullYear());
+                    setPickerMode('month');
+                  }
+                }}
+              >
+                <CalendarIcon size={16} className={showMonthYearPicker ? "text-[#10B981] mr-1" : "text-[#10B981] mr-1 opacity-70"} />
+                {fullMonthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+              </button>
+
+              {/* Custom Month-Year Picker Popup */}
+              {showMonthYearPicker && (
+                <div
+                  ref={pickerRef}
+                  className="absolute top-9 left-1/2 -translate-x-1/2 z-50 w-60 bg-white dark:bg-[#1E2026] border border-gray-200 dark:border-[#38352e] rounded-xl shadow-2xl p-3 flex flex-col"
+                >
+                  {/* Selected Year Header (Clickable) */}
+                  <button
+                    type="button"
+                    onClick={() => setPickerMode(pickerMode === 'year' ? 'month' : 'year')}
+                    className="w-full bg-gray-100 dark:bg-[#2A2D35] hover:bg-gray-200 dark:hover:bg-[#32363F] text-gray-800 dark:text-white font-bold py-1.5 px-3 rounded-lg transition-colors mb-2 flex justify-center items-center text-sm"
+                  >
+                    {tempYear}
+                    <svg className={`w-3.5 h-3.5 ml-1.5 transition-transform ${pickerMode === 'year' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {pickerMode === 'year' ? (
+                    <div className="max-h-48 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1">
+                      {Array.from({ length: 60 }, (_, i) => new Date().getFullYear() - 30 + i).map((y) => (
+                        <button
+                          key={y}
+                          id="admin-selected-year-btn"
+                          onClick={() => {
+                            setTempYear(y);
+                            setPickerMode('month');
+                          }}
+                          className={`w-full py-1.5 rounded-lg text-xs font-semibold transition-colors ${tempYear === y
+                              ? 'bg-[#E0F2FE] dark:bg-[#10B981]/20 text-[#0284C7] dark:text-[#10B981]'
+                              : 'hover:bg-gray-50 dark:hover:bg-[#2A2D35] text-gray-700 dark:text-gray-300'
+                            }`}
+                        >
+                          {y}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {monthNames.map((m, i) => {
+                        const isSelected = currentMonth.getFullYear() === tempYear && currentMonth.getMonth() === i;
+                        return (
+                          <button
+                            key={m}
+                            onClick={() => {
+                              setCurrentMonth(new Date(tempYear, i, 1));
+                              setShowMonthYearPicker(false);
+                            }}
+                            className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${isSelected
+                                ? 'bg-[#10B981] text-white shadow-md'
+                                : 'hover:bg-gray-50 dark:hover:bg-[#2A2D35] text-gray-700 dark:text-gray-300'
+                              }`}
+                          >
+                            {m}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-1">
+                <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-[#282520] rounded-lg transition-colors bg-transparent border-none cursor-pointer"><ChevronLeft size={16} className="text-gray-600 dark:text-[#a3a094]" /></button>
+                <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-[#282520] rounded-lg transition-colors bg-transparent border-none cursor-pointer"><ChevronRight size={16} className="text-gray-600 dark:text-[#a3a094]" /></button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center mb-1">
+              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                <div key={d} className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{d}</div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-y-1 gap-x-0.5 text-center flex-1 content-start">
+              {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`empty-${i}`} className="w-8 h-8 mx-auto" />)}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1;
+                const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayData = calendarData.find(d => d.date === dateStr);
+                const hasLog = !!dayData;
+                const isSelected = dateStr === selectedDate;
+                const isToday = dateStr === getLocalDate(new Date());
+
+                return (
+                  <button
+                    key={day}
+                    onClick={() => setSelectedDate(dateStr)}
+                    className={`
+                      relative w-8 h-8 mx-auto flex items-center justify-center text-xs font-semibold rounded-full transition-all border-none cursor-pointer
+                      ${isSelected ? 'bg-[#10B981] text-white shadow-md' : 'hover:bg-gray-100 dark:hover:bg-[#282520] text-gray-700 dark:text-gray-300 bg-transparent'}
+                      ${isToday && !isSelected ? 'border-2 border-[#10B981] text-[#10B981]' : ''}
+                    `}
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </div>
+
+
+          </div>
+        </div>
+      )}
+
+      {/* SUMMARY CARDS (ADMIN ONLY) */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {/* Card 1: Present Today */}
+          <div className="bg-white dark:bg-[#112822] rounded-2xl border border-slate-200/80 dark:border-[#1a3830] px-4 py-3 shadow-xs hover:shadow-md hover:border-emerald-500/30 transition-all duration-200 flex items-center justify-between group">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xs shadow-emerald-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Users size={15} className="text-white" />
+              </div>
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Present Today</span>
+            </div>
+            <span className="text-base font-black text-slate-900 dark:text-white bg-slate-100 dark:bg-[#091a16] border border-slate-200/60 dark:border-[#16382f] px-3 py-1 rounded-xl shadow-2xs">
+              {totalEmployeesPresent}
+            </span>
+          </div>
+
+          {/* Card 2: Avg Working Time */}
+          <div className="bg-white dark:bg-[#112822] rounded-2xl border border-slate-200/80 dark:border-[#1a3830] px-4 py-3 shadow-xs hover:shadow-md hover:border-blue-500/30 transition-all duration-200 flex items-center justify-between group">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-xs shadow-blue-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Clock size={15} className="text-white" />
+              </div>
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Avg. Working Time</span>
+            </div>
+            <span className="text-base font-black text-blue-700 dark:text-blue-300 bg-blue-50/70 dark:bg-[#091a16] border border-blue-200/60 dark:border-[#16382f] px-3 py-1 rounded-xl shadow-2xs">
+              {formatMinutes(avgTimeLogged)}
+            </span>
+          </div>
+
+          {/* Card 3: Currently Active */}
+          <div className="bg-white dark:bg-[#112822] rounded-2xl border border-slate-200/80 dark:border-[#1a3830] px-4 py-3 shadow-xs hover:shadow-md hover:border-cyan-500/30 transition-all duration-200 flex items-center justify-between group">
+            <div className="flex items-center gap-3">
+              <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-500 text-white shadow-xs shadow-cyan-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Activity size={15} className="text-white" />
+                {currentlyActive > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+                  </span>
+                )}
+              </div>
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Currently Active</span>
+            </div>
+            <span className="text-base font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-[#091a16] border border-emerald-200/60 dark:border-[#16382f] px-3 py-1 rounded-xl shadow-2xs">
+              {currentlyActive}
+            </span>
+          </div>
+
+          {/* Card 4: On Break */}
+          <div className="bg-white dark:bg-[#112822] rounded-2xl border border-slate-200/80 dark:border-[#1a3830] px-4 py-3 shadow-xs hover:shadow-md hover:border-amber-500/30 transition-all duration-200 flex items-center justify-between group">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-xs shadow-amber-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Coffee size={15} className="text-white" />
+              </div>
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">On Break</span>
+            </div>
+            <span className="text-base font-black text-amber-600 dark:text-amber-400 bg-amber-50/80 dark:bg-[#201808] border border-amber-200/60 dark:border-[#382b13] px-3 py-1 rounded-xl shadow-2xs">
+              {onBreak}
+            </span>
+          </div>
+        </div>
+      )}
+      {/* SUMMARY CARDS (EMPLOYEE ONLY) */}
+      {!isAdmin && (() => {
+        const empLog = filteredData.length > 0 ? filteredData[0] : null;
+        const checkInStr = empLog?.startTime ? new Date(empLog.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+        const isRunning = empLog?.status === 'active' || empLog?.status === 'paused';
+        const checkOutStr = isRunning ? 'Running...' : (empLog?.endTime ? new Date(empLog.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--');
+        const activeSecs = session && session.isRunning ? timer : (empLog?.totalActiveTime || empLog?.activeTime || 0);
+
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white dark:bg-[#181612] rounded-xl border border-gray-200 dark:border-[#38352e] p-5 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase tracking-widest mb-1">Check-in Time</p>
+                <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">{checkInStr}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Clock size={20} />
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-[#181612] rounded-xl border border-gray-200 dark:border-[#38352e] p-5 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase tracking-widest mb-1">Check-out Time</p>
+                <p className={`text-xl font-black ${isRunning ? 'text-emerald-500 animate-pulse' : 'text-blue-600 dark:text-blue-400'}`}>{checkOutStr}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <Square size={20} />
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-[#181612] rounded-xl border border-gray-200 dark:border-[#38352e] p-5 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-gray-400 dark:text-[#a3a094] uppercase tracking-widest mb-1">Total Hours</p>
+                <p className="text-xl font-black text-amber-600 dark:text-amber-400">{formatMinutes(activeSecs)}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <Clock size={20} />
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* BOTTOM ROW: ROLE-BASED DAILY ACTIVITY LOG */}
       <div className="bg-white dark:bg-[#181612] rounded-2xl border border-gray-200 dark:border-[#38352e] shadow-sm overflow-hidden">
@@ -568,27 +683,29 @@ const SmartTimeTracker = () => {
           </h3>
 
           {!isAdmin && (
-            <input
-              type="date"
-              className="text-xs outline-none text-gray-700 dark:text-gray-300 font-normal bg-white dark:bg-[#181612] border border-gray-200 dark:border-[#38352e] rounded-lg px-2.5 py-1 shadow-sm focus:ring-1 focus:ring-[#10B981] focus:border-[#10B981]"
+            <AttendanceDatePicker
               value={selectedDate}
-              onChange={e => setSelectedDate(e.target.value)}
+              onChange={setSelectedDate}
+              placeholder="dd-mm-yyyy"
             />
           )}
 
           {isAdmin && (
-            <div className="flex gap-4 items-center">
-              <div className="flex items-center bg-white dark:bg-[#181612] border border-gray-200 dark:border-[#38352e] rounded-lg h-9 overflow-hidden flex-shrink-0 shadow-sm transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/50">
-                <div className="px-3 bg-gray-50 dark:bg-[#282520] border-r border-gray-200 dark:border-[#38352e] h-full flex items-center justify-center">
-                  <span className="text-[11px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-wider whitespace-nowrap">Range</span>
-                </div>
-                <div className="flex items-center px-1 h-full">
-                  <input type="date" className="text-sm outline-none text-gray-700 dark:text-gray-300 bg-transparent min-w-[125px] cursor-pointer h-full px-2" value={dateRange.start} onChange={e => setDateRange({ ...dateRange, start: e.target.value })} />
-                  <span className="text-gray-300 dark:text-[#5c584b] px-1 font-bold">-</span>
-                  <input type="date" className="text-sm outline-none text-gray-700 dark:text-gray-300 bg-transparent min-w-[125px] cursor-pointer h-full px-2" value={dateRange.end} onChange={e => setDateRange({ ...dateRange, end: e.target.value })} />
-                </div>
+            <div className="flex gap-2.5 items-center">
+              <div className="flex items-center gap-1.5">
+                <AttendanceDatePicker
+                  value={dateRange.start}
+                  onChange={(val) => setDateRange({ ...dateRange, start: val })}
+                  placeholder="dd-mm-yyyy"
+                />
+                <span className="text-gray-400 dark:text-[#5c584b] font-bold text-xs px-0.5">-</span>
+                <AttendanceDatePicker
+                  value={dateRange.end}
+                  onChange={(val) => setDateRange({ ...dateRange, end: val })}
+                  placeholder="dd-mm-yyyy"
+                />
               </div>
-              <button onClick={handleExport} className="flex items-center justify-center gap-2 px-4 h-9 bg-gray-800 dark:bg-[#282520] text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-gray-900 dark:hover:bg-[#38352e] transition-colors shadow-sm">
+              <button onClick={handleExport} className="flex items-center justify-center gap-2 px-3.5 h-8 bg-gray-800 dark:bg-[#282520] text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-gray-900 dark:hover:bg-[#38352e] transition-colors shadow-sm cursor-pointer">
                 <FileDown size={14} /> Export CSV
               </button>
             </div>
@@ -680,7 +797,7 @@ const SmartTimeTracker = () => {
                 {(() => {
                   let employeeRows = [];
                   if (filteredData.length > 0) {
-                    const log = filteredData[0];
+                    const log = filteredData.find(d => String(d.employeeId?._id || d.employeeId) === String(userId)) || filteredData[0];
                     const checkinStr = log.startTime ? new Date(log.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
 
                     if (log.sessions && log.sessions.length > 0) {
@@ -811,13 +928,25 @@ const SmartTimeTracker = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                <button onClick={handlePrevSummary} className="p-1.5 hover:bg-gray-200 dark:hover:bg-[#38352e] rounded-lg transition-colors"><ChevronLeft size={16} className="text-gray-600 dark:text-[#a3a094]" /></button>
-                <span className="text-xs font-bold text-gray-600 dark:text-[#a3a094] uppercase w-24 text-center">
-                  {summaryRange === 'week'
-                    ? `Week of ${new Date(getWeekRange(summaryDateRef).start).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
-                    : summaryDateRef.toLocaleString('default', { month: 'short', year: 'numeric' })}
+                <button onClick={handlePrevSummary} className="p-1.5 hover:bg-gray-200 dark:hover:bg-[#38352e] rounded-lg transition-colors cursor-pointer"><ChevronLeft size={16} className="text-gray-600 dark:text-[#a3a094]" /></button>
+                <span className="text-xs font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap px-2 text-center min-w-[140px]">
+                  {(() => {
+                    if (summaryRange === 'week') {
+                      const { start, end } = getWeekRange(summaryDateRef);
+                      const startDateObj = new Date(start + 'T00:00:00');
+                      const endDateObj = new Date(end + 'T00:00:00');
+                      const startDay = startDateObj.getDate();
+                      const startMonth = startDateObj.toLocaleDateString('en-US', { month: 'short' });
+                      const endDay = endDateObj.getDate();
+                      const endMonth = endDateObj.toLocaleDateString('en-US', { month: 'short' });
+                      const year = startDateObj.getFullYear();
+                      return `${startDay} ${startMonth} - ${endDay} ${endMonth} ${year}`;
+                    } else {
+                      return summaryDateRef.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                    }
+                  })()}
                 </span>
-                <button onClick={handleNextSummary} className="p-1.5 hover:bg-gray-200 dark:hover:bg-[#38352e] rounded-lg transition-colors"><ChevronRight size={16} className="text-gray-600 dark:text-[#a3a094]" /></button>
+                <button onClick={handleNextSummary} className="p-1.5 hover:bg-gray-200 dark:hover:bg-[#38352e] rounded-lg transition-colors cursor-pointer"><ChevronRight size={16} className="text-gray-600 dark:text-[#a3a094]" /></button>
               </div>
             </div>
           </div>
