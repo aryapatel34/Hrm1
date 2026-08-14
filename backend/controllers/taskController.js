@@ -98,7 +98,7 @@ exports.getTasks = async (req, res) => {
     if (req.query.date) filter.date = req.query.date;
     if (req.query.userId) filter.userId = req.query.userId;
 
-    const tasks = await Task.find(filter).sort({ createdAt: -1 });
+    const tasks = await Task.find(filter).sort({ createdAt: -1 }).lean();
 
     // Stats calculation
     const stats = {

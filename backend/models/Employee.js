@@ -29,4 +29,6 @@ const employeeSchema = new mongoose.Schema({
   reportingManager: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
+employeeSchema.index({ status: 1 });
+
 module.exports = mongoose.model('Employee', employeeSchema);

@@ -3,7 +3,7 @@ const Job = require('../models/Job');
 // Get all jobs
 exports.getJobs = async (req, res) => {
   try {
-    const jobs = await Job.find().sort({ createdAt: -1 });
+    const jobs = await Job.find().sort({ createdAt: -1 }).lean();
     res.json(jobs);
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { ClipboardList, Users, CalendarDays, PieChart, TrendingUp } from 'lucide-react';
+import { ClipboardList, Users, CalendarDays, PieChart, TrendingUp, Plus } from 'lucide-react';
 
 import PendingApprovalQueue from '../../components/manager/PendingApprovalQueue';
 import EmployeeAvailabilityChart from '../../components/manager/EmployeeAvailabilityChart';
@@ -53,24 +53,24 @@ const LeaveManagement = () => {
   }
 
   const activeStats = (stats && stats.totalEmployees > 0) ? stats : {
-    pending: 3,
-    onLeaveToday: 1,
-    upcoming: 2,
-    availabilityPercent: 96,
-    availableCount: 24,
-    totalEmployees: 25,
-    thisMonthRequests: 12,
-    growth: 20
+    pending: 0,
+    onLeaveToday: 0,
+    upcoming: 0,
+    availabilityPercent: 0,
+    availableCount: 0,
+    totalEmployees: 0,
+    thisMonthRequests: 0,
+    growth: 0
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0b1120] text-[#1e293b] dark:text-[#cbd5e1] font-['Inter',sans-serif] px-4 pb-8 pt-2 transition-colors duration-300">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Leave Management Dashboard</h1>
       </div>
 
-      {/* VIEW MODE TOGGLE */}
-      <div className="flex justify-start w-full mb-6 mt-2">
+      {/* VIEW MODE TOGGLE & ACTIONS */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full mb-6 mt-2">
         <div className="bg-white dark:bg-[#1e293b] p-1 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm inline-flex">
           <button 
             onClick={() => setViewMode('employee')}
@@ -85,10 +85,47 @@ const LeaveManagement = () => {
             Team Leaves (Manager)
           </button>
         </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex gap-2 bg-gray-150 dark:bg-gray-800 p-1 rounded-lg">
+            <button 
+              onClick={() => {
+                setViewMode('employee');
+                setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'comp-off' })), 100);
+              }} 
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <Plus size={14} /> Comp-Off
+            </button>
+          </div>
+
+          <div className="flex gap-2 bg-gray-150 dark:bg-gray-800 p-1 rounded-lg">
+            <button 
+              onClick={() => {
+                setViewMode('employee');
+                setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'on-duty' })), 100);
+              }} 
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <Plus size={14} /> On Duty
+            </button>
+          </div>
+
+          <button 
+            onClick={() => {
+              setViewMode('employee');
+              setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'apply-leave' })), 100);
+            }} 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap ml-2 cursor-pointer"
+          >
+            <Plus size={16} /> Apply for Leave
+          </button>
+        </div>
       </div>
 
       {viewMode === 'employee' ? (
-        <EmployeeLeaveManagement />
+        <EmployeeLeaveManagement isChild={true} />
       ) : (
         <>
           {/* Summary Cards Row */}
@@ -199,9 +236,9 @@ const LeaveManagement = () => {
 
       {/* Calendar, Balances, and Availability Grid */}
       <div id="leave-calendar-section" className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-        <TeamLeaveCalendar />
-        <TeamLeaveBalance />
-        <EmployeeAvailabilityChart trigger={refreshTrigger} />
+        <div className="h-[500px] overflow-hidden"><TeamLeaveCalendar /></div>
+        <div className="h-[500px] overflow-hidden"><TeamLeaveBalance /></div>
+        <div className="h-[500px] overflow-hidden"><EmployeeAvailabilityChart trigger={refreshTrigger} /></div>
       </div>
 
       {/* Analytics Charts */}

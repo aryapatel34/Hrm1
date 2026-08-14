@@ -3,6 +3,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const compression = require('compression');
 const dotenv = require('dotenv');
 dotenv.config();
 const authRoutes = require('./routes/authRoutes');
@@ -40,6 +41,7 @@ const io = new Server(server, {
 });
 
 // ⚙️ Middleware
+app.use(compression());
 app.use(cors({
   origin: true, // Allow all origins during dev
   credentials: true,

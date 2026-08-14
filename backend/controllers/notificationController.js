@@ -3,15 +3,16 @@ const User = require('../models/User');
 
 exports.getNotifications = async (req, res) => {
   try {
-    const received = await Notification.find({ userId: req.user.id })
-      .populate('senderId', 'name email role')
-      .sort({ createdAt: -1 })
-      .lean();
-
-    const sent = await Notification.find({ senderId: req.user.id, batchId: { $exists: true } })
-      .populate('senderId', 'name email role')
-      .sort({ createdAt: -1 })
-      .lean();
+    const [received, sent] = await Promise.all([
+      Notification.find({ userId: req.user.id })
+        .populate('senderId', 'name email role')
+        .sort({ createdAt: -1 })
+        .lean(),
+      Notification.find({ senderId: req.user.id, batchId: { $exists: true } })
+        .populate('senderId', 'name email role')
+        .sort({ createdAt: -1 })
+        .lean()
+    ]);
 
     const uniqueSent = [];
     const seenBatches = new Set();

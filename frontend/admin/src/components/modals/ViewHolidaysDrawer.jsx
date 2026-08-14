@@ -3,34 +3,45 @@ import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { X, Calendar } from 'lucide-react';
 
-const ViewHolidaysDrawer = ({ isOpen, onClose }) => {
+const ViewHolidaysDrawer = ({ isOpen, onClose, holidays: initialHolidays }) => {
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
   const token = sessionStorage.getItem('token');
 
   useEffect(() => {
     if (!isOpen) return;
+
+    const processHolidays = (data) => {
+      console.log('ViewHolidaysDrawer processHolidays input:', data);
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Start of today
+
+      const res = (data || [])
+        .filter(h => {
+          if (!h || !h.date || h.isActive === false) return false;
+          const hDate = new Date(h.date);
+          return !isNaN(hDate.getTime()) && hDate >= now;
+        })
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(0, 15); // Max 15 holidays
+      console.log('ViewHolidaysDrawer processHolidays output:', res);
+      return res;
+    };
+
+    if (initialHolidays && initialHolidays.length > 0) {
+      console.log('ViewHolidaysDrawer using initialHolidays prop:', initialHolidays);
+      setHolidays(processHolidays(initialHolidays));
+      setLoading(false);
+      return;
+    }
+
     const fetchHolidays = async () => {
       try {
         setLoading(true);
         const res = await axios.get('/api/holidays', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
-        // Filter and sort upcoming holidays
-        const now = new Date();
-        now.setHours(0, 0, 0, 0); // Start of today
-
-        const upcoming = (res.data || [])
-          .filter(h => {
-            if (!h || !h.date || h.isActive === false) return false;
-            const hDate = new Date(h.date);
-            return !isNaN(hDate.getTime()) && hDate >= now;
-          })
-          .sort((a, b) => new Date(a.date) - new Date(b.date))
-          .slice(0, 15); // Max 15 holidays
-
-        setHolidays(upcoming);
+        setHolidays(processHolidays(res.data));
       } catch (err) {
         console.error('Failed to fetch holidays:', err);
       } finally {
@@ -38,7 +49,7 @@ const ViewHolidaysDrawer = ({ isOpen, onClose }) => {
       }
     };
     fetchHolidays();
-  }, [isOpen, token]);
+  }, [isOpen, token, initialHolidays]);
 
   if (!isOpen) return null;
 

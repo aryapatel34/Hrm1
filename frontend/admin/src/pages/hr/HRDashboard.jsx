@@ -168,12 +168,13 @@ const HRDashboard = () => {
       const token = sessionStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Fetch Profile
-      const profRes = await axios.get('/api/auth/me', { headers });
+      // Profile and dashboard summary are independent, so fetch them together
+      const [profRes, dashRes] = await Promise.all([
+        axios.get('/api/auth/me', { headers }),
+        axios.get('/api/hr-dashboard/summary', { headers, params: { attPeriod, leavePeriod } })
+      ]);
       setProfile(profRes.data?.data || profRes.data);
 
-      // Fetch Aggregated Dashboard Data
-      const dashRes = await axios.get('/api/hr-dashboard/summary', { headers, params: { attPeriod, leavePeriod } });
       const dData = dashRes.data.data;
       setDashboardData(dData);
 

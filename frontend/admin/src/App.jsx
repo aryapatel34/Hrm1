@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
 const ScrollToTop = () => {
@@ -12,54 +12,67 @@ import { Toaster } from 'react-hot-toast';
 import Login from '@shared/pages/Login';
 import ForgotPassword from '@shared/pages/ForgotPassword';
 import ResetPassword from '@shared/pages/ResetPassword';
-
-import AdminDashboard from './pages/admin/AdminDashboard';
-import HRDashboard from './pages/hr/HRDashboard';
-import ManagerDashboard from './pages/manager/ManagerDashboard';
-import EmployeeDashboard from './pages/employee/EmployeeDashboard';
-import Employees from './pages/admin/Employees';
-import EmployeeForm from './pages/admin/EmployeeForm';
-import EmployeeDetail from './pages/admin/EmployeeDetail';
-import Tasks from './pages/admin/Tasks';
-import Attendance from './pages/Attendance';
-
-import HRTasks from './pages/hr/HRTasks';
-import LeaveManagement from './pages/hr/LeaveManagement';
-import ManagerLeaveManagement from './pages/manager/LeaveManagement';
-import TeamManagement from './pages/hr/TeamManagement';
-import HREmployees from './pages/hr/HREmployees';
-import EmployeeLeave from './pages/employee/LeaveManagement';
-import EmployeeHolidays from './pages/employee/Holidays';
-import EmployeePayslips from './pages/employee/EmployeePayslips';
-import EmployeeDocuments from './pages/employee/EmployeeDocuments';
-import EmployeePerformance from './pages/employee/EmployeePerformance';
-import Payroll from './pages/Payroll';
-import ManagerTasks from './pages/manager/ManagerTasks';
-import Performance from './pages/Performance';
-import Reports from './pages/Reports';
-import Recruitment from './pages/Recruitment';
-import Training from './pages/Training';
-import Settings from './pages/admin/Settings';
-import Departments from './pages/Departments';
-import Designations from './pages/Designations';
-import RolesPermissions from './pages/admin/RolesPermissions';
-import AuditLogs from './pages/admin/AuditLogs';
-import Integrations from './pages/admin/Integrations';
-import CreateUser from './pages/admin/CreateUser';
 import MainLayout from '@shared/layouts/MainLayout';
-import Profile from '@shared/pages/Profile';
-import ProjectManagement from './pages/hr/ProjectManagement';
-import ManagerProjects from './pages/manager/ManagerProjects';
-import EmployeeProjects from './pages/employee/EmployeeProjects';
-import Screenshots from './pages/Screenshots';
-import Chat from '@shared/pages/Chat';
-import TaskManagement from './pages/TaskManagement';
-import TaskCreate from './pages/TaskCreate';
-import TaskUpdate from './pages/TaskUpdate';
-import Notifications from './pages/Notifications';
-import AllNotifications from './pages/AllNotifications';
-import SmartTimeTracker from './pages/SmartTimeTracker';
-import EventsManagement from './pages/EventsManagement';
+
+// Route-level pages are lazy-loaded so a role only downloads the code for
+// the pages it actually visits, instead of every page in the app upfront.
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const HRDashboard = lazy(() => import('./pages/hr/HRDashboard'));
+const ManagerDashboard = lazy(() => import('./pages/manager/ManagerDashboard'));
+const EmployeeDashboard = lazy(() => import('./pages/employee/EmployeeDashboard'));
+const Employees = lazy(() => import('./pages/admin/Employees'));
+const EmployeeForm = lazy(() => import('./pages/admin/EmployeeForm'));
+const EmployeeDetail = lazy(() => import('./pages/admin/EmployeeDetail'));
+const Tasks = lazy(() => import('./pages/admin/Tasks'));
+const Attendance = lazy(() => import('./pages/Attendance'));
+
+const HRTasks = lazy(() => import('./pages/hr/HRTasks'));
+const LeaveManagement = lazy(() => import('./pages/hr/LeaveManagement'));
+const ManagerLeaveManagement = lazy(() => import('./pages/manager/LeaveManagement'));
+const TeamManagement = lazy(() => import('./pages/hr/TeamManagement'));
+const HREmployees = lazy(() => import('./pages/hr/HREmployees'));
+const EmployeeLeave = lazy(() => import('./pages/employee/LeaveManagement'));
+const EmployeeHolidays = lazy(() => import('./pages/employee/Holidays'));
+const EmployeePayslips = lazy(() => import('./pages/employee/EmployeePayslips'));
+const EmployeeDocuments = lazy(() => import('./pages/employee/EmployeeDocuments'));
+const EmployeePerformance = lazy(() => import('./pages/employee/EmployeePerformance'));
+const Payroll = lazy(() => import('./pages/Payroll'));
+const ManagerTasks = lazy(() => import('./pages/manager/ManagerTasks'));
+const Performance = lazy(() => import('./pages/Performance'));
+const Reports = lazy(() => import('./pages/Reports'));
+const Recruitment = lazy(() => import('./pages/Recruitment'));
+const Training = lazy(() => import('./pages/Training'));
+const Settings = lazy(() => import('./pages/admin/Settings'));
+const Departments = lazy(() => import('./pages/Departments'));
+const Designations = lazy(() => import('./pages/Designations'));
+const RolesPermissions = lazy(() => import('./pages/admin/RolesPermissions'));
+const AuditLogs = lazy(() => import('./pages/admin/AuditLogs'));
+const Integrations = lazy(() => import('./pages/admin/Integrations'));
+const CreateUser = lazy(() => import('./pages/admin/CreateUser'));
+const Profile = lazy(() => import('@shared/pages/Profile'));
+const ProjectManagement = lazy(() => import('./pages/hr/ProjectManagement'));
+const ManagerProjects = lazy(() => import('./pages/manager/ManagerProjects'));
+const EmployeeProjects = lazy(() => import('./pages/employee/EmployeeProjects'));
+const Screenshots = lazy(() => import('./pages/Screenshots'));
+const Chat = lazy(() => import('@shared/pages/Chat'));
+const TaskManagement = lazy(() => import('./pages/TaskManagement'));
+const TaskCreate = lazy(() => import('./pages/TaskCreate'));
+const TaskUpdate = lazy(() => import('./pages/TaskUpdate'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const AllNotifications = lazy(() => import('./pages/AllNotifications'));
+const SmartTimeTracker = lazy(() => import('./pages/SmartTimeTracker'));
+const EventsManagement = lazy(() => import('./pages/EventsManagement'));
+
+const RouteLoadingFallback = () => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+    <div style={{
+      width: 32, height: 32, borderRadius: '50%',
+      border: '3px solid rgba(0,167,107,0.2)', borderTopColor: '#00a76b',
+      animation: 'spin 0.7s linear infinite'
+    }} />
+    <style>{'@keyframes spin { to { transform: rotate(360deg); } }'}</style>
+  </div>
+);
 
 // ROUTE PROTECTION LOGIC
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -101,6 +114,7 @@ const App = () => {
     <>
       <ScrollToTop />
       <Toaster position="bottom-right" toastOptions={{ duration: 3500 }} reverseOrder={false} />
+      <Suspense fallback={<RouteLoadingFallback />}>
       <Routes>
         {/* PUBLIC ROUTES */}
         <Route path="/" element={<RootRedirect />} />
@@ -268,6 +282,7 @@ const App = () => {
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </>
   );
 };

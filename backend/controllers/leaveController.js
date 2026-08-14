@@ -1,7 +1,7 @@
 const Leave = require('../models/Leave');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
-const { isLeaveDatePassed, autoRejectExpiredLeaves } = require('../utils/leaveUtils');
+const { isLeaveDatePassed } = require('../utils/leaveUtils');
 const LeaveHistory = require('../models/LeaveHistory');
 const LeaveBalance = require('../models/LeaveBalance');
 
@@ -243,10 +243,7 @@ exports.applyLeave = async (req, res) => {
 // @access  Private/Manager
 exports.getManagerLeaves = async (req, res) => {
   try {
-    const io = req.app.get('io');
-    await autoRejectExpiredLeaves(io);
-
-    const leaves = await Leave.find({}).populate('user', 'name email profile role employeeId profileImage');
+    const leaves = await Leave.find({}).populate('user', 'name email profile role employeeId profileImage').lean();
     res.json(leaves);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -334,15 +331,13 @@ exports.managerApprove = async (req, res) => {
 // @access  Private/HR
 exports.getHRLeaves = async (req, res) => {
   try {
-    const io = req.app.get('io');
-    await autoRejectExpiredLeaves(io);
-
     const targetUsers = await User.find({ role: { $in: ['employee', 'manager'] } }).select('_id');
     const targetUserIds = targetUsers.map(u => u._id);
 
     const leaves = await Leave.find({ user: { $in: targetUserIds } })
       .populate('user', 'name email profile role employeeId profileImage')
-      .populate('managerId', 'name email');
+      .populate('managerId', 'name email')
+      .lean();
     res.json(leaves);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -591,10 +586,7 @@ exports.cancelLeave = async (req, res) => {
 // @access  Private/Employee
 exports.getMyLeaves = async (req, res) => {
   try {
-    const io = req.app.get('io');
-    await autoRejectExpiredLeaves(io);
-
-    const leaves = await Leave.find({ user: req.user.id });
+    const leaves = await Leave.find({ user: req.user.id }).lean();
     res.json(leaves);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -638,10 +630,7 @@ exports.getMyLeaveQuotas = async (req, res) => {
 // @access  Private/Admin
 exports.getAllLeaves = async (req, res) => {
   try {
-    const io = req.app.get('io');
-    await autoRejectExpiredLeaves(io);
-
-    const leaves = await Leave.find().populate('user', 'name email profile');
+    const leaves = await Leave.find().populate('user', 'name email profile').lean();
     res.json(leaves);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -973,6 +962,17 @@ exports.exportTeamLeaves = async (req, res) => {
   try {
     const { format } = req.query; // pdf or xlsx
 
+    const formatDateSafe = (d) => {
+      if (!d) return 'N/A';
+      try {
+        const dateObj = new Date(d);
+        if (isNaN(dateObj.getTime())) return 'N/A';
+        return dateObj.toISOString().split('T')[0];
+      } catch (e) {
+        return 'N/A';
+      }
+    };
+
     const subordinates = await User.find({ reportingManager: req.user.id }).select('_id');
     const subIds = subordinates.map(s => s._id);
 
@@ -1000,8 +1000,8 @@ exports.exportTeamLeaves = async (req, res) => {
           employee: l.user ? l.user.name : 'Unknown',
           type: l.leaveType,
           status: l.status,
-          start: l.startDate.toISOString().split('T')[0],
-          end: l.endDate.toISOString().split('T')[0],
+          start: formatDateSafe(l.startDate),
+          end: formatDateSafe(l.endDate),
           duration: l.totalDays,
           reason: l.reason
         });
@@ -1025,7 +1025,7 @@ exports.exportTeamLeaves = async (req, res) => {
       leaves.forEach(l => {
         const empName = l.user ? l.user.name : 'Unknown';
         doc.fontSize(12).text(`${empName} - ${l.leaveType} (${l.status})`);
-        doc.fontSize(10).text(`Dates: ${l.startDate.toISOString().split('T')[0]} to ${l.endDate.toISOString().split('T')[0]}`);
+        doc.fontSize(10).text(`Dates: ${formatDateSafe(l.startDate)} to ${formatDateSafe(l.endDate)}`);
         doc.text(`Reason: ${l.reason}`);
         doc.moveDown();
       });

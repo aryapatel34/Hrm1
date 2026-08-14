@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import {
   CheckSquare, Clock, Users, Calendar, BarChart2,
   CheckCircle2, AlertTriangle, ArrowRight, XCircle, LayoutGrid,
-  FileText, Upload, RefreshCcw, HandCoins, DollarSign, Check, ChevronDown
+  FileText, Upload, RefreshCcw, HandCoins, DollarSign, Check, ChevronDown, Plus
 } from 'lucide-react';
 import LeavePolicyOverview from '../../components/LeavePolicyOverview';
 import HolidayManagement from '../../components/HolidayManagement';
@@ -13,6 +13,7 @@ import LeaveAllocationSummary from '../../components/LeaveAllocationSummary';
 import CompanyShutdowns from '../../components/CompanyShutdowns';
 import EmployeeLeaveAudit from '../../components/EmployeeLeaveAudit';
 import LeaveDashboardHeader from '../../components/LeaveDashboardHeader';
+import EmployeeAvailabilityChart from '../../components/manager/EmployeeAvailabilityChart';
 import EmployeeLeaveManagement from '../employee/LeaveManagement';
 import CustomDatePicker from '../../components/CustomDatePicker';
 
@@ -144,6 +145,7 @@ const Leaves = () => {
   });
 
   useEffect(() => {
+    if (viewMode !== 'hr') return;
     const fetchData = async () => {
       try {
         const [leavesRes, statsRes] = await Promise.all([
@@ -161,7 +163,7 @@ const Leaves = () => {
       }
     };
     fetchData();
-  }, [token, refreshTrigger]);
+  }, [token, refreshTrigger, viewMode]);
 
   const handleDownloadReport = () => {
     if (!leaves || leaves.length === 0) {
@@ -200,17 +202,14 @@ const Leaves = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
         <div>
-          <h1 className="text-2xl font-black text-[#1e293b] dark:text-white tracking-tight leading-none mb-1.5">
+          <h1 className="text-2xl font-black text-[#1e293b] dark:text-white tracking-tight leading-none">
             Leave Management
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 font-semibold text-xs">
-            Manage leave policies, track request history, and approve employee leaves.
-          </p>
         </div>
       </div>
 
-      {/* VIEW MODE TOGGLE */}
-      <div className="flex justify-start w-full mb-2 mt-2">
+      {/* VIEW MODE TOGGLE & ACTIONS */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full mb-4 mt-2">
         <div className="bg-white dark:bg-[#1e293b] p-1 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm inline-flex">
           <button
             onClick={() => setViewMode('employee')}
@@ -225,14 +224,51 @@ const Leaves = () => {
             Team Leaves ({role === 'admin' ? 'Admin' : 'HR'})
           </button>
         </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex gap-2 bg-gray-150 dark:bg-gray-800 p-1 rounded-lg">
+            <button 
+              onClick={() => {
+                setViewMode('employee');
+                setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'comp-off' })), 100);
+              }} 
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <Plus size={14} /> Comp-Off
+            </button>
+          </div>
+
+          <div className="flex gap-2 bg-gray-150 dark:bg-gray-800 p-1 rounded-lg">
+            <button 
+              onClick={() => {
+                setViewMode('employee');
+                setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'on-duty' })), 100);
+              }} 
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <Plus size={14} /> On Duty
+            </button>
+          </div>
+
+          <button 
+            onClick={() => {
+              setViewMode('employee');
+              setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'apply-leave' })), 100);
+            }} 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap ml-2 cursor-pointer"
+          >
+            <Plus size={16} /> Apply for Leave
+          </button>
+        </div>
       </div>
 
       {viewMode === 'employee' ? (
-        <EmployeeLeaveManagement />
+        <EmployeeLeaveManagement isChild={true} />
       ) : (
         <>
           {/* 2. SUMMARY CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
             {[
               { label: 'Total Leave Requests', val: totalRequests, sub: 'This Month', icon: CheckSquare, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20', hoverBorder: 'hover:border-indigo-500 hover:shadow-indigo-500/5', filter: 'all' },
               { label: 'Pending Approvals', val: pendingRequests, sub: 'Requests', icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', hoverBorder: 'hover:border-purple-500 hover:shadow-purple-500/5', filter: 'pending' },
@@ -245,9 +281,9 @@ const Leaves = () => {
                 <div
                   key={i}
                   onClick={() => isClickable && scrollToRequests(stat.filter)}
-                  className={`bg-white dark:bg-[#1e293b] p-3.5 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm transition-all flex items-center justify-between gap-3 cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 group ${stat.hoverBorder}`}
+                  className={`bg-white dark:bg-[#1e293b] py-2 px-3 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm transition-all flex items-center justify-between gap-2.5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 group ${stat.hoverBorder}`}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
                     <div className={`p-2 rounded-lg shrink-0 ${stat.bg} group-hover:scale-110 transition-all duration-200`}>
                       <stat.icon size={16} className={stat.color} />
                     </div>
@@ -268,7 +304,7 @@ const Leaves = () => {
           </div>
 
           {/* 3. Employee Leave Requests (Full Width 100% - Row 2) */}
-          <div ref={leaveRequestsRef} className="w-full bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 flex flex-col justify-between h-[750px] mb-8 overflow-hidden transition-all duration-200 hover:border-emerald-500">
+          <div ref={leaveRequestsRef} className={`w-full bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 flex flex-col justify-between mb-8 overflow-hidden transition-all duration-200 hover:border-emerald-500 ${filteredLeaves.length === 0 ? 'min-h-[200px]' : 'h-[750px]'}`}>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Employee Leave Requests</h3>
@@ -481,10 +517,10 @@ const Leaves = () => {
           </div>
 
           {/* 5. 3-Column Grid: Holiday Management, Company Shutdowns, Leave Allocation Summary - Row 4 */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-            <HolidayManagement refreshTrigger={refreshTrigger} />
-            <CompanyShutdowns />
-            <LeaveAllocationSummary />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+            <div className="h-[400px] overflow-hidden"><HolidayManagement refreshTrigger={refreshTrigger} /></div>
+            <div className="h-[400px] overflow-hidden"><CompanyShutdowns /></div>
+            <div className="h-[400px] overflow-hidden"><LeaveAllocationSummary /></div>
           </div>
 
           {/* 6. 5 Quick-Stat Cards - Row 5 */}

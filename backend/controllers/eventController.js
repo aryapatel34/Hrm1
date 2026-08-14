@@ -118,7 +118,8 @@ exports.getEvents = async (req, res) => {
     const events = await Event.find(query)
       .populate('assignedEmployees', 'name email profile')
       .populate('createdBy', 'name role profile')
-      .sort({ date: 1, startTime: 1 });
+      .sort({ date: 1, startTime: 1 })
+      .lean();
 
     res.status(200).json({ success: true, count: events.length, data: events });
   } catch (error) {
@@ -134,7 +135,8 @@ exports.getAssignedEvents = async (req, res) => {
   try {
     const events = await Event.find({ assignedEmployees: req.user.id })
       .populate('createdBy', 'name role profile')
-      .sort({ date: 1, startTime: 1 });
+      .sort({ date: 1, startTime: 1 })
+      .lean();
 
     res.status(200).json({ success: true, count: events.length, data: events });
   } catch (error) {

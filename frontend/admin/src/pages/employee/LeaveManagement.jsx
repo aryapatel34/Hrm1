@@ -66,7 +66,7 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select..." }) =
   );
 };
 
-const LeaveManagement = () => {
+const LeaveManagement = ({ isChild = false }) => {
   const navigate = useNavigate();
   const [leaves, setLeaves] = useState([]);
   const [holidays, setHolidays] = useState([]);
@@ -146,6 +146,16 @@ const LeaveManagement = () => {
 
   useEffect(() => {
     fetchMyLeaves();
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail === 'comp-off') setIsCompOffModalOpen(true);
+      else if (e.detail === 'on-duty') setIsOnDutyModalOpen(true);
+      else if (e.detail === 'apply-leave') setIsRequestModalOpen(true);
+    };
+    window.addEventListener('open-leave-modal', handler);
+    return () => window.removeEventListener('open-leave-modal', handler);
   }, []);
 
   useEffect(() => {
@@ -455,32 +465,34 @@ const LeaveManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#08100e] text-[#3b3e3c] dark:text-[#cbd5e1] font-['Inter',sans-serif] px-0 pt-0 pb-6 lg:px-1 lg:pt-0 lg:pb-6 transition-colors duration-300">
+    <div className={isChild ? "transition-colors duration-300 w-full" : "min-h-screen bg-[#F8F9FA] dark:bg-[#08100e] text-[#3b3e3c] dark:text-[#cbd5e1] font-['Inter',sans-serif] px-0 pt-0 pb-6 lg:px-1 lg:pt-0 lg:pb-6 transition-colors duration-300"}>
 
       {/* 1. Header Section */}
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Leave Manage</h1>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-            <button onClick={() => setIsCompOffModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors">
-              <Plus size={14} /> Comp-Off
+      {!isChild && (
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Leave Management</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+              <button onClick={() => setIsCompOffModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer">
+                <Plus size={14} /> Comp-Off
+              </button>
+            </div>
+
+            <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+              <button onClick={() => setIsOnDutyModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer">
+                <Plus size={14} /> On Duty
+              </button>
+            </div>
+
+            <button onClick={() => setIsRequestModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap ml-2 cursor-pointer">
+              <Plus size={16} /> Apply for Leave
             </button>
           </div>
-
-          <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-            <button onClick={() => setIsOnDutyModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors">
-              <Plus size={14} /> On Duty
-            </button>
-          </div>
-
-          <button onClick={() => setIsRequestModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap ml-2">
-            <Plus size={16} /> Apply for Leave
-          </button>
         </div>
-      </div>
+      )}
 
       {/* 2. Summary Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
         {[
           { title: 'Total Leave Balance', value: totalBalance, unit: 'Days', icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-100', hoverBorder: 'hover:border-purple-500 hover:shadow-purple-500/5', link: 'View Details' },
           { title: 'Active Leave Types', value: activeLeaveTypesCount, unit: '', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-100', hoverBorder: 'hover:border-green-500 hover:shadow-green-500/5', link: 'View Types' },
@@ -488,8 +500,8 @@ const LeaveManagement = () => {
           { title: 'Leaves Taken (YTD)', value: totalUsed, unit: 'Days', icon: CalendarDays, color: 'text-blue-600', bg: 'bg-blue-100', hoverBorder: 'hover:border-blue-500 hover:shadow-blue-500/5', link: 'View Report' },
           { title: 'Pending Requests', value: pendingCount, unit: pendingCount === 1 ? 'Request' : 'Requests', icon: User, color: 'text-orange-600', bg: 'bg-orange-100', hoverBorder: 'hover:border-orange-500 hover:shadow-orange-500/5', link: 'View Requests' }
         ].map((card, idx) => (
-          <div key={idx} className={`bg-white dark:bg-[#111c18] p-3.5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3 cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all group ${card.hoverBorder}`}>
-            <div className="flex items-center gap-2.5 min-w-0">
+          <div key={idx} className={`bg-white dark:bg-[#111c18] py-2 px-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2.5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all group ${card.hoverBorder}`}>
+            <div className="flex items-center gap-2 min-w-0">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${card.bg} group-hover:scale-110 transition-transform duration-200`}>
                 <card.icon size={16} className={card.color} />
               </div>
@@ -507,7 +519,7 @@ const LeaveManagement = () => {
           </div>
         ))}
         <ViewPolicyDrawer isOpen={isPolicyDrawerOpen} onClose={() => setIsPolicyDrawerOpen(false)} />
-        <ViewHolidaysDrawer isOpen={isHolidaysDrawerOpen} onClose={() => setIsHolidaysDrawerOpen(false)} />
+        <ViewHolidaysDrawer isOpen={isHolidaysDrawerOpen} onClose={() => setIsHolidaysDrawerOpen(false)} holidays={holidays} />
         <ViewUpcomingLeavesDrawer isOpen={isUpcomingLeavesDrawerOpen} onClose={() => setIsUpcomingLeavesDrawerOpen(false)} leaves={leaves} />
         <ViewLeaveRequestsDrawer 
           isOpen={isLeaveRequestsDrawerOpen} 

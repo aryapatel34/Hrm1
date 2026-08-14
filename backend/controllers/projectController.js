@@ -35,7 +35,8 @@ exports.getHRProjects = async (req, res) => {
     const projects = await Project.find()
       .populate('assignedManager', 'name email employeeId')
       .populate('assignedEmployees', 'name email employeeId')
-      .sort('-createdAt');
+      .sort('-createdAt')
+      .lean();
     res.json(projects);
   } catch (err) {
     res.status(500).json({ message: err.message });

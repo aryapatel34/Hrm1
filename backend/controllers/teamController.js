@@ -66,7 +66,8 @@ exports.getAllTeams = async (req, res) => {
   try {
     const teams = await Team.find()
       .populate('managerId', 'name email employeeId')
-      .populate('members', 'name email employeeId role');
+      .populate('members', 'name email employeeId role')
+      .lean();
     res.json(teams);
   } catch (err) {
     res.status(500).json({ message: err.message });

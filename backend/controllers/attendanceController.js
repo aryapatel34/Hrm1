@@ -97,7 +97,8 @@ exports.getAttendance = async (req, res) => {
 
     const records = await Attendance.find(query)
       .populate('user', 'name role email')
-      .sort({ date: -1 });
+      .sort({ date: -1 })
+      .lean();
 
     res.json(records);
   } catch (error) {
@@ -361,7 +362,7 @@ exports.clockOut = async (req, res) => {
 exports.getMyAttendance = async (req, res) => {
   try {
     const targetUserId = (req.user.role === 'admin' || req.user.role === 'hr') && req.query.userId ? req.query.userId : req.user.id;
-    const records = await Attendance.find({ user: targetUserId }).sort({ date: -1 });
+    const records = await Attendance.find({ user: targetUserId }).sort({ date: -1 }).lean();
     res.json(records);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -516,7 +517,7 @@ exports.getMyYearlyStats = async (req, res) => {
 // @route   GET /api/attendance
 exports.getAllAttendance = async (req, res) => {
   try {
-    const records = await Attendance.find().populate('user', 'name role email').sort({ date: -1 });
+    const records = await Attendance.find().populate('user', 'name role email').sort({ date: -1 }).lean();
     res.json(records);
   } catch (error) {
     res.status(500).json({ message: error.message });

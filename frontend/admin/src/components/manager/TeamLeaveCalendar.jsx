@@ -112,7 +112,7 @@ const TeamLeaveCalendar = () => {
   return (
     <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-full transition-all duration-200 hover:border-indigo-500">
       
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Team Leave Calendar</h2>
         <div className="flex items-center gap-1">
           <button onClick={prevMonth} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
@@ -134,15 +134,15 @@ const TeamLeaveCalendar = () => {
       {loading ? (
         <div className="flex-1 flex items-center justify-center py-10 text-gray-500">Loading...</div>
       ) : (
-        <div className="grid grid-cols-7 gap-y-4 mb-6 flex-1">
+        <div className="grid grid-cols-7 gap-y-1 mb-2 flex-1">
           {days.map((d, i) => (
-            <div key={i} className="flex flex-col items-center justify-center h-10">
-              <span className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold
+            <div key={i} className="flex flex-col items-center justify-center h-8">
+              <span className={`w-7 h-7 flex items-center justify-center rounded-full text-sm font-semibold
                 ${d.isCurrentMonth ? (d.isToday ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-900 dark:text-white hover:bg-gray-100 cursor-pointer') : 'text-gray-300 dark:text-gray-600'}
               `}>
                 {d.day}
               </span>
-              <div className="flex gap-0.5 mt-1 h-1.5">
+              <div className="flex gap-0.5 mt-0.5 h-1.5">
                 {d.isCurrentMonth && d.hasApprovedLeave && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
                 {d.isCurrentMonth && d.hasPendingLeave && <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>}
                 {d.isCurrentMonth && d.hasWfh && <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>}
@@ -155,7 +155,7 @@ const TeamLeaveCalendar = () => {
       )}
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-gray-500 mt-auto pt-4 border-t border-gray-100 dark:border-gray-800">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-gray-500 mt-auto pt-2 border-t border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Approved Leave</div>
         <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-orange-500"></span> Pending Leave</div>
         <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-purple-500"></span> Work From Home</div>

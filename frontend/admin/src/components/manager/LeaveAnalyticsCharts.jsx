@@ -79,7 +79,7 @@ const LeaveAnalyticsCharts = () => {
       <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-[350px] transition-all duration-200 hover:border-blue-500">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Monthly Leave Trend <span className="text-gray-500 text-sm font-medium">(This Year)</span></h2>
-          <button className="text-indigo-600 text-sm font-bold hover:underline border border-indigo-100 px-3 py-1 rounded-lg">View report</button>
+          <button className="text-indigo-600 text-sm font-bold hover:underline cursor-pointer">View report</button>
         </div>
 
         {loading1 ? (
@@ -117,7 +117,7 @@ const LeaveAnalyticsCharts = () => {
       <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-[350px] transition-all duration-200 hover:border-indigo-500">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Department Leave Analytics <span className="text-gray-500 text-sm font-medium">(This Month)</span></h2>
-          <button className="text-indigo-600 text-sm font-bold hover:underline border border-indigo-100 px-3 py-1 rounded-lg">View report</button>
+          <button className="text-indigo-600 text-sm font-bold hover:underline cursor-pointer">View report</button>
         </div>
 
         {loading2 ? (

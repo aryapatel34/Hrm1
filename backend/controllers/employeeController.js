@@ -25,7 +25,8 @@ exports.getEmployees = async (req, res) => {
 
     const employees = await Employee.find(query)
       .populate('userId', 'name email status role')
-      .populate('managerId', 'name email');
+      .populate('managerId', 'name email')
+      .lean();
 
     res.json(employees);
   } catch (error) {
@@ -324,7 +325,7 @@ exports.updateEmployeeDocument = async (req, res, field) => {
 // GET /api/employees/events
 exports.getUpcomingEvents = async (req, res) => {
   try {
-    const employees = await Employee.find({ status: 'active' }).populate('userId', 'name role profileImage');
+    const employees = await Employee.find({ status: 'active' }).populate('userId', 'name role profileImage').lean();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 

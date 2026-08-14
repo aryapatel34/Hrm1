@@ -32,42 +32,9 @@ const TeamLeaveBalance = () => {
     fetchBalances();
   }, [currentPage]);
 
-  const mockBalances = [
-    {
-      _id: 'bal1',
-      employeeId: { name: 'Amit Sharma' },
-      casualLeave: 12,
-      sickLeave: 10,
-      earnedLeave: 18,
-      compOff: 2,
-      totalLeave: 42,
-      usedLeave: { casual: 2, sick: 1, earned: 3, compOff: 0, total: 6 }
-    },
-    {
-      _id: 'bal2',
-      employeeId: { name: 'Priya Patel' },
-      casualLeave: 12,
-      sickLeave: 10,
-      earnedLeave: 18,
-      compOff: 0,
-      totalLeave: 40,
-      usedLeave: { casual: 3, sick: 0, earned: 2, compOff: 0, total: 5 }
-    },
-    {
-      _id: 'bal3',
-      employeeId: { name: 'Rohan Verma' },
-      casualLeave: 12,
-      sickLeave: 10,
-      earnedLeave: 18,
-      compOff: 1,
-      totalLeave: 41,
-      usedLeave: { casual: 1, sick: 2, earned: 0, compOff: 0, total: 3 }
-    }
-  ];
-
-  const displayBalances = (balances && balances.length > 0) ? balances : mockBalances;
-  const displayTotalItems = (balances && balances.length > 0) ? totalItems : mockBalances.length;
-  const displayTotalPages = (balances && balances.length > 0) ? totalPages : 1;
+  const displayBalances = balances || [];
+  const displayTotalItems = totalItems || 0;
+  const displayTotalPages = totalPages || 1;
 
   const startEntry = displayTotalItems === 0 ? 0 : (currentPage - 1) * 5 + 1;
   const endEntry = Math.min(currentPage * 5, displayTotalItems);
@@ -79,10 +46,10 @@ const TeamLeaveBalance = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col transition-all duration-200 hover:border-emerald-500">
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-full transition-all duration-200 hover:border-emerald-500">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Team Leave Balance</h2>
-        <button className="text-indigo-600 text-sm font-bold hover:underline border border-indigo-100 px-3 py-1 rounded-lg">View all</button>
+        <button className="text-indigo-600 text-sm font-bold hover:underline cursor-pointer">View all</button>
       </div>
 
       <div className="overflow-x-auto flex-1">

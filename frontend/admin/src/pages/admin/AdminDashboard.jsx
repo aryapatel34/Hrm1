@@ -181,12 +181,13 @@ const fetchData = async () => {
     const token = sessionStorage.getItem('token');
     const headers = { Authorization: `Bearer ${token}` };
 
-    // Fetch Profile
-    const profRes = await axios.get('/api/auth/me', { headers });
+    // Profile and dashboard summary are independent, so fetch them together
+    const [profRes, dashRes] = await Promise.all([
+      axios.get('/api/auth/me', { headers }),
+      axios.get('/api/hr-dashboard/summary', { headers })
+    ]);
     setProfile(profRes.data);
 
-    // Fetch Aggregated Dashboard Data
-    const dashRes = await axios.get('/api/hr-dashboard/summary', { headers });
     const dData = dashRes.data.data;
     setDashboardData(dData);
 

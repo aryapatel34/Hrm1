@@ -39,15 +39,15 @@ const CompanyShutdowns = () => {
         </button>
       </div>
 
-      <div className="overflow-x-auto flex-1">
+      <div className="overflow-x-auto flex-1 scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-gray-100 dark:border-gray-800">
-              <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Shutdown Name</th>
-              <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">From - To</th>
-              <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Days</th>
-              <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Reason</th>
-              <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Applicable To</th>
+              <th className="px-2 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Shutdown</th>
+              <th className="px-2 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Dates</th>
+              <th className="px-2 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Days</th>
+              <th className="px-2 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Reason</th>
+              <th className="px-2 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Applicable</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
@@ -57,7 +57,7 @@ const CompanyShutdowns = () => {
               <tr>
                 <td colSpan="5">
                   <div className="flex flex-col items-center justify-center py-8">
-                    <Calendar size={24} className="text-gray-300 mb-2" />
+                     <Calendar size={24} className="text-gray-300 mb-2" />
                     <p className="text-sm font-bold text-gray-400">No company shutdowns scheduled.</p>
                   </div>
                 </td>
@@ -65,13 +65,13 @@ const CompanyShutdowns = () => {
             ) : (
               shutdowns.map((shutdown) => (
                 <tr key={shutdown._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                  <td className="px-4 py-4 font-bold text-gray-900 dark:text-white text-xs">{shutdown.name}</td>
-                  <td className="px-4 py-4 text-xs font-bold text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                  <td className="px-2 py-4 font-bold text-gray-900 dark:text-white text-xs">{shutdown.name}</td>
+                  <td className="px-2 py-4 text-xs font-bold text-gray-700 dark:text-gray-300 whitespace-nowrap">
                     {new Date(shutdown.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} - {new Date(shutdown.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </td>
-                  <td className="px-4 py-4 text-xs font-black text-gray-900 dark:text-white text-center tabular-nums">{shutdown.days}</td>
-                  <td className="px-4 py-4 text-xs font-medium text-gray-600 dark:text-gray-400">{shutdown.reason}</td>
-                  <td className="px-4 py-4 text-xs font-bold text-gray-700 dark:text-gray-300">
+                  <td className="px-2 py-4 text-xs font-black text-gray-900 dark:text-white text-center tabular-nums">{shutdown.days}</td>
+                  <td className="px-2 py-4 text-xs font-medium text-gray-600 dark:text-gray-400">{shutdown.reason}</td>
+                  <td className="px-2 py-4 text-xs font-bold text-gray-700 dark:text-gray-300">
                     {Array.isArray(shutdown.applicableTo) ? shutdown.applicableTo.join(', ') : shutdown.applicableTo}
                   </td>
                 </tr>

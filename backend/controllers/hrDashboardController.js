@@ -8,31 +8,16 @@ const User = require('../models/User');
 const Holiday = require('../models/Holiday');
 const LeaveBalance = require('../models/LeaveBalance');
 const mongoose = require('mongoose');
-const { autoRejectExpiredLeaves } = require('../utils/leaveUtils');
 
 exports.getDashboardStats = async (req, res) => {
   try {
-    const io = req.app.get('io');
-    await autoRejectExpiredLeaves(io);
+    const AuditLog = require('../models/AuditLog');
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const endOfToday = new Date(startOfToday);
     endOfToday.setDate(endOfToday.getDate() + 1);
-
-    // 1. Employee Stats
-    const totalEmployees = await Employee.countDocuments({});
-    const activeEmployeesCount = await Employee.countDocuments({ status: { $in: ['active', 'Active'] } });
-    const newJoinersThisMonth = await Employee.countDocuments({ joinDate: { $gte: startOfMonth } });
-
-    // 2. Leave Stats
-    const pendingLeaveApprovals = await Leave.countDocuments({ status: { $regex: /^pending$/i } });
-    const employeesOnLeaveToday = await Leave.countDocuments({
-      status: { $regex: /^approved$/i },
-      startDate: { $lte: endOfToday },
-      endDate: { $gte: startOfToday }
-    });
 
     const startOfWeek = new Date(startOfToday);
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
@@ -44,48 +29,181 @@ exports.getDashboardStats = async (req, res) => {
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
 
-    const allLeavesList = await Leave.find({});
+    const attPeriod = req.query.attPeriod || 'This Week';
+    const currentDayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1; // 0 for Mon, 6 for Sun
+    const startOfCurrentWeek = new Date(startOfToday);
+    startOfCurrentWeek.setDate(startOfCurrentWeek.getDate() - currentDayOfWeek);
 
-    const calcLeaveMetrics = (leaves) => {
-      let total = leaves.length;
-      let approved = 0;
-      let rejected = 0;
-      let cancelled = 0;
-      let pending = 0;
-      leaves.forEach(l => {
-        const s = (l.status || '').toLowerCase();
-        if (s === 'approved') approved++;
-        else if (s === 'rejected') rejected++;
-        else if (s === 'cancelled' || s === 'canceled') cancelled++;
-        else if (s === 'pending') pending++;
+    if (attPeriod === 'Last Week') {
+      startOfCurrentWeek.setDate(startOfCurrentWeek.getDate() - 7);
+    }
+
+    const startOfCurrentWeekStr = startOfCurrentWeek.toISOString().split('T')[0];
+
+    const thirtyDaysFromNow = new Date(now);
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+    const getPeriodLeaveMetrics = async (start, end) => {
+      const matchQuery = {};
+      if (start && end) {
+        matchQuery.$or = [
+          {
+            startDate: { $lte: end },
+            endDate: { $gte: start }
+          },
+          {
+            createdAt: { $gte: start, $lte: end }
+          }
+        ];
+      }
+
+      const counts = await Leave.aggregate([
+        { $match: matchQuery },
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+
+      const result = { total: 0, approved: 0, rejected: 0, cancelled: 0, pending: 0 };
+      let total = 0;
+      counts.forEach(c => {
+        total += c.count;
+        const s = (c._id || '').toLowerCase();
+        if (s === 'approved') result.approved = c.count;
+        else if (s === 'rejected') result.rejected = c.count;
+        else if (s === 'cancelled' || s === 'canceled') result.cancelled = c.count;
+        else if (s === 'pending') result.pending = c.count;
       });
-      return { total, approved, rejected, cancelled, pending };
+      result.total = total;
+      return result;
     };
 
-    const filterLeavesByDate = (start, end) => {
-      return allLeavesList.filter(l => {
-        const s = new Date(l.startDate);
-        const e = new Date(l.endDate);
-        const c = new Date(l.createdAt);
-        return (s <= end && e >= start) || (c >= start && c <= end);
-      });
+    // Pending leaves needs the current user's role first to scope the query,
+    // but that chain is independent of everything else below, so it runs
+    // alongside the rest as just one more branch of the big Promise.all.
+    const getPendingLeavesData = async () => {
+      const currentUser = await User.findById(req.user.id);
+      let pendingLeaveQuery = { status: { $regex: /^pending$/i } };
+
+      if (currentUser.role === 'hr') {
+        const allowedUsers = await User.find({ role: { $nin: ['admin', 'manager'] } }).select('_id');
+        pendingLeaveQuery.user = { $in: allowedUsers.map(u => u._id) };
+      } else if (currentUser.role === 'manager') {
+        const allowedUsers = await User.find({ role: 'employee' }).select('_id');
+        pendingLeaveQuery.user = { $in: allowedUsers.map(u => u._id) };
+      }
+
+      return Leave.find(pendingLeaveQuery)
+        .populate('user', 'name email role employeeId profileImage')
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean();
     };
 
-    const statsToday = calcLeaveMetrics(filterLeavesByDate(startOfToday, endOfToday));
-    const statsThisWeek = calcLeaveMetrics(filterLeavesByDate(startOfWeek, endOfWeek));
-    const statsThisMonth = calcLeaveMetrics(filterLeavesByDate(startOfMonth, endOfMonth));
-    const statsThisYear = calcLeaveMetrics(filterLeavesByDate(startOfYear, endOfYear));
-    const statsAllTime = calcLeaveMetrics(allLeavesList);
-
-    // 3. Jobs Stats
-    const openPositions = await Job.countDocuments({ status: { $regex: /^open$/i } });
-
-    // 4. Payroll Summary
-    const payrollStats = await Payroll.aggregate([
-      { $match: { month: now.toLocaleString('default', { month: 'long', year: 'numeric' }) } },
-      { $group: { _id: { $toLower: '$status' }, total: { $sum: '$netSalary' } } }
+    // Every query below is independent of the others, so fetch them all
+    // concurrently — total wait time becomes the slowest single query
+    // instead of the sum of ~20 sequential round-trips.
+    const [
+      totalEmployees,
+      activeEmployeesCount,
+      newJoinersThisMonth,
+      pendingLeaveApprovals,
+      employeesOnLeaveToday,
+      [statsToday, statsThisWeek, statsThisMonth, statsThisYear, statsAllTime],
+      openPositions,
+      payrollStats,
+      attRecords,
+      employees,
+      recentJoiners,
+      pendingLeaves,
+      rawAnnouncements,
+      activeEmps,
+      wishesToday,
+      upcomingHolidaysCount,
+      currentMonthBalances,
+      compOffsApproved,
+      encashmentsPending,
+      leaveAdjustments
+    ] = await Promise.all([
+      Employee.countDocuments({}),
+      Employee.countDocuments({ status: { $in: ['active', 'Active'] } }),
+      Employee.countDocuments({ joinDate: { $gte: startOfMonth } }),
+      Leave.countDocuments({ status: { $regex: /^pending$/i } }),
+      Leave.countDocuments({
+        status: { $regex: /^approved$/i },
+        startDate: { $lte: endOfToday },
+        endDate: { $gte: startOfToday }
+      }),
+      Promise.all([
+        getPeriodLeaveMetrics(startOfToday, endOfToday),
+        getPeriodLeaveMetrics(startOfWeek, endOfWeek),
+        getPeriodLeaveMetrics(startOfMonth, endOfMonth),
+        getPeriodLeaveMetrics(startOfYear, endOfYear),
+        getPeriodLeaveMetrics(null, null)
+      ]),
+      Job.countDocuments({ status: { $regex: /^open$/i } }),
+      Payroll.aggregate([
+        { $match: { month: now.toLocaleString('default', { month: 'long', year: 'numeric' }) } },
+        { $group: { _id: { $toLower: '$status' }, total: { $sum: '$netSalary' } } }
+      ]),
+      Attendance.aggregate([
+        { $match: { date: { $gte: startOfCurrentWeekStr } } },
+        {
+          $group: {
+            _id: "$date",
+            present: { $sum: { $cond: [{ $eq: [{ $toLower: "$status" }, "present"] }, 1, 0] } },
+            absent: { $sum: { $cond: [{ $eq: [{ $toLower: "$status" }, "absent"] }, 1, 0] } },
+            late: { $sum: { $cond: [{ $eq: [{ $toLower: "$status" }, "late"] }, 1, 0] } },
+            halfDay: { $sum: { $cond: [{ $eq: [{ $toLower: "$status" }, "half day"] }, 1, 0] } }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      Employee.find({}, 'userId gender').populate('userId', 'role').lean(),
+      Employee.find({}, 'fullName role joinDate profileImage userId').sort({ joinDate: -1 }).limit(5).populate('userId', 'name email profile').lean(),
+      getPendingLeavesData(),
+      Notification.find({
+        $or: [
+          { type: { $in: ['announcement', 'general', 'emergency', 'task', 'broadcast'] } },
+          { userId: req.user.id },
+          { senderId: req.user.id },
+          { type: { $exists: false } }
+        ]
+      })
+        .populate('senderId', 'name email role')
+        .sort({ createdAt: -1 })
+        .limit(40)
+        .lean(),
+      Employee.find({ status: { $in: ['active', 'Active'] } }, 'fullName userId dob joinDate profileImage role designation email').populate('userId', 'name profile email role').lean(),
+      Notification.find({
+        senderId: req.user.id,
+        type: { $in: ['birthday', 'anniversary'] },
+        createdAt: { $gte: startOfToday, $lte: endOfToday }
+      }).select('userId type').lean(),
+      Holiday.countDocuments({
+        date: { $gte: now, $lte: thirtyDaysFromNow }
+      }),
+      LeaveBalance.find({ month: now.getMonth() + 1, year: now.getFullYear() }).lean(),
+      Leave.countDocuments({
+        leaveType: { $regex: /comp/i },
+        status: { $regex: /^approved$/i },
+        createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+      }),
+      Leave.countDocuments({
+        leaveType: { $regex: /encashment/i },
+        status: { $regex: /^pending$/i },
+        createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+      }),
+      AuditLog.countDocuments({
+        action: { $regex: /adjust/i },
+        timestamp: { $gte: startOfMonth, $lte: endOfMonth }
+      })
     ]);
 
+    // Payroll Summary
     let processedPayroll = 0;
     let pendingPayroll = 0;
     payrollStats.forEach(stat => {
@@ -93,32 +211,7 @@ exports.getDashboardStats = async (req, res) => {
       else pendingPayroll += stat.total;
     });
 
-    // 5. Attendance Overview (Current Week: Mon - Sun)
-    const attPeriod = req.query.attPeriod || 'This Week';
-    const currentDayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1; // 0 for Mon, 6 for Sun
-    const startOfCurrentWeek = new Date(startOfToday);
-    startOfCurrentWeek.setDate(startOfCurrentWeek.getDate() - currentDayOfWeek);
-    
-    if (attPeriod === 'Last Week') {
-      startOfCurrentWeek.setDate(startOfCurrentWeek.getDate() - 7);
-    }
-
-    const startOfCurrentWeekStr = startOfCurrentWeek.toISOString().split('T')[0];
-
-    const attRecords = await Attendance.aggregate([
-      { $match: { date: { $gte: startOfCurrentWeekStr } } },
-      {
-        $group: {
-          _id: "$date",
-          present: { $sum: { $cond: [{ $eq: [{ $toLower: "$status" }, "present"] }, 1, 0] } },
-          absent: { $sum: { $cond: [{ $eq: [{ $toLower: "$status" }, "absent"] }, 1, 0] } },
-          late: { $sum: { $cond: [{ $eq: [{ $toLower: "$status" }, "late"] }, 1, 0] } },
-          halfDay: { $sum: { $cond: [{ $eq: [{ $toLower: "$status" }, "half day"] }, 1, 0] } }
-        }
-      },
-      { $sort: { _id: 1 } }
-    ]);
-
+    // Attendance Overview (Current Week: Mon - Sun)
     const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const attendanceOverview = [];
     for (let i = 0; i < 7; i++) {
@@ -141,8 +234,7 @@ exports.getDashboardStats = async (req, res) => {
       });
     }
 
-    // 6. Department & Gender Distribution
-    const employees = await Employee.find().populate('userId');
+    // Department & Gender Distribution
     const departmentDistribution = {};
     const genderDistribution = {};
 
@@ -162,40 +254,7 @@ exports.getDashboardStats = async (req, res) => {
       name: k, value: genderDistribution[k]
     }));
 
-    // 7. Recent Joiners
-    const recentJoiners = await Employee.find().sort({ joinDate: -1 }).limit(5).populate('userId', 'name email profile');
-
-    // 8. Pending Approvals (Leaves)
-    const currentUser = await User.findById(req.user.id);
-    let pendingLeaveQuery = { status: { $regex: /^pending$/i } };
-    
-    if (currentUser.role === 'hr') {
-      const allowedUsers = await User.find({ role: { $nin: ['admin', 'manager'] } }).select('_id');
-      pendingLeaveQuery.user = { $in: allowedUsers.map(u => u._id) };
-    } else if (currentUser.role === 'manager') {
-      const allowedUsers = await User.find({ role: 'employee' }).select('_id');
-      pendingLeaveQuery.user = { $in: allowedUsers.map(u => u._id) };
-    }
-
-    const pendingLeaves = await Leave.find(pendingLeaveQuery)
-      .populate('user', 'name email role employeeId profileImage')
-      .sort({ createdAt: -1 })
-      .limit(10);
-
-    // 9. Announcements & Latest Notifications from Database
-    const rawAnnouncements = await Notification.find({
-      $or: [
-        { type: { $in: ['announcement', 'general', 'emergency', 'task', 'broadcast'] } },
-        { userId: req.user.id },
-        { senderId: req.user.id },
-        { type: { $exists: false } }
-      ]
-    })
-      .populate('senderId', 'name email role')
-      .sort({ createdAt: -1 })
-      .limit(40)
-      .lean();
-
+    // Announcements & Latest Notifications from Database
     const announcements = [];
     const seenBatches = new Set();
     for (const item of rawAnnouncements) {
@@ -214,17 +273,10 @@ exports.getDashboardStats = async (req, res) => {
       if (announcements.length >= 3) break;
     }
 
-    // 10. Birthdays & Anniversaries (Upcoming in 30 days)
+    // Birthdays & Anniversaries (Upcoming in 30 days)
     const upcomingCelebrations = [];
-    const activeEmps = await Employee.find({ status: { $in: ['active', 'Active'] } }).populate('userId', 'name profile email role');
     const today = new Date();
     today.setHours(0, 0, 0, 0); // start of day for accurate day diff
-
-    const wishesToday = await Notification.find({
-      senderId: req.user.id,
-      type: { $in: ['birthday', 'anniversary'] },
-      createdAt: { $gte: startOfToday, $lte: endOfToday }
-    }).select('userId type');
 
     const wishedSet = new Set(wishesToday.map(w => `${w.type}-${String(w.userId)}`));
 
@@ -291,38 +343,13 @@ exports.getDashboardStats = async (req, res) => {
     upcomingCelebrations.sort((a, b) => a.diffDays - b.diffDays);
     const topCelebrations = upcomingCelebrations.slice(0, 5);
 
-    // 11. Calculate Quick Stats
-    const thirtyDaysFromNow = new Date(now);
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-    const upcomingHolidaysCount = await Holiday.countDocuments({
-      date: { $gte: now, $lte: thirtyDaysFromNow }
-    });
-
-    const currentMonthBalances = await LeaveBalance.find({ month: now.getMonth() + 1, year: now.getFullYear() });
+    // Quick Stats
     let totalAllocatedDays = 0;
     currentMonthBalances.forEach(b => {
       totalAllocatedDays += (b.earnedLeave || 0) + (b.sickLeave || 0) + (b.casualLeave || 0) + (b.compOff || 0) + (b.otherLeaves || 0);
     });
 
-    const compOffsApproved = await Leave.countDocuments({
-      leaveType: { $regex: /comp/i },
-      status: { $regex: /^approved$/i },
-      createdAt: { $gte: startOfMonth, $lte: endOfMonth }
-    });
-
-    const encashmentsPending = await Leave.countDocuments({
-      leaveType: { $regex: /encashment/i },
-      status: { $regex: /^pending$/i },
-      createdAt: { $gte: startOfMonth, $lte: endOfMonth }
-    });
-
-    const AuditLog = require('../models/AuditLog');
-    const leaveAdjustments = await AuditLog.countDocuments({
-      action: { $regex: /adjust/i },
-      timestamp: { $gte: startOfMonth, $lte: endOfMonth }
-    });
-
-    // 12. Compile the response
+    // Compile the response
     res.json({
       success: true,
       data: {
@@ -475,7 +502,7 @@ exports.getCompanyShutdowns = async (req, res) => {
 
 exports.getAttendanceReconciliation = async (req, res) => {
   try {
-    const employees = await Employee.find({ status: { $in: ['active', 'Active'] } }).populate('userId');
+    const employees = await Employee.find({ status: { $in: ['active', 'Active'] } }, 'userId').populate('userId', 'role');
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
 

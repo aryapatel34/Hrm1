@@ -51,7 +51,7 @@ const LeaveAllocationSummary = () => {
           {selectOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setSelectOpen(false)} />
-              <div className="absolute right-0 mt-1 w-36 bg-white dark:bg-[#1e293b] border border-gray-150 dark:border-gray-800 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="absolute right-0 mt-1 w-36 bg-white dark:bg-[#1e293b] border border-gray-155 dark:border-gray-800 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
                 {[
                   { value: 'this_month', label: 'This Month' },
                   { value: 'last_month', label: 'Last Month' },
@@ -72,18 +72,18 @@ const LeaveAllocationSummary = () => {
         </div>
       </div>
 
-      <div className="flex flex-col items-center justify-center gap-6 flex-1 w-full">
+      <div className="flex flex-col items-center justify-center gap-3 flex-1 w-full">
         {/* Recharts Pie Donut Chart */}
-        <div className="w-40 h-40 flex-shrink-0 flex items-center justify-center relative mx-auto">
+        <div className="w-36 h-36 flex-shrink-0 flex items-center justify-center relative">
           {allocationData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart width={160} height={160}>
+              <PieChart width={144} height={144}>
                 <Pie
                   data={allocationData}
-                  cx={75}
-                  cy={75}
-                  innerRadius={55}
-                  outerRadius={75}
+                  cx={68}
+                  cy={68}
+                  innerRadius={48}
+                  outerRadius={68}
                   paddingAngle={3}
                   dataKey="value"
                   stroke="none"
@@ -99,41 +99,41 @@ const LeaveAllocationSummary = () => {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="w-40 h-40 rounded-full border-4 border-dashed border-gray-250 flex items-center justify-center">
+            <div className="w-36 h-36 rounded-full border-4 border-dashed border-gray-250 flex items-center justify-center">
               <span className="text-xs text-gray-400">No Data</span>
             </div>
           )}
 
           {/* Center text hole */}
-          <div className="absolute w-28 h-28 bg-white dark:bg-[#1e293b] rounded-full flex flex-col items-center justify-center pointer-events-none shadow-sm border border-gray-50 dark:border-gray-800/50">
-            <span className="text-2xl font-black text-gray-900 dark:text-white tabular-nums tracking-tight">
+          <div className="absolute w-24 h-24 bg-white dark:bg-[#1e293b] rounded-full flex flex-col items-center justify-center pointer-events-none shadow-sm border border-gray-50 dark:border-gray-800/50">
+            <span className="text-xl font-black text-gray-900 dark:text-white tabular-nums tracking-tight">
               {hoveredSegment ? hoveredSegment.value.toLocaleString() : totalDays.toLocaleString()}
             </span>
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1 text-center max-w-[90px] truncate">
+            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-0.5 text-center max-w-[80px] truncate">
               {hoveredSegment ? hoveredSegment.name : 'Total Days'}
             </span>
           </div>
         </div>
 
         {/* Legend */}
-        <div className="flex flex-col gap-3 w-full max-w-[280px] mx-auto">
+        <div className="flex flex-col gap-1 w-full px-2">
           {loading ? (
-            <p className="text-sm text-gray-400">Loading chart data...</p>
+            <p className="text-xs text-gray-400 text-center">Loading chart...</p>
           ) : (
             allocationData.map((item, i) => (
               <div 
                 key={i} 
-                className={`flex items-center justify-between gap-4 text-sm font-semibold cursor-pointer p-1.5 rounded transition-all duration-150 ${hoveredSegment?.name === item.name ? 'bg-gray-150 dark:bg-gray-800 scale-[1.02]' : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}
+                className={`flex items-center justify-between gap-2 text-xs font-semibold cursor-pointer p-0.5 px-2 rounded transition-all duration-150 ${hoveredSegment?.name === item.name ? 'bg-gray-150 dark:bg-gray-800 scale-[1.02]' : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}
                 onMouseEnter={() => setHoveredSegment(item)}
                 onMouseLeave={() => setHoveredSegment(null)}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                  <span className="text-gray-700 dark:text-gray-300 w-28 text-left truncate">{item.name}</span>
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }}></div>
+                  <span className="text-gray-700 dark:text-gray-300 text-left truncate text-[11px]">{item.name}</span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-gray-900 dark:text-white w-6 text-right">{item.value.toLocaleString()}</span>
-                  <span className="text-gray-500 w-10 text-right">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-gray-900 dark:text-white font-bold text-[11px]">{item.value.toLocaleString()}</span>
+                  <span className="text-gray-400 text-[10px]">
                     ({totalDays > 0 ? Math.round((item.value / totalDays) * 100) : 0}%)
                   </span>
                 </div>
@@ -142,8 +142,6 @@ const LeaveAllocationSummary = () => {
           )}
         </div>
       </div>
-
-
     </div>
   );
 };

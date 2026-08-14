@@ -31,8 +31,8 @@ const QuickActions = () => {
   };
 
   const actions = [
-    { label: 'Approve Leave', icon: CheckCircle, color: 'text-emerald-500', hoverBorder: 'hover:border-emerald-500', hoverText: 'hover:text-emerald-600 dark:hover:text-emerald-400', onClick: () => toast('Please select leaves from the pending queue to approve.') },
-    { label: 'Bulk Approval', icon: Users, color: 'text-purple-500', hoverBorder: 'hover:border-purple-500', hoverText: 'hover:text-purple-600 dark:hover:text-purple-400', onClick: () => toast('Bulk approval feature coming soon.') },
+    { label: 'Approve Leave', icon: CheckCircle, color: 'text-emerald-500', hoverBorder: 'hover:border-emerald-500', hoverText: 'hover:text-emerald-600 dark:hover:text-emerald-400', onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+    { label: 'Bulk Approval', icon: Users, color: 'text-purple-500', hoverBorder: 'hover:border-purple-500', hoverText: 'hover:text-purple-600 dark:hover:text-purple-400', onClick: () => window.dispatchEvent(new CustomEvent('trigger-bulk-approval')) },
     { label: 'Team Calendar', icon: Calendar, color: 'text-orange-500', hoverBorder: 'hover:border-orange-500', hoverText: 'hover:text-orange-600 dark:hover:text-orange-400', onClick: () => window.scrollTo({ top: 500, behavior: 'smooth' }) },
     { label: 'Team Leave Balance', icon: Clock, color: 'text-blue-500', hoverBorder: 'hover:border-blue-500', hoverText: 'hover:text-blue-600 dark:hover:text-blue-400', onClick: () => window.scrollTo({ top: 500, behavior: 'smooth' }) },
     { label: 'Download Report', icon: Download, color: 'text-emerald-600', hoverBorder: 'hover:border-emerald-600', hoverText: 'hover:text-emerald-700 dark:hover:text-emerald-450', onClick: () => handleExport('pdf') },

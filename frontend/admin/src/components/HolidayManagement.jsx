@@ -77,7 +77,7 @@ const HolidayManagement = ({ refreshTrigger }) => {
       return !isNaN(hDate.getTime()) && hDate >= now;
     })
     .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .slice(0, 5);
+    .slice(0, 7);
 
   return (
     <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 flex flex-col h-full transition-all duration-200 hover:border-pink-500">
@@ -175,7 +175,7 @@ const HolidayManagement = ({ refreshTrigger }) => {
           </tbody>
         </table>
       </div>
-      <ViewHolidaysDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <ViewHolidaysDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} holidays={holidays} />
     </div>
   );
 };

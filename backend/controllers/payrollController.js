@@ -35,7 +35,7 @@ exports.generatePayroll = async (req, res) => {
 // @route   GET /api/payroll/me
 exports.getMyPayroll = async (req, res) => {
   try {
-    const history = await Payroll.find({ user: req.user.id }).sort({ year: -1, month: -1 });
+    const history = await Payroll.find({ user: req.user.id }).sort({ year: -1, month: -1 }).lean();
     res.json(history);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -46,7 +46,7 @@ exports.getMyPayroll = async (req, res) => {
 // @route   GET /api/payroll
 exports.getAllPayroll = async (req, res) => {
   try {
-    const allPayroll = await Payroll.find().populate('user', 'name role email').sort({ createdAt: -1 });
+    const allPayroll = await Payroll.find().populate('user', 'name role email').sort({ createdAt: -1 }).lean();
     res.json(allPayroll);
   } catch (error) {
     res.status(500).json({ message: error.message });

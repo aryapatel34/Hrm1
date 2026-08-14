@@ -473,13 +473,13 @@ exports.getMyTime = async (req, res) => {
 
 exports.getHRTime = async (req, res) => {
   try {
-    res.json(await TimeTrack.find({ employeeRole: { $in: ['employee', 'manager'] } }).sort({ date: -1 }).populate('employeeId', 'name fullName email'));
+    res.json(await TimeTrack.find({ employeeRole: { $in: ['employee', 'manager'] } }).sort({ date: -1 }).populate('employeeId', 'name fullName email').lean());
   } catch (err) { res.status(500).json({ message: 'HR logs failed', error: err.message }); }
 };
 
 exports.getAllTime = async (req, res) => {
   try {
-    res.json(await TimeTrack.find({}).sort({ date: -1 }).populate('employeeId', 'name fullName email'));
+    res.json(await TimeTrack.find({}).sort({ date: -1 }).populate('employeeId', 'name fullName email').lean());
   } catch (err) { res.status(500).json({ message: 'All logs failed', error: err.message }); }
 };
 
@@ -632,7 +632,7 @@ exports.getDashboardData = async (req, res) => {
       filter.date = today;
     }
 
-    const sessions = await TimeTrack.find(filter).sort({ date: -1, createdAt: -1 }).populate('employeeId', 'name fullName email role');
+    const sessions = await TimeTrack.find(filter).sort({ date: -1, createdAt: -1 }).populate('employeeId', 'name fullName email role').lean();
     const stats = {
       totalTime: sessions.reduce((a, s) => a + (s.activeTime || 0) + (s.idleTime || 0), 0),
       activeTime: sessions.reduce((a, s) => a + (s.activeTime || 0), 0),

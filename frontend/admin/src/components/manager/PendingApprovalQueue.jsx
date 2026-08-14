@@ -33,6 +33,32 @@ const PendingApprovalQueue = ({ onAction }) => {
     fetchPending();
   }, [currentPage]);
 
+  useEffect(() => {
+    const handleBulkApproval = async () => {
+      if (!leaves || leaves.length === 0) {
+        toast.error('No pending leave requests to approve.');
+        return;
+      }
+      
+      const confirmApprove = window.confirm(`Are you sure you want to approve all ${leaves.length} pending leave requests?`);
+      if (!confirmApprove) return;
+      
+      try {
+        const res = await axios.put('/api/leaves/manager/bulk-approve', { ids: leaves.map(l => l._id) }, {
+          headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
+        });
+        toast.success(res.data.message || 'Bulk approval successful');
+        fetchPending();
+        if (onAction) onAction();
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to perform bulk approval');
+      }
+    };
+
+    window.addEventListener('trigger-bulk-approval', handleBulkApproval);
+    return () => window.removeEventListener('trigger-bulk-approval', handleBulkApproval);
+  }, [leaves]);
+
   const handleApprove = async (id) => {
     try {
       await axios.put(`/api/leaves/manager-approve/${id}`, {}, {
@@ -67,62 +93,9 @@ const PendingApprovalQueue = ({ onAction }) => {
     });
   };
 
-  const mockLeaves = [
-    {
-      _id: 'mock1',
-      user: { name: 'Amit Sharma', email: 'amit@example.com', role: 'developer' },
-      leaveType: 'casual',
-      startDate: new Date(Date.now() + 24*60*60*1000).toISOString(),
-      endDate: new Date(Date.now() + 3*24*60*60*1000).toISOString(),
-      totalDays: 2,
-      reason: 'Attending family function',
-      createdAt: new Date().toISOString()
-    },
-    {
-      _id: 'mock2',
-      user: { name: 'Priya Patel', email: 'priya@example.com', role: 'designer' },
-      leaveType: 'sick',
-      startDate: new Date().toISOString(),
-      endDate: new Date(Date.now() + 24*60*60*1000).toISOString(),
-      totalDays: 1,
-      reason: 'Fever and cold',
-      createdAt: new Date().toISOString()
-    },
-    {
-      _id: 'mock3',
-      user: { name: 'Rohan Verma', email: 'rohan@example.com', role: 'QA tester' },
-      leaveType: 'earned',
-      startDate: new Date(Date.now() + 5*24*60*60*1000).toISOString(),
-      endDate: new Date(Date.now() + 10*24*60*60*1000).toISOString(),
-      totalDays: 5,
-      reason: 'Personal vacation',
-      createdAt: new Date().toISOString()
-    },
-    {
-      _id: 'mock4',
-      user: { name: 'Karan Johar', email: 'karan@example.com', role: 'product manager' },
-      leaveType: 'casual',
-      startDate: new Date(Date.now() + 6*24*60*60*1000).toISOString(),
-      endDate: new Date(Date.now() + 8*24*60*60*1000).toISOString(),
-      totalDays: 2,
-      reason: 'Personal travel & vacation',
-      createdAt: new Date().toISOString()
-    },
-    {
-      _id: 'mock5',
-      user: { name: 'Sneha Reddy', email: 'sneha@example.com', role: 'developer' },
-      leaveType: 'sick',
-      startDate: new Date(Date.now() + 2*24*60*60*1000).toISOString(),
-      endDate: new Date(Date.now() + 3*24*60*60*1000).toISOString(),
-      totalDays: 1,
-      reason: 'Dental checkup',
-      createdAt: new Date().toISOString()
-    }
-  ];
-
-  const displayLeaves = (leaves && leaves.length > 0) ? leaves : mockLeaves;
-  const displayTotalItems = (leaves && leaves.length > 0) ? totalItems : mockLeaves.length;
-  const displayTotalPages = (leaves && leaves.length > 0) ? totalPages : 1;
+  const displayLeaves = leaves || [];
+  const displayTotalItems = totalItems || 0;
+  const displayTotalPages = totalPages || 1;
 
   const startEntry = displayTotalItems === 0 ? 0 : (currentPage - 1) * 5 + 1;
   const endEntry = Math.min(currentPage * 5, displayTotalItems);
@@ -167,7 +140,7 @@ const PendingApprovalQueue = ({ onAction }) => {
             ) : (
               filteredLeaves.map((leave) => (
                 <tr key={leave._id} className="border-b border-gray-50 dark:border-gray-850 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-all text-xs font-semibold text-gray-700 dark:text-gray-300 text-center">
-                  <td className="py-4 text-left flex items-center gap-3">
+                  <td className="py-2.5 text-left flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-50 to-violet-50 text-indigo-600 flex items-center justify-center font-bold text-xs border border-indigo-100 shadow-sm shrink-0">
                       {leave.user?.name ? leave.user.name.charAt(0).toUpperCase() : 'U'}
                     </div>
@@ -176,7 +149,7 @@ const PendingApprovalQueue = ({ onAction }) => {
                       <span className="text-[10px] text-gray-400 font-medium truncate">{leave.user?.email || 'No email'}</span>
                     </div>
                   </td>
-                  <td className="py-4">
+                  <td className="py-2.5">
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                       leave.leaveType === 'sick' ? 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400' :
                       leave.leaveType === 'casual' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400' :
@@ -185,12 +158,12 @@ const PendingApprovalQueue = ({ onAction }) => {
                       {leave.leaveType}
                     </span>
                   </td>
-                  <td className="py-4 text-gray-500 dark:text-gray-400 font-medium">{formatDate(leave.startDate)}</td>
-                  <td className="py-4 text-gray-500 dark:text-gray-400 font-medium">{formatDate(leave.endDate)}</td>
-                  <td className="py-4 font-bold text-gray-900 dark:text-white">{leave.totalDays} day(s)</td>
-                  <td className="py-4 text-gray-500 dark:text-gray-400 font-medium max-w-[150px] truncate" title={leave.reason}>{leave.reason || '-'}</td>
-                  <td className="py-4 text-gray-400 font-medium">{formatDate(leave.createdAt)}</td>
-                  <td className="py-4 text-right">
+                  <td className="py-2.5 text-gray-500 dark:text-gray-400 font-medium">{formatDate(leave.startDate)}</td>
+                  <td className="py-2.5 text-gray-500 dark:text-gray-400 font-medium">{formatDate(leave.endDate)}</td>
+                  <td className="py-2.5 font-bold text-gray-900 dark:text-white">{leave.totalDays} day(s)</td>
+                  <td className="py-2.5 text-gray-500 dark:text-gray-400 font-medium max-w-[150px] truncate" title={leave.reason}>{leave.reason || '-'}</td>
+                  <td className="py-2.5 text-gray-400 font-medium">{formatDate(leave.createdAt)}</td>
+                  <td className="py-2.5 text-right">
                     <div className="flex justify-end gap-1.5">
                       <button 
                         onClick={() => handleApprove(leave._id)}
