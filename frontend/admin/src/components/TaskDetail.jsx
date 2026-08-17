@@ -37,6 +37,8 @@ const TaskDetail = ({ task, isOpen, onClose, onUpdate, userRole }) => {
 
     // Connect to backend (adjust URL if needed, usually same as origin in dev)
     const socket = io(window.location.origin, {
+      transports: ['websocket'],
+      upgrade: false,
       withCredentials: true
     });
 

@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import {
   CheckSquare, Clock, Users, Calendar, BarChart2,
   CheckCircle2, AlertTriangle, ArrowRight, XCircle, LayoutGrid,
-  FileText, Upload, RefreshCcw, HandCoins, DollarSign, Check, ChevronDown, Plus
+  FileText, Upload, RefreshCcw, HandCoins, DollarSign, Check, ChevronDown, Plus, Briefcase
 } from 'lucide-react';
 import LeavePolicyOverview from '../../components/LeavePolicyOverview';
 import HolidayManagement from '../../components/HolidayManagement';
@@ -35,6 +35,7 @@ const Leaves = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [requestFilter, setRequestFilter] = useState('pending');
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+  const [applyDropdownOpen, setApplyDropdownOpen] = useState(false);
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -227,36 +228,12 @@ const Leaves = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex gap-2 bg-gray-150 dark:bg-gray-800 p-1 rounded-lg">
-            <button 
-              onClick={() => {
-                setViewMode('employee');
-                setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'comp-off' })), 100);
-              }} 
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-            >
-              <Plus size={14} /> Comp-Off
-            </button>
-          </div>
-
-          <div className="flex gap-2 bg-gray-150 dark:bg-gray-800 p-1 rounded-lg">
-            <button 
-              onClick={() => {
-                setViewMode('employee');
-                setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'on-duty' })), 100);
-              }} 
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-            >
-              <Plus size={14} /> On Duty
-            </button>
-          </div>
-
           <button 
             onClick={() => {
               setViewMode('employee');
               setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'apply-leave' })), 100);
             }} 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap ml-2 cursor-pointer"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap cursor-pointer"
           >
             <Plus size={16} /> Apply for Leave
           </button>
@@ -304,7 +281,7 @@ const Leaves = () => {
           </div>
 
           {/* 3. Employee Leave Requests (Full Width 100% - Row 2) */}
-          <div ref={leaveRequestsRef} className={`w-full bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 flex flex-col justify-between mb-8 overflow-hidden transition-all duration-200 hover:border-emerald-500 ${filteredLeaves.length === 0 ? 'min-h-[200px]' : 'h-[750px]'}`}>
+          <div ref={leaveRequestsRef} className="w-full bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 flex flex-col justify-between mb-8 overflow-hidden transition-all duration-200 hover:border-emerald-500 h-[680px]">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Employee Leave Requests</h3>
@@ -404,7 +381,7 @@ const Leaves = () => {
                         .slice((currentPage - 1) * 10, currentPage * 10)
                         .map(leave => (
                           <tr key={leave._id} onClick={() => setSelectedLeaveDetails(leave)} className="border-b border-gray-50 dark:border-gray-850 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-all text-xs font-semibold text-gray-700 dark:text-gray-300 text-center cursor-pointer">
-                            <td className="py-4 text-left flex items-center gap-3">
+                            <td className="py-2 text-left flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-50 to-violet-50 text-indigo-600 flex items-center justify-center font-bold text-xs border border-indigo-100 shadow-sm shrink-0">
                                 {leave.user?.name ? leave.user.name.charAt(0).toUpperCase() : 'U'}
                               </div>
@@ -413,7 +390,7 @@ const Leaves = () => {
                                 <span className="text-[10px] text-gray-400 font-medium truncate">{leave.user?.email || 'No email'}</span>
                               </div>
                             </td>
-                            <td className="py-4">
+                            <td className="py-2">
                               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                                 leave.leaveType === 'sick' ? 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400' :
                                 leave.leaveType === 'casual' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400' :
@@ -422,25 +399,25 @@ const Leaves = () => {
                                 {leave.leaveType || leave.type}
                               </span>
                             </td>
-                            <td className="py-4 text-gray-500 dark:text-gray-400 font-medium">
+                            <td className="py-2 text-gray-500 dark:text-gray-400 font-medium">
                               {leave.startDate ? new Date(leave.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
                             </td>
-                            <td className="py-4 text-gray-500 dark:text-gray-400 font-medium">
+                            <td className="py-2 text-gray-500 dark:text-gray-400 font-medium">
                               {leave.endDate ? new Date(leave.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
                             </td>
-                            <td className="py-4 font-bold text-gray-900 dark:text-white">
+                            <td className="py-2 font-bold text-gray-900 dark:text-white">
                               {leave.totalDays || 0} day(s)
                             </td>
-                            <td className="py-4 text-gray-500 dark:text-gray-400 font-medium max-w-[150px] truncate" title={leave.reason}>
+                            <td className="py-2 text-gray-500 dark:text-gray-400 font-medium max-w-[150px] truncate" title={leave.reason}>
                               {leave.reason || '-'}
                             </td>
-                            <td className="py-4">
+                            <td className="py-2">
                               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusColor(leave.status)}`}>
                                 {leave.status === 'cancellation_pending' ? 'Cancellation Requested' : leave.status}
                               </span>
                             </td>
                             {(requestFilter === 'pending' || requestFilter === 'cancellation_pending') && (
-                              <td className="py-4 text-right">
+                              <td className="py-2 text-right">
                                 <div className="flex justify-end gap-1.5">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleRejectLeave(leave._id); }}
@@ -467,7 +444,7 @@ const Leaves = () => {
 
                 {/* Pagination controls */}
                 {Math.ceil(filteredLeaves.length / 10) > 1 && (
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       Page {currentPage} of {Math.ceil(filteredLeaves.length / 10)}
                     </span>
@@ -500,7 +477,7 @@ const Leaves = () => {
               {[
                 { label: 'Create Policy', icon: FileText, color: 'text-purple-500', hoverBorder: 'hover:border-purple-500', hoverText: 'hover:text-purple-600 dark:hover:text-purple-455', onClick: () => setActiveModal('createPolicy') },
                 { label: 'Allocate Leave', icon: ArrowRight, color: 'text-green-500', hoverBorder: 'hover:border-green-500', hoverText: 'hover:text-green-600 dark:hover:text-green-455', onClick: () => setActiveModal('allocateLeave') },
-                { label: 'On Duty Requests', icon: Calendar, color: 'text-blue-500', hoverBorder: 'hover:border-blue-500', hoverText: 'hover:text-blue-600 dark:hover:text-blue-455', onClick: () => setActiveModal('onDutyApproval') },
+                { label: 'On Duty Requests', icon: Briefcase, color: 'text-blue-500', hoverBorder: 'hover:border-blue-500', hoverText: 'hover:text-blue-600 dark:hover:text-blue-455', onClick: () => setActiveModal('onDutyApproval') },
                 { label: 'Add Holiday', icon: Calendar, color: 'text-pink-500', hoverBorder: 'hover:border-pink-500', hoverText: 'hover:text-pink-600 dark:hover:text-pink-455', onClick: () => setActiveModal('addHoliday') },
                 { label: 'Compensatory Off approval', icon: HandCoins, color: 'text-emerald-500', hoverBorder: 'hover:border-emerald-500', hoverText: 'hover:text-emerald-600 dark:hover:text-emerald-455', onClick: () => setActiveModal('compOff') },
                 { label: 'Leave Encashment', icon: DollarSign, color: 'text-red-500', hoverBorder: 'hover:border-red-500', hoverText: 'hover:text-red-600 dark:hover:text-red-455', onClick: () => setActiveModal('leaveEncashment') },
@@ -523,32 +500,7 @@ const Leaves = () => {
             <div className="h-[400px] overflow-hidden"><LeaveAllocationSummary /></div>
           </div>
 
-          {/* 6. 5 Quick-Stat Cards - Row 5 */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-            {[
-              { label: 'Bulk Leave Allocation', val: (stats?.quickStats?.bulkAllocationDays || 0).toLocaleString(), sub: 'Days Allocated This Month', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', hoverBorder: 'hover:border-blue-500 hover:shadow-blue-500/5', link: 'View Details' },
-              { label: 'Bulk Import', val: (stats?.quickStats?.importedEmployees || 0).toLocaleString(), sub: 'Employees Imported This Month', icon: Upload, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20', hoverBorder: 'hover:border-green-500 hover:shadow-green-500/5', link: 'View Import Status' },
-              { label: 'Leave Adjustments', val: (stats?.quickStats?.leaveAdjustments || 0).toLocaleString(), sub: 'Adjustments Made This Month', icon: RefreshCcw, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', hoverBorder: 'hover:border-purple-500 hover:shadow-purple-500/5', link: 'View Adjustments' },
-              { label: 'Comp-Off Management', val: (stats?.quickStats?.compOffsApproved || 0).toLocaleString(), sub: 'Comp-Offs Approved This Month', icon: HandCoins, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', hoverBorder: 'hover:border-orange-500 hover:shadow-orange-500/5', link: 'View Comp-Offs' },
-              { label: 'Leave Encashment', val: (stats?.quickStats?.encashmentsPending || 0).toLocaleString(), sub: 'Requests Pending This Month', icon: DollarSign, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20', hoverBorder: 'hover:border-red-500 hover:shadow-red-500/5', link: 'View Requests' }
-            ].map((stat, i) => (
-              <div key={i} className={`bg-white dark:bg-[#1e293b] p-5 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer ${stat.hoverBorder}`}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`p-2.5 rounded-xl ${stat.bg}`}>
-                    <stat.icon size={20} className={stat.color} />
-                  </div>
-                  <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">{stat.label}</span>
-                </div>
-                <div className="flex flex-row items-baseline gap-2 mb-4 flex-wrap">
-                  <h3 className="text-3xl font-black text-gray-900 dark:text-white tabular-nums">{stat.val}</h3>
-                  <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 leading-tight">{stat.sub}</p>
-                </div>
-                <button className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 hover:gap-2 transition-all">
-                  {stat.link} <ArrowRight size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
+
 
           {/* 7. Leave Policy Overview (Full Width - Row 6) */}
           <div className="w-full mb-8">

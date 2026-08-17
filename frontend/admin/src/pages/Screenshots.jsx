@@ -19,8 +19,8 @@ const getLocalISODate = (date = new Date()) => {
 const Screenshots = () => {
   const [screenshots, setScreenshots] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterUser, setFilterUser] = useState('');
   const [filterDate, setFilterDate] = useState('');
+  const filterUser = '';
   const [searchEmployeeName, setSearchEmployeeName] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // grid, list
   const [selectedImage, setSelectedImage] = useState(null);
@@ -72,7 +72,7 @@ const Screenshots = () => {
 
     // 📡 REAL-TIME SYNC ENGINE
     const socket = io(window.location.origin, {
-       transports: ['websocket', 'polling']
+       transports: ['websocket']
     });
 
     socket.on('connect', () => {
@@ -230,25 +230,6 @@ const Screenshots = () => {
     }
     if (type === 'all') setFilterDate('');
   };
-
-  const renderBreadcrumbs = () => (
-    <div className="flex items-center gap-3 mb-8 text-[11px] font-black uppercase tracking-[0.2em] text-[#939084]">
-       <button onClick={() => setNavigationPath([])} className={`hover:text-[#00a76b] transition-colors ${navigationPath.length === 0 ? 'text-[#201515]' : ''}`}>
-          Registry Root
-       </button>
-       {navigationPath.map((path, idx) => (
-         <React.Fragment key={idx}>
-            <ChevronRight size={14} className="opacity-40" />
-            <button 
-              onClick={() => setNavigationPath(navigationPath.slice(0, idx + 1))}
-              className={`hover:text-[#00a76b] transition-colors ${idx === navigationPath.length - 1 ? 'text-[#201515]' : ''}`}
-            >
-               {path}
-            </button>
-         </React.Fragment>
-       ))}
-    </div>
-  );
 
   return (
     <div className="animate-fade-in pb-24">

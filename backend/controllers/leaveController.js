@@ -80,6 +80,132 @@ const updateLeaveBalanceForUser = async (userId, date) => {
   return balance;
 };
 
+const wrapEmailInTemplate = (contentHtml, titleText) => {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${titleText}</title>
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          background-color: #f6f8fb;
+          margin: 0;
+          padding: 0;
+          -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+          width: 100%;
+          background-color: #f6f8fb;
+          padding: 40px 0;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background-color: #ffffff;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+          border: 1px solid #e2eae7;
+        }
+        .header {
+          background-color: #08100e;
+          padding: 30px;
+          text-align: center;
+          border-bottom: 3px solid #00a76b;
+        }
+        .logo {
+          color: #ffffff;
+          font-size: 24px;
+          font-weight: 800;
+          letter-spacing: -0.5px;
+          margin: 0;
+          text-transform: uppercase;
+        }
+        .logo span {
+          color: #00a76b;
+        }
+        .content {
+          padding: 40px 30px;
+          color: #334155;
+          line-height: 1.6;
+          font-size: 15px;
+        }
+        .content p {
+          margin-top: 0;
+          margin-bottom: 16px;
+        }
+        .content ul {
+          background-color: #f8fafc;
+          border: 1px solid #f1f5f9;
+          border-radius: 12px;
+          padding: 20px 20px 20px 35px;
+          margin: 24px 0;
+          list-style-type: square;
+        }
+        .content li {
+          margin-bottom: 10px;
+          color: #475569;
+        }
+        .content li:last-child {
+          margin-bottom: 0;
+        }
+        .cta-container {
+          text-align: center;
+          margin: 32px 0 16px;
+        }
+        .cta-button {
+          display: inline-block;
+          background-color: #00a76b;
+          color: #ffffff !important;
+          text-decoration: none;
+          padding: 12px 30px;
+          font-weight: 700;
+          border-radius: 8px;
+          font-size: 14px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .footer {
+          background-color: #f8fafc;
+          padding: 24px 30px;
+          text-align: center;
+          font-size: 12px;
+          color: #94a3b8;
+          border-top: 1px solid #f1f5f9;
+        }
+        .footer a {
+          color: #00a76b;
+          text-decoration: none;
+          font-weight: 600;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="wrapper">
+        <div class="container">
+          <div class="header">
+            <h1 class="logo">Fluid<span>HR</span></h1>
+          </div>
+          <div class="content">
+            ${contentHtml}
+            <div class="cta-container">
+              <a href="http://192.168.1.210:4000" class="cta-button">Go to Dashboard</a>
+            </div>
+          </div>
+          <div class="footer">
+            <p>Sent by FluidHR Workforce OS. All access logged.</p>
+            <p>Visit our website at <a href="http://192.168.1.210:4000">fluidhr.workforce.os</a></p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
 const createInAppAndEmailNotification = async (req, { userId, title, message, type, subject, emailHtml }) => {
   try {
     const Notification = require('../models/Notification');
@@ -111,11 +237,12 @@ const createInAppAndEmailNotification = async (req, { userId, title, message, ty
 
     const targetUser = await User.findById(userId);
     if (targetUser && targetUser.email) {
+      const finalHtml = wrapEmailInTemplate(emailHtml || `<p>${message}</p>`, subject || title);
       await sendEmail({
         email: targetUser.email,
         subject: subject || title,
         message: message,
-        html: emailHtml || `<p>${message}</p>`
+        html: finalHtml
       }).catch(err => {
         console.error(`[EMAIL ERROR] Failed to send email to ${targetUser.email}:`, err.message);
       });
@@ -188,43 +315,76 @@ exports.applyLeave = async (req, res) => {
       status: 'Success'
     });
 
-    if (employee.reportingManager) {
-      await createInAppAndEmailNotification(req, {
-        userId: employee.reportingManager,
-        title: 'New Leave Request',
-        message: `${employee.name} has submitted a leave request.`,
-        type: 'leave_created',
-        subject: 'New Leave Request Submitted',
-        emailHtml: `<p>Hello,</p>
-                    <p>A new leave request has been submitted by ${employee.name}.</p>
-                    <ul>
-                      <li><strong>Leave Type:</strong> ${leaveType}</li>
-                      <li><strong>From:</strong> ${new Date(startDate).toLocaleDateString('en-GB')}</li>
-                      <li><strong>To:</strong> ${new Date(endDate).toLocaleDateString('en-GB')}</li>
-                      <li><strong>Total Days:</strong> ${totalDays || 1}</li>
-                      <li><strong>Reason:</strong> ${reason}</li>
-                    </ul>`
-      });
+    const senderRoleLabel = employee.role === 'manager' ? 'Manager' : employee.role === 'hr' ? 'HR' : 'Employee';
+    const notificationMessage = `${senderRoleLabel} ${employee.name} has submitted a leave request.`;
+    const notificationSubject = `${senderRoleLabel} Leave Request Submitted`;
+
+    // 1. If a Manager or HR is requesting leave, notify all Admins and HRs
+    if (employee.role === 'manager' || employee.role === 'hr') {
+      const adminUsers = await User.find({ role: 'admin' }).select('_id');
+      for (const admin of adminUsers) {
+        await createInAppAndEmailNotification(req, {
+          userId: admin._id,
+          title: 'New Leave Request',
+          message: notificationMessage,
+          type: 'leave_created',
+          subject: notificationSubject,
+          emailHtml: `<p>Hello,</p>
+                      <p>A new leave request has been submitted by ${senderRoleLabel} ${employee.name}.</p>
+                      <ul>
+                        <li><strong>Leave Type:</strong> ${leaveType}</li>
+                        <li><strong>From:</strong> ${new Date(startDate).toLocaleDateString('en-GB')}</li>
+                        <li><strong>To:</strong> ${new Date(endDate).toLocaleDateString('en-GB')}</li>
+                        <li><strong>Total Days:</strong> ${totalDays || 1}</li>
+                        <li><strong>Reason:</strong> ${reason}</li>
+                      </ul>`
+        });
+      }
+    } else {
+      // 2. If an Employee/HR is requesting leave, notify their Reporting Manager
+      if (employee.reportingManager) {
+        await createInAppAndEmailNotification(req, {
+          userId: employee.reportingManager,
+          title: 'New Leave Request',
+          message: notificationMessage,
+          type: 'leave_created',
+          subject: notificationSubject,
+          emailHtml: `<p>Hello,</p>
+                      <p>A new leave request has been submitted by ${senderRoleLabel} ${employee.name}.</p>
+                      <ul>
+                        <li><strong>Leave Type:</strong> ${leaveType}</li>
+                        <li><strong>From:</strong> ${new Date(startDate).toLocaleDateString('en-GB')}</li>
+                        <li><strong>To:</strong> ${new Date(endDate).toLocaleDateString('en-GB')}</li>
+                        <li><strong>Total Days:</strong> ${totalDays || 1}</li>
+                        <li><strong>Reason:</strong> ${reason}</li>
+                      </ul>`
+        });
+      }
     }
 
-    const hrUsers = await User.find({ role: 'hr' }).select('_id');
-    for (const hr of hrUsers) {
-      await createInAppAndEmailNotification(req, {
-        userId: hr._id,
-        title: 'New Leave Request',
-        message: `${employee.name} has submitted a leave request.`,
-        type: 'leave_created',
-        subject: 'New Leave Request Submitted',
-        emailHtml: `<p>Hello,</p>
-                    <p>A new leave request has been submitted by ${employee.name}.</p>
-                    <ul>
-                      <li><strong>Leave Type:</strong> ${leaveType}</li>
-                      <li><strong>From:</strong> ${new Date(startDate).toLocaleDateString('en-GB')}</li>
-                      <li><strong>To:</strong> ${new Date(endDate).toLocaleDateString('en-GB')}</li>
-                      <li><strong>Total Days:</strong> ${totalDays || 1}</li>
-                      <li><strong>Reason:</strong> ${reason}</li>
-                    </ul>`
-      });
+    // 3. Notify the HR Team (only if the applicant is NOT an HR user)
+    if (employee.role !== 'hr') {
+      const hrUsers = await User.find({ role: 'hr' }).select('_id');
+      for (const hr of hrUsers) {
+        if (hr._id.toString() !== req.user.id) {
+          await createInAppAndEmailNotification(req, {
+            userId: hr._id,
+            title: 'New Leave Request',
+            message: notificationMessage,
+            type: 'leave_created',
+            subject: notificationSubject,
+            emailHtml: `<p>Hello,</p>
+                        <p>A new leave request has been submitted by ${senderRoleLabel} ${employee.name}.</p>
+                        <ul>
+                          <li><strong>Leave Type:</strong> ${leaveType}</li>
+                          <li><strong>From:</strong> ${new Date(startDate).toLocaleDateString('en-GB')}</li>
+                          <li><strong>To:</strong> ${new Date(endDate).toLocaleDateString('en-GB')}</li>
+                          <li><strong>Total Days:</strong> ${totalDays || 1}</li>
+                          <li><strong>Reason:</strong> ${reason}</li>
+                        </ul>`
+          });
+        }
+      }
     }
 
     const io = req.app.get('io');

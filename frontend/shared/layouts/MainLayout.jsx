@@ -1185,7 +1185,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-[#f8fafc] dark:bg-[#08100e] relative flex flex-col p-6 md:p-8">
             {location.pathname.endsWith('/chat') ? (
               <div className="h-[calc(100vh-70px)] relative overflow-hidden">
-                <ErrorBoundary>
+                <ErrorBoundary key={location.pathname}>
                   <Outlet />
                 </ErrorBoundary>
                 {children}
@@ -1193,7 +1193,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
             ) : (
               <div className="animate-fade-in w-full min-h-full flex flex-col">
                 <div className="flex-1 w-full">
-                  <ErrorBoundary>
+                  <ErrorBoundary key={location.pathname}>
                     <Outlet />
                   </ErrorBoundary>
                   {children}

@@ -88,7 +88,7 @@ router.get('/all', async (req, res) => {
       query = {};
     }
 
-    const screenshots = await Screenshot.find(query).sort({ timestamp: -1 });
+    const screenshots = await Screenshot.find(query).sort({ timestamp: -1 }).limit(150);
     res.json(screenshots);
   } catch (err) {
     res.status(500).json({ message: 'Server Error' });

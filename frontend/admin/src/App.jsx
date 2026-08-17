@@ -1,6 +1,20 @@
 import React, { useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
+// A route's lazy-loaded chunk can go stale if a tab was left open across a
+// dev-server restart or a new deploy (chunk hashes changed underneath it).
+// Reload once automatically instead of showing a broken "Failed to fetch
+// dynamically imported module" screen; guard against a reload loop if the
+// server is actually down.
+window.addEventListener('vite:preloadError', () => {
+  const key = 'hrm_chunk_reload_at';
+  const last = Number(sessionStorage.getItem(key) || 0);
+  if (Date.now() - last > 10000) {
+    sessionStorage.setItem(key, String(Date.now()));
+    window.location.reload();
+  }
+});
+
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -110,6 +124,68 @@ const RootRedirect = () => {
 };
 
 const App = () => {
+  // Background chunk preloader to ensure instant navigation for key views without initial load freeze
+  React.useEffect(() => {
+    // Batch 1: Primary pages across all modules (1.5 seconds after mount)
+    const timer1 = setTimeout(() => {
+      // Employee & Shared
+      import('./pages/employee/EmployeeDocuments').catch(() => {});
+      import('./pages/employee/LeaveManagement').catch(() => {});
+      import('./pages/employee/Holidays').catch(() => {});
+      import('./pages/employee/EmployeePayslips').catch(() => {});
+      import('./pages/employee/EmployeePerformance').catch(() => {});
+      import('./pages/employee/EmployeeProjects').catch(() => {});
+      import('./pages/Attendance').catch(() => {});
+      import('@shared/pages/Chat').catch(() => {});
+
+      // Admin, HR, Manager Dashboards / Core Pages
+      import('./pages/admin/AdminDashboard').catch(() => {});
+      import('./pages/hr/HRDashboard').catch(() => {});
+      import('./pages/manager/ManagerDashboard').catch(() => {});
+      import('./pages/admin/Employees').catch(() => {});
+      import('./pages/admin/Tasks').catch(() => {});
+      import('./pages/hr/LeaveManagement').catch(() => {});
+      import('./pages/Screenshots').catch(() => {});
+    }, 1500);
+
+    // Batch 2: Secondary and Management pages (3.5 seconds after mount)
+    const timer2 = setTimeout(() => {
+      import('./pages/hr/HRTasks').catch(() => {});
+      import('./pages/manager/LeaveManagement').catch(() => {});
+      import('./pages/hr/TeamManagement').catch(() => {});
+      import('./pages/hr/HREmployees').catch(() => {});
+      import('./pages/Payroll').catch(() => {});
+      import('./pages/manager/ManagerTasks').catch(() => {});
+      import('./pages/Performance').catch(() => {});
+      import('./pages/Reports').catch(() => {});
+      import('./pages/Recruitment').catch(() => {});
+      import('./pages/Training').catch(() => {});
+      import('./pages/hr/ProjectManagement').catch(() => {});
+      import('./pages/manager/ManagerProjects').catch(() => {});
+      import('./pages/TaskManagement').catch(() => {});
+      import('./pages/TaskCreate').catch(() => {});
+      import('./pages/Notifications').catch(() => {});
+    }, 3500);
+
+    // Batch 3: System and configuration views (6 seconds after mount)
+    const timer3 = setTimeout(() => {
+      import('./pages/admin/Settings').catch(() => {});
+      import('./pages/Departments').catch(() => {});
+      import('./pages/Designations').catch(() => {});
+      import('./pages/admin/RolesPermissions').catch(() => {});
+      import('./pages/admin/AuditLogs').catch(() => {});
+      import('./pages/admin/Integrations').catch(() => {});
+      import('./pages/admin/CreateUser').catch(() => {});
+      import('./pages/EventsManagement').catch(() => {});
+    }, 6000);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  }, []);
+
   return (
     <>
       <ScrollToTop />

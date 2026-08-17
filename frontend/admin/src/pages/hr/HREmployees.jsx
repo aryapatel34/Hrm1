@@ -370,10 +370,10 @@ const HREmployees = () => {
                 ) : (
                 paginatedEmployees.map((emp) => (
                 <tr key={emp._id} className="border-b border-[#c5c0b1] hover:bg-slate-50/50 dark:hover:bg-[#0d2a22]/50 transition-colors group">
-                  <td className="py-6 px-4">
+                  <td className="py-3 px-4">
                     <span className="font-bold text-[#201515]">{emp.employeeId || 'NODE-UNDEF'}</span>
                   </td>
-                  <td className="py-6 px-4">
+                  <td className="py-3 px-4">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 bg-[#eceae3] border border-[#c5c0b1] rounded-[4px] flex items-center justify-center overflow-hidden">
                         {emp.profileImage ? <img src={getImageUrl(emp.profileImage)} alt="User" className="w-full h-full object-cover" /> : <User size={18} className="text-[#939084]" />}
@@ -385,19 +385,19 @@ const HREmployees = () => {
                     </div>
                   </td>
                   {/* Designation */}
-                  <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-400">
+                  <td className="py-3 px-6 text-sm text-gray-900 dark:text-gray-400">
                     {emp.designation}
                   </td>
                   {/* Join Date */}
-                  <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-normal">
+                  <td className="py-3 px-6 text-sm text-gray-600 dark:text-gray-400 font-normal">
                     {formatDate(emp.joinDate)}
                   </td>
                   {/* Status badge */}
-                  <td className="py-4 px-6">
+                  <td className="py-3 px-6">
                     {renderStatusBadge(emp.status)}
                   </td>
                   {/* Row-level dropdown options */}
-                  <td className="py-4 px-6 text-right relative">
+                  <td className="py-3 px-6 text-right relative">
                     <div className="flex items-center justify-end gap-2">
                       <button
                       onClick={() => handleView(emp._id)}

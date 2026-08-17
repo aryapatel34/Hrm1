@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import {
   Calendar, Clock, Plane, CheckCircle2, Plus, Search,
   SlidersHorizontal, Download, X, AlertCircle, Info,
-  ArrowRight, User, FileText, ChevronLeft, ChevronRight, MoreHorizontal, CalendarDays
+  ArrowRight, User, FileText, ChevronLeft, ChevronRight, MoreHorizontal, CalendarDays, ChevronDown
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 import ViewPolicyDrawer from '../../components/modals/ViewPolicyDrawer';
@@ -19,7 +19,7 @@ import MyCompOffRequestsModal from '../../components/modals/MyCompOffRequestsMod
 import MyCompOffOnDutyRequestsDrawer from '../../components/modals/MyCompOffOnDutyRequestsDrawer';
 import CustomDatePicker from '../../components/CustomDatePicker';
 
-const CustomSelect = ({ value, onChange, options, placeholder = "Select..." }) => {
+const CustomSelect = ({ value, onChange, options, placeholder = "Select...", hasError = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectedOption = options.find(opt => opt.value === value);
 
@@ -28,7 +28,9 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select..." }) =
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg py-2.5 px-4 bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white text-xs font-semibold text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+        className={`w-full border rounded-lg py-2.5 px-4 bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white text-xs font-semibold text-left flex justify-between items-center focus:outline-none focus:border-blue-500 cursor-pointer ${
+          hasError ? 'border-[#ff4f00]' : 'border-gray-300 dark:border-gray-600'
+        }`}
       >
         <span className={selectedOption ? "text-gray-900 dark:text-white" : "text-gray-400"}>
           {selectedOption ? selectedOption.label : placeholder}
@@ -41,7 +43,7 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select..." }) =
       {isOpen && (
         <>
           <div className="fixed inset-0 z-[10000]" onClick={() => setIsOpen(false)}></div>
-          <div className="absolute z-[10001] w-full mt-1 bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden py-1 max-h-48 overflow-y-auto">
+          <div className="absolute z-[10001] w-full mt-1 bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden py-1 max-h-80 overflow-y-auto">
             {options.map((opt) => (
               <button
                 key={opt.value}
@@ -95,6 +97,7 @@ const LeaveManagement = ({ isChild = false }) => {
     endDate: '',
     reason: ''
   });
+  const [isApplyDropdownOpen, setIsApplyDropdownOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isPolicyDrawerOpen, setIsPolicyDrawerOpen] = useState(false);
   const [isHolidaysDrawerOpen, setIsHolidaysDrawerOpen] = useState(false);
@@ -112,6 +115,7 @@ const LeaveManagement = ({ isChild = false }) => {
     endDate: '',
     reason: ''
   });
+  const [formErrors, setFormErrors] = useState({});
 
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -160,7 +164,7 @@ const LeaveManagement = ({ isChild = false }) => {
 
   useEffect(() => {
     if (!token) return;
-    const socket = io(window.location.origin, { withCredentials: true });
+    const socket = io(window.location.origin, { transports: ['websocket'], upgrade: false, withCredentials: true });
     socket.on('connect', () => {
       socket.emit('join_notifications', { userId: user._id || user.id, role: user.role });
     });
@@ -211,6 +215,20 @@ const LeaveManagement = ({ isChild = false }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    // Custom Validation
+    const errors = {};
+    if (!formData.leaveType) errors.leaveType = 'Please choose a leave type';
+    if (!formData.startDate) errors.startDate = 'Please pick a start date';
+    if (!formData.endDate) errors.endDate = 'Please pick an end date';
+    if (!formData.reason || !formData.reason.trim()) errors.reason = 'Please state your reason';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
+
     try {
       setIsSubmitting(true);
       const days = calculateDays(formData.startDate, formData.endDate);
@@ -395,7 +413,7 @@ const LeaveManagement = ({ isChild = false }) => {
       if (!h || !h.date || h.isActive === false) return false;
       const hDate = new Date(h.date);
       if (isNaN(hDate.getTime())) return false;
-      return hDate.getDate() === day.date && hDate.getMonth() === currentMonth;
+      return hDate.getDate() === day.date && hDate.getMonth() === currentMonth && hDate.getFullYear() === currentYear;
     });
     if (isHoliday) return 'holiday';
 
@@ -427,7 +445,7 @@ const LeaveManagement = ({ isChild = false }) => {
       if (!h || !h.date || h.isActive === false) return false;
       const hDate = new Date(h.date);
       if (isNaN(hDate.getTime())) return false;
-      return hDate.getDate() === day.date && hDate.getMonth() === currentMonth;
+      return hDate.getDate() === day.date && hDate.getMonth() === currentMonth && hDate.getFullYear() === currentYear;
     });
     if (matchingHoliday) {
       return `Holiday\n${matchingHoliday.name || matchingHoliday.title || 'Holiday'}`;
@@ -472,19 +490,14 @@ const LeaveManagement = ({ isChild = false }) => {
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Leave Management</h1>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-              <button onClick={() => setIsCompOffModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer">
-                <Plus size={14} /> Comp-Off
-              </button>
-            </div>
-
-            <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-              <button onClick={() => setIsOnDutyModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer">
-                <Plus size={14} /> On Duty
-              </button>
-            </div>
-
-            <button onClick={() => setIsRequestModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap ml-2 cursor-pointer">
+            <button 
+              onClick={() => {
+                setFormErrors({});
+                setFormData({ leaveType: '', startDate: '', endDate: '', reason: '' });
+                setIsRequestModalOpen(true);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap cursor-pointer"
+            >
               <Plus size={16} /> Apply for Leave
             </button>
           </div>
@@ -659,41 +672,46 @@ const LeaveManagement = ({ isChild = false }) => {
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 mb-4 items-stretch">
 
         {/* My Upcoming Leaves */}
-        <div className="lg:col-span-3 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col justify-between transition-all duration-200 hover:border-orange-500">
-          <div className="flex justify-between items-center mb-6">
+        <div className="lg:col-span-3 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col justify-between transition-all duration-200 hover:border-orange-500 h-[290px]">
+          <div className="flex justify-between items-center mb-2 shrink-0">
             <h2 className="text-base font-bold text-gray-900 dark:text-white">My Upcoming Leaves</h2>
             <button onClick={() => setIsUpcomingLeavesDrawerOpen(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">View All</button>
           </div>
-          <div className="space-y-4">
-            {leaves.filter(l => new Date(l.startDate) >= new Date() && (l.status === 'approved' || l.status === 'pending')).length > 0 ? (
-              leaves.filter(l => new Date(l.startDate) >= new Date() && (l.status === 'approved' || l.status === 'pending')).slice(0, 3).map((l, idx) => (
-                <div key={idx} className="flex gap-4 p-4 border border-gray-100 dark:border-gray-800 rounded-lg hover:shadow-md transition-shadow">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-lg p-3 flex flex-col items-center justify-center min-w-[70px]">
-                    <span className="text-[10px] font-bold uppercase">{new Date(l.startDate).toLocaleString('default', { month: 'short' })}</span>
-                    <span className="text-lg font-black leading-none my-1">{new Date(l.startDate).getDate()}</span>
-                    <span className="text-[9px] font-semibold uppercase">{new Date(l.startDate).toLocaleString('default', { weekday: 'short' })}</span>
-                  </div>
-                  <div className="flex-1 flex justify-between">
-                    <div>
-                      <h4 className="font-bold text-gray-900 dark:text-gray-100 capitalize">{l.leaveType} Leave</h4>
-                      <p className="text-xs text-gray-500 mt-1"><span className="font-semibold">Reason:</span> {l.reason || 'N/A'}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">Applied on: {new Date(l.createdAt).toLocaleDateString()}</p>
+          <div className="space-y-4 flex-1 mt-1 flex flex-col justify-center">
+            {(() => {
+              const upcoming = leaves.filter(l => new Date(l.startDate) >= new Date() && (l.status === 'approved' || l.status === 'pending'));
+              if (upcoming.length > 0) {
+                return upcoming.slice(0, 1).map((l, idx) => (
+                  <div key={idx} onClick={() => setIsUpcomingLeavesDrawerOpen(true)} className="flex gap-4 p-3 border border-gray-100 dark:border-gray-800 rounded-lg hover:shadow-md transition-all cursor-pointer hover:bg-slate-50/50 dark:hover:bg-[#162722]/40 shrink-0">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-lg p-2.5 flex flex-col items-center justify-center min-w-[65px] shrink-0">
+                      <span className="text-[9px] font-bold uppercase">{new Date(l.startDate).toLocaleString('default', { month: 'short' })}</span>
+                      <span className="text-base font-black leading-none my-0.5">{new Date(l.startDate).getDate()}</span>
+                      <span className="text-[8px] font-semibold uppercase">{new Date(l.startDate).toLocaleString('default', { weekday: 'short' })}</span>
                     </div>
-                    <div className="flex flex-col items-end justify-between">
-                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{l.totalDays} Day(s)</span>
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${getStatusColor(l.status)} capitalize`}>{l.status}</span>
+                    <div className="flex-1 flex justify-between min-w-0">
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-gray-900 dark:text-gray-100 capitalize text-xs truncate">{l.leaveType} Leave</h4>
+                        <p className="text-[11px] text-gray-500 mt-0.5 truncate"><span className="font-semibold">Reason:</span> {l.reason || 'N/A'}</p>
+                        <p className="text-[9px] text-gray-400 mt-0.5">Applied on: {new Date(l.createdAt).toLocaleDateString()}</p>
+                      </div>
+                      <div className="flex flex-col items-end justify-between shrink-0 ml-2">
+                        <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">{l.totalDays} Day(s)</span>
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${getStatusColor(l.status)} capitalize`}>{l.status}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-10 text-gray-500">No upcoming leaves found.</div>
-            )}
+                ));
+              } else {
+                return (
+                  <div className="text-center py-6 text-gray-500 font-medium text-xs">No upcoming leaves found.</div>
+                );
+              }
+            })()}
           </div>
         </div>
 
         {/* Leave Policy */}
-        <div className="lg:col-span-7 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 transition-all duration-200 hover:border-purple-500">
+        <div className="lg:col-span-7 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 transition-all duration-200 hover:border-purple-500 h-[290px]">
           <div className="flex justify-between items-center mb-3.5">
             <h2 className="text-base font-bold text-gray-900 dark:text-white">Leave Policy</h2>
             <button onClick={() => setIsPolicyDrawerOpen(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">View Full Policy</button>
@@ -718,39 +736,6 @@ const LeaveManagement = ({ isChild = false }) => {
                 <h4 className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Carry Forward</h4>
                 <p className="font-bold text-gray-900 dark:text-gray-100 text-xs mt-0.5">
                   {cfEarned > 0 ? `Max ${cfEarned} Days` : 'Not Allowed'} <span className="text-[9px] text-gray-400 font-normal font-sans">/ year</span>
-                </p>
-              </div>
-            </div>
-            <div className="py-2 px-3 border border-gray-100 dark:border-gray-850 hover:border-orange-500 dark:hover:border-orange-500 transition-colors rounded-xl flex items-center gap-3 cursor-pointer">
-              <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
-                <AlertCircle size={14} />
-              </div>
-              <div>
-                <h4 className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Advance Notice</h4>
-                <p className="font-bold text-gray-900 dark:text-gray-100 text-xs mt-0.5">
-                  3 Days <span className="text-[9px] text-gray-400 font-normal font-sans">(minimum)</span>
-                </p>
-              </div>
-            </div>
-            <div className="py-2 px-3 border border-gray-100 dark:border-gray-850 hover:border-pink-500 dark:hover:border-pink-500 transition-colors rounded-xl flex items-center gap-3 cursor-pointer">
-              <div className="w-7 h-7 rounded-lg bg-pink-100 text-pink-600 flex items-center justify-center shrink-0">
-                <FileText size={14} />
-              </div>
-              <div>
-                <h4 className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Medical Certificate</h4>
-                <p className="font-bold text-gray-900 dark:text-gray-100 text-xs mt-0.5">
-                  Required after 2 sick days
-                </p>
-              </div>
-            </div>
-            <div className="col-span-2 py-2 px-3 border border-gray-100 dark:border-gray-850 hover:border-blue-500 dark:hover:border-blue-500 transition-colors rounded-xl flex items-center gap-3 cursor-pointer">
-              <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                <CheckCircle2 size={14} />
-              </div>
-              <div>
-                <h4 className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Max Continuous Leave</h4>
-                <p className="font-bold text-gray-900 dark:text-gray-100 text-xs mt-0.5">
-                  15 Days <span className="text-[9px] text-gray-400 font-normal font-sans">(at a time)</span>
                 </p>
               </div>
             </div>
@@ -904,22 +889,39 @@ const LeaveManagement = ({ isChild = false }) => {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between h-full overflow-hidden">
+                <form onSubmit={handleSubmit} noValidate className="flex-1 flex flex-col justify-between h-full overflow-hidden">
                   <div className="overflow-y-auto pr-1 flex-1 space-y-4 pb-2">
 
                   <div className="flex flex-col gap-2">
                     <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Leave Type</label>
                     <CustomSelect
                       value={formData.leaveType}
-                      onChange={val => setFormData({ ...formData, leaveType: val })}
+                      hasError={!!formErrors.leaveType}
+                      onChange={val => {
+                        setFormErrors(prev => ({ ...prev, leaveType: null }));
+                        if (val === 'comp-off') {
+                          setIsRequestModalOpen(false);
+                          setTimeout(() => setIsCompOffModalOpen(true), 100);
+                        } else if (val === 'on-duty') {
+                          setIsRequestModalOpen(false);
+                          setTimeout(() => setIsOnDutyModalOpen(true), 100);
+                        } else {
+                          setFormData({ ...formData, leaveType: val });
+                        }
+                      }}
                       placeholder="Choose Leave Type"
                       options={[
                         { value: 'sick', label: 'Sick Leave (SL)' },
                         { value: 'casual', label: 'Casual Leave (CL)' },
                         { value: 'earned', label: 'Earned Leave (EL)' },
-                        { value: 'emergency', label: 'Emergency Leave' }
+                        { value: 'emergency', label: 'Emergency Leave' },
+                        { value: 'comp-off', label: 'Comp-Off' },
+                        { value: 'on-duty', label: 'On Duty' }
                       ]}
                     />
+                    {formErrors.leaveType && (
+                      <p className="text-[#ff4f00] text-[10px] font-bold leading-none mt-1">{formErrors.leaveType}</p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -928,33 +930,50 @@ const LeaveManagement = ({ isChild = false }) => {
                       <CustomDatePicker
                         name="startDate"
                         value={formData.startDate}
-                        onChange={e => setFormData({ ...formData, startDate: e.target.value })}
+                        onChange={e => {
+                          setFormErrors(prev => ({ ...prev, startDate: null }));
+                          setFormData({ ...formData, startDate: e.target.value });
+                        }}
                         placeholder="dd-mm-yyyy"
-                        className="w-full bg-gray-50 dark:bg-[#0f172a] border border-gray-300 dark:border-gray-600 rounded-lg h-10 flex items-center text-xs text-gray-900 dark:text-white"
+                        className={`w-full bg-gray-50 dark:bg-[#0f172a] border rounded-lg h-10 flex items-center text-xs text-gray-900 dark:text-white ${formErrors.startDate ? 'border-[#ff4f00]' : 'border-gray-300 dark:border-gray-600'}`}
                       />
+                      {formErrors.startDate && (
+                        <p className="text-[#ff4f00] text-[10px] font-bold leading-none mt-1">{formErrors.startDate}</p>
+                      )}
                     </div>
                     <div className="flex flex-col gap-2">
                       <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">End Date</label>
                       <CustomDatePicker
                         name="endDate"
                         value={formData.endDate}
-                        onChange={e => setFormData({ ...formData, endDate: e.target.value })}
+                        onChange={e => {
+                          setFormErrors(prev => ({ ...prev, endDate: null }));
+                          setFormData({ ...formData, endDate: e.target.value });
+                        }}
                         placeholder="dd-mm-yyyy"
                         align="right"
-                        className="w-full bg-gray-50 dark:bg-[#0f172a] border border-gray-300 dark:border-gray-600 rounded-lg h-10 flex items-center text-xs text-gray-900 dark:text-white"
+                        className={`w-full bg-gray-50 dark:bg-[#0f172a] border rounded-lg h-10 flex items-center text-xs text-gray-900 dark:text-white ${formErrors.endDate ? 'border-[#ff4f00]' : 'border-gray-300 dark:border-gray-600'}`}
                       />
+                      {formErrors.endDate && (
+                        <p className="text-[#ff4f00] text-[10px] font-bold leading-none mt-1">{formErrors.endDate}</p>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-2">
                     <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Reason</label>
                     <textarea
-                      required
                       value={formData.reason}
-                      onChange={e => setFormData({ ...formData, reason: e.target.value })}
+                      onChange={e => {
+                        setFormErrors(prev => ({ ...prev, reason: null }));
+                        setFormData({ ...formData, reason: e.target.value });
+                      }}
                       placeholder="State your reason..."
-                      className="w-full min-h-[120px] bg-gray-50 dark:bg-[#0f172a] border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-xs outline-none focus:ring-2 focus:ring-blue-500/50 resize-none text-gray-900 dark:text-white"
+                      className={`w-full min-h-[120px] bg-gray-50 dark:bg-[#0f172a] border rounded-lg px-4 py-3 text-xs outline-none focus:border-blue-500 resize-none text-gray-900 dark:text-white ${formErrors.reason ? 'border-[#ff4f00]' : 'border-gray-300 dark:border-gray-600'}`}
                     />
+                    {formErrors.reason && (
+                      <p className="text-[#ff4f00] text-[10px] font-bold leading-none mt-1">{formErrors.reason}</p>
+                    )}
                   </div>
                 </div>
 

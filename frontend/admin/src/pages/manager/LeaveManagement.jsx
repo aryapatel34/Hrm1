@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { ClipboardList, Users, CalendarDays, PieChart, TrendingUp, Plus } from 'lucide-react';
+import { ClipboardList, Users, CalendarDays, PieChart, TrendingUp, Plus, ChevronDown } from 'lucide-react';
 
 import PendingApprovalQueue from '../../components/manager/PendingApprovalQueue';
 import EmployeeAvailabilityChart from '../../components/manager/EmployeeAvailabilityChart';
@@ -21,6 +21,7 @@ const LeaveManagement = () => {
   const [viewMode, setViewMode] = useState('manager');
   const [isLeaveTodayDrawerOpen, setIsLeaveTodayDrawerOpen] = useState(false);
   const [isUpcomingLeavesDrawerOpen, setIsUpcomingLeavesDrawerOpen] = useState(false);
+  const [applyDropdownOpen, setApplyDropdownOpen] = useState(false);
 
   const fetchStats = async () => {
     try {
@@ -88,36 +89,12 @@ const LeaveManagement = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex gap-2 bg-gray-150 dark:bg-gray-800 p-1 rounded-lg">
-            <button 
-              onClick={() => {
-                setViewMode('employee');
-                setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'comp-off' })), 100);
-              }} 
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-            >
-              <Plus size={14} /> Comp-Off
-            </button>
-          </div>
-
-          <div className="flex gap-2 bg-gray-150 dark:bg-gray-800 p-1 rounded-lg">
-            <button 
-              onClick={() => {
-                setViewMode('employee');
-                setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'on-duty' })), 100);
-              }} 
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-            >
-              <Plus size={14} /> On Duty
-            </button>
-          </div>
-
           <button 
             onClick={() => {
               setViewMode('employee');
               setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'apply-leave' })), 100);
             }} 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap ml-2 cursor-pointer"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap cursor-pointer"
           >
             <Plus size={16} /> Apply for Leave
           </button>

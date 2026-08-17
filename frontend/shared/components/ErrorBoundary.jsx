@@ -12,6 +12,17 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("ErrorBoundary caught an uncaught exception:", error, errorInfo);
+    
+    // Auto-reload on dynamic import failure to clear browser cache and recover automatically
+    if (error && error.toString().includes('Failed to fetch dynamically imported module')) {
+      const lastReload = Number(sessionStorage.getItem('last_chunk_reload') || 0);
+      if (Date.now() - lastReload > 10000) { // Throttled to prevent reload loop
+        sessionStorage.setItem('last_chunk_reload', String(Date.now()));
+        window.location.reload();
+        return;
+      }
+    }
+    
     this.setState({ error, errorInfo });
   }
 

@@ -40,13 +40,29 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@shared': path.resolve(__dirname, '../shared'),
-      // Helping Vite map dependencies
-      'recharts': path.resolve(__dirname, '../../node_modules/recharts'),
-      'lucide-react': path.resolve(__dirname, '../../node_modules/lucide-react')
-    },
+      '@shared': path.resolve(__dirname, '../shared').replace(/\\/g, '/'),
+      // Map React packages to the root node_modules to ensure a single shared context instance
+      'react': path.resolve(__dirname, '../../node_modules/react').replace(/\\/g, '/'),
+      'react-dom': path.resolve(__dirname, '../../node_modules/react-dom').replace(/\\/g, '/'),
+      'react-router-dom': path.resolve(__dirname, '../../node_modules/react-router-dom').replace(/\\/g, '/'),
+      'recharts': path.resolve(__dirname, '../../node_modules/recharts').replace(/\\/g, '/'),
+      'lucide-react': path.resolve(__dirname, '../../node_modules/lucide-react').replace(/\\/g, '/')
+    }
   },
   optimizeDeps: {
-    include: ['recharts', 'lucide-react']
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'axios',
+      'socket.io-client',
+      'recharts',
+      'lucide-react',
+      'zustand',
+      'react-hot-toast',
+      'emoji-picker-react',
+      'date-fns',
+      'framer-motion'
+    ]
   }
 })
