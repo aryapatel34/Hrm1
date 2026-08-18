@@ -11,7 +11,7 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
   const navigate = useNavigate();
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInLoading, setCheckInLoading] = useState(false);
-  const [initialChecking, setInitialChecking] = useState(true);
+  const [initialChecking, setInitialChecking] = useState(false);
 
   const fetchStatus = async () => {
     try {
@@ -19,33 +19,29 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
       if (!t) return;
       const headers = { Authorization: `Bearer ${t}` };
 
-      // 1. Check today attendance
-      const attRes = await axios.get('/api/attendance/today', { headers }).catch(() => null);
+      // Fetch time status and attendance in parallel for instant response
+      const [timerRes, attRes] = await Promise.all([
+        axios.get('/api/time/status', { headers }).catch(() => null),
+        axios.get('/api/attendance/today', { headers }).catch(() => null)
+      ]);
+
+      if (timerRes?.data?.hasActiveSession || ['active', 'paused', 'idle'].includes(timerRes?.data?.status)) {
+        setIsCheckedIn(true);
+        return;
+      }
+
       if (attRes?.data?.attendance) {
         const att = attRes.data.attendance;
         const hasClockedOut = Boolean((att.clockOut && att.clockOut !== '--') || att.checkOutTime);
-        if (att.checkInTime || att.clockIn) {
-          if (!hasClockedOut) {
-            setIsCheckedIn(true);
-            return;
-          } else {
-            setIsCheckedIn(false);
-            return;
-          }
+        if ((att.checkInTime || att.clockIn) && !hasClockedOut) {
+          setIsCheckedIn(true);
+          return;
         }
       }
 
-      // 2. Fallback check timer status
-      const timerRes = await axios.get('/api/time/timer-status', { headers }).catch(() => null);
-      if (timerRes?.data?.isRunning) {
-        setIsCheckedIn(true);
-      } else {
-        setIsCheckedIn(false);
-      }
+      setIsCheckedIn(false);
     } catch (e) {
       console.error('Error fetching check-in status:', e);
-    } finally {
-      setInitialChecking(false);
     }
   };
 
@@ -112,10 +108,26 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
       const t = token();
       const headers = { Authorization: `Bearer ${t}` };
 
-      try {
-        await stopDesktopTracker();
-      } catch (_) {}
+      // 1. If desktop tracker is running, open it to show the confirmation dialog
+      const trackerActive = await stopDesktopTracker();
+      if (trackerActive) {
+        toast('Please confirm check-out in FluidHR Tracker app.', {
+          icon: '⚡',
+          duration: 4000,
+          style: {
+            borderRadius: '12px',
+            background: '#1c1917',
+            color: '#fff',
+            border: '1px solid #00a76b',
+            fontSize: '13px',
+            fontWeight: '600'
+          }
+        });
+        setCheckInLoading(false);
+        return;
+      }
 
+      // 2. Fallback direct checkout if app is not running
       await axios.put('/api/attendance/clock-out', {}, { headers });
       try {
         await axios.post('/api/time/stop', {}, { headers });
@@ -167,8 +179,8 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
           <button
             type="button"
             onClick={handleCheckOut}
-            disabled={checkInLoading || initialChecking}
-            className="flex items-center justify-center gap-2.5 px-3 py-2.5 bg-white dark:bg-[#0f0d0a] border rounded-2xl w-full h-14 transition-all shadow-xs hover:shadow-md cursor-pointer disabled:opacity-50"
+            disabled={checkInLoading}
+            className="flex items-center justify-center gap-2.5 px-3 py-2.5 bg-white dark:bg-[#0f0d0a] border rounded-2xl w-full h-14 transition-all shadow-xs hover:shadow-md cursor-pointer"
             style={{ borderColor: '#fca5a5', color: '#ef4444' }}
             onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fef2f2'}
             onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
@@ -182,8 +194,8 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
           <button
             type="button"
             onClick={handleCheckIn}
-            disabled={checkInLoading || initialChecking}
-            className="flex items-center justify-center gap-2.5 px-3 py-2.5 bg-white dark:bg-[#0f0d0a] border rounded-2xl w-full h-14 transition-all shadow-xs hover:shadow-md cursor-pointer disabled:opacity-50"
+            disabled={checkInLoading}
+            className="flex items-center justify-center gap-2.5 px-3 py-2.5 bg-white dark:bg-[#0f0d0a] border rounded-2xl w-full h-14 transition-all shadow-xs hover:shadow-md cursor-pointer"
             style={{ borderColor: '#86efac', color: '#00a76b' }}
             onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0fdf4'}
             onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}

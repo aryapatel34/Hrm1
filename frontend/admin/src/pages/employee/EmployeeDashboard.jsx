@@ -318,6 +318,7 @@ const EmployeeDashboard = () => {
             fontWeight: '600'
           }
         });
+        setCheckInLoading(false);
         return;
       }
 
@@ -335,7 +336,12 @@ const EmployeeDashboard = () => {
   };
 
   // ── Derived Data from MongoDB ──
-  const isCheckedIn = timerStatus?.isRunning;
+  const isCheckedIn = Boolean(
+    timerStatus?.isRunning ||
+    timerStatus?.hasActiveSession ||
+    ['active', 'paused', 'idle'].includes(timerStatus?.status) ||
+    (attMetrics?.today?.checkInTime && !attMetrics?.today?.checkOutTime)
+  );
   const checkInTime = attMetrics?.today?.checkInTime
     ? new Date(attMetrics.today.checkInTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
     : (timerStatus?.startTime ? new Date(timerStatus.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : null);

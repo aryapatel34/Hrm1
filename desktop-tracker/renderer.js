@@ -32,12 +32,16 @@ let isSessionRunning = false;
 
 // Local clock loop for smooth UI ticking (matches Web App behavior)
 setInterval(() => {
-  if (isSessionRunning && segmentStartTime) {
-    const elapsed = Math.floor((Date.now() - segmentStartTime) / 1000);
-    activeSeconds = baseActiveSeconds + Math.max(0, elapsed);
+  if (status === 'ACTIVE' && isSessionRunning) {
+    if (segmentStartTime) {
+      const elapsed = Math.floor((Date.now() - segmentStartTime) / 1000);
+      activeSeconds = baseActiveSeconds + Math.max(0, elapsed);
+    } else {
+      activeSeconds += 1;
+    }
     updateDisplay();
   }
-}, 500);
+}, 1000);
 
 // ── Intervals ─────────────────────────────────────────────
 let pollInterval = null;  // polls /status every 1s
@@ -75,26 +79,24 @@ const syncIndicator = document.getElementById('sync-indicator');
 // ============================================================
 if (window.electronAPI?.onSystemIdleStatus) {
   window.electronAPI.onSystemIdleStatus(({ idleSeconds, isIdle: systemIsIdle }) => {
+    lastSystemIdleSeconds = idleSeconds;
 
-    console.log('IDLE STATUS:', { idleSeconds, isIdle: systemIsIdle });
+    // 🛡️ Never trigger idle if session was started or resumed less than 60 seconds ago
+    if (Date.now() - lastStartOrResumeTime < 60000) {
+      return;
+    }
 
-    if (systemIsIdle) {
-      // ── System has been idle >= threshold ──
-      // Ignore idle triggers during the first 15 seconds of starting/resuming
-      if (Date.now() - lastStartOrResumeTime < 15000) {
-        console.log('[IDLE IGNORED] Ignoring system idle trigger during start/resume grace period.');
-        return;
-      }
-      // Only trigger once per idle event (idleNotificationSent guards re-entry)
+    if (systemIsIdle && idleSeconds >= 60) {
+      // Only trigger once per idle event
       if (status === 'ACTIVE' && !idleNotificationSent) {
-        console.log(`[IDLE TRIGGER] ${idleSeconds}s idle — sending idle signal to backend`);
         triggerIdle(idleSeconds);
       }
-    } else {
-      // ── Activity detected anywhere on PC ──
-      // idleSeconds < threshold means keyboard/mouse used in any app
-      // No local timer math — just used to decide heartbeat type
-      lastSystemIdleSeconds = idleSeconds;
+    } else if (idleSeconds < 5) {
+      // Activity detected anywhere on PC
+      if (status === 'ACTIVE') {
+        idleNotificationSent = false;
+        isIdle = false;
+      }
     }
   });
 }
@@ -218,10 +220,6 @@ function applyServerState(data) {
   } else if (serverStatus === 'idle') {
     status = 'IDLE';
     isIdle = true;
-    if (!idleNotificationSent) {
-      idleNotificationSent = true;
-      showIdleNotification();
-    }
   } else if (serverStatus === 'paused') {
     status = 'PAUSED';
     isIdle = false;
@@ -345,6 +343,15 @@ async function pauseSession() {
 // ============================================================
 async function resumeSession() {
   if (!authToken) return alert('Please login first.');
+  // 🚀 OPTIMISTIC UI: Instantly clear idle status and banner
+  status = 'ACTIVE';
+  isIdle = false;
+  isSessionRunning = true;
+  if (!segmentStartTime) segmentStartTime = Date.now();
+  idleNotificationSent = false;
+  lastStartOrResumeTime = Date.now();
+  updateUI();
+
   try {
     const res = await fetch(`${API_BASE}/resume`, {
       method: 'POST',
@@ -355,8 +362,6 @@ async function resumeSession() {
       if (!err.message?.toLowerCase().includes('already')) alert(err.message || 'Unable to resume.');
     }
     stopIdleReminderLoop();
-    idleNotificationSent = false;
-    lastStartOrResumeTime = Date.now();
     await pollSessionStatus();
     startPolling();
     startHeartbeat();
@@ -440,6 +445,8 @@ function setControlState(currentStatus) {
     binaryControls.style.display = 'none';
     if (stopBtn) stopBtn.style.display = 'none';
     if (statusEl) { statusEl.innerText = 'OFFLINE'; statusEl.className = 'status-badge'; }
+    const alertEl = document.getElementById('desktop-alert');
+    if (alertEl) alertEl.style.display = 'none';
   } else if (isActuallyActive) {
     startBtn.style.display = 'none';
     binaryControls.style.display = 'flex';
@@ -447,6 +454,8 @@ function setControlState(currentStatus) {
     resumeBtn.style.display = 'none';
     if (stopBtn) stopBtn.style.display = 'flex';
     if (statusEl) { statusEl.innerText = 'ACTIVE'; statusEl.className = 'status-badge status-active'; }
+    const alertEl = document.getElementById('desktop-alert');
+    if (alertEl) alertEl.style.display = 'none';
   } else {
     startBtn.style.display = 'none';
     binaryControls.style.display = 'flex';

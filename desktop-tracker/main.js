@@ -167,14 +167,12 @@ function createWindow() {
   mainWindow.loadFile('index.html');
 
   mainWindow.once('ready-to-show', () => {
-    setTimeout(() => {
-      mainWindow.show();
-      mainWindow.focus();
-      if (app.readyUrl) {
-        handleDeepLink(app.readyUrl);
-        app.readyUrl = null;
-      }
-    }, 600);
+    mainWindow.show();
+    mainWindow.focus();
+    if (app.readyUrl) {
+      handleDeepLink(app.readyUrl);
+      app.readyUrl = null;
+    }
   });
 }
 
@@ -221,15 +219,17 @@ if (!gotTheLock) {
       const idleSeconds = powerMonitor.getSystemIdleTime();
       const isIdle = idleSeconds >= IDLE_THRESHOLD;
 
-      // Always log so you can verify in terminal
-      console.log(`[DEBUG] System Idle Seconds: ${idleSeconds} | Threshold: ${IDLE_THRESHOLD}`);
+      // Real-time diagnostic log
+      if (idleSeconds % 5 === 0 || isIdle) {
+        console.log(`[IDLE MONITOR] System Idle: ${idleSeconds}s | Threshold: ${IDLE_THRESHOLD}s | Status: ${isIdle ? 'IDLE' : 'ACTIVE'}`);
+      }
 
       // Send to renderer via IPC — renderer ONLY displays/reacts
       mainWindow.webContents.send('system-idle-status', {
         idleSeconds,
         isIdle
       });
-    }, 500); // 🚀 Higher precision for snappier sync
+    }, 1000); // 🚀 1s interval matches real-time seconds
     // ============================================================
   });
 }
