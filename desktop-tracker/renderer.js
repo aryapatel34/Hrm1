@@ -40,6 +40,10 @@ setInterval(() => {
       activeSeconds += 1;
     }
     updateDisplay();
+  } else if (status === 'IDLE') {
+    // 🛡️ When IDLE: Active Work Time is strictly frozen, Idle Time increases
+    inactiveSeconds += 1;
+    updateDisplay();
   }
 }, 1000);
 
@@ -194,38 +198,54 @@ function applyServerState(data) {
     return;
   }
 
-  // Set display values directly from backend
-  baseActiveSeconds = data.activeTime ?? 0;
-  inactiveSeconds = data.idleTime ?? 0;
-  segmentStartTime = data.segmentStart ? new Date(data.segmentStart).getTime() : null;
-  isSessionRunning = data.isRunning;
-
-  // Calculate immediate activeSeconds to avoid delay on poll response
-  if (isSessionRunning && segmentStartTime) {
-    const elapsed = Math.floor((Date.now() - segmentStartTime) / 1000);
-    activeSeconds = baseActiveSeconds + Math.max(0, elapsed);
-  } else {
-    activeSeconds = baseActiveSeconds;
-  }
-
   const serverStatus = String(data.status || '').toLowerCase();
 
-  if (serverStatus === 'active' && data.isRunning) {
+  if (serverStatus === 'idle') {
+    status = 'IDLE';
+    isIdle = true;
+    isSessionRunning = false;
+    segmentStartTime = null;
+    inactiveSeconds = data.idleTime ?? inactiveSeconds;
+    // 🛡️ When IDLE: Prefer the higher of local committed activeSeconds or server activeTime to prevent backward rewinds
+    if (data.activeTime !== undefined && data.activeTime > 0) {
+      baseActiveSeconds = Math.max(baseActiveSeconds, data.activeTime);
+      activeSeconds = baseActiveSeconds;
+    }
+  } else if (serverStatus === 'active' && data.isRunning) {
     status = 'ACTIVE';
     isIdle = false;
     idleNotificationSent = false;
+    isSessionRunning = true;
+    baseActiveSeconds = data.activeTime ?? baseActiveSeconds;
+    inactiveSeconds = data.idleTime ?? inactiveSeconds;
+    segmentStartTime = data.segmentStart ? new Date(data.segmentStart).getTime() : segmentStartTime;
+
+    if (segmentStartTime) {
+      const elapsed = Math.floor((Date.now() - segmentStartTime) / 1000);
+      activeSeconds = baseActiveSeconds + Math.max(0, elapsed);
+    } else {
+      activeSeconds = baseActiveSeconds;
+    }
+
     if (!screenshotTimeout) {
       initScreenshotLoop(true);
     }
-  } else if (serverStatus === 'idle') {
-    status = 'IDLE';
-    isIdle = true;
   } else if (serverStatus === 'paused') {
     status = 'PAUSED';
     isIdle = false;
+    isSessionRunning = false;
+    segmentStartTime = null;
+    baseActiveSeconds = data.activeTime ?? baseActiveSeconds;
+    inactiveSeconds = data.idleTime ?? inactiveSeconds;
+    activeSeconds = baseActiveSeconds;
   } else if (serverStatus === 'completed') {
     status = 'OFFLINE';
     isIdle = false;
+    isSessionRunning = false;
+    segmentStartTime = null;
+    baseActiveSeconds = data.activeTime ?? baseActiveSeconds;
+    inactiveSeconds = data.idleTime ?? inactiveSeconds;
+    activeSeconds = baseActiveSeconds;
   }
 
   updateDisplay();
@@ -256,9 +276,19 @@ async function sendHeartbeat() {
 async function triggerIdle(idleSeconds = 60) {
   if (!authToken || status !== 'ACTIVE') return;
 
-  // 🚀 OPTIMISTIC UI: Show idle state instantly on screen
+  // 🚀 OPTIMISTIC UI: Instantly pause active timer and preserve exact active work time
   status = 'IDLE';
   isIdle = true;
+  isSessionRunning = false;
+
+  // Commit current elapsed segment to baseActiveSeconds so it freezes at exact current value
+  if (segmentStartTime) {
+    const elapsed = Math.floor((Date.now() - segmentStartTime) / 1000);
+    baseActiveSeconds += Math.max(0, elapsed);
+    segmentStartTime = null;
+  }
+  activeSeconds = baseActiveSeconds;
+  updateDisplay();
   updateUI();
 
   idleNotificationSent = true;
@@ -271,7 +301,7 @@ async function triggerIdle(idleSeconds = 60) {
       body: JSON.stringify({ type: 'idle', idleSeconds }) // 🎯 Send exact duration
     });
     const data = await res.json();
-    if (data) applyServerState({ hasActiveSession: true, ...data });
+    if (data) applyServerState(data);
     setTimeout(() => syncIndicator?.classList.remove('online'), 2000);
   } catch (err) {
     console.error('[IDLE TRIGGER ERROR]', err.message);
@@ -347,7 +377,7 @@ async function resumeSession() {
   status = 'ACTIVE';
   isIdle = false;
   isSessionRunning = true;
-  if (!segmentStartTime) segmentStartTime = Date.now();
+  segmentStartTime = Date.now(); // 🎯 Start fresh active segment
   idleNotificationSent = false;
   lastStartOrResumeTime = Date.now();
   updateUI();
