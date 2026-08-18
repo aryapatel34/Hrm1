@@ -37,6 +37,10 @@ const ViewLeaveRequestsDrawer = ({ isOpen, onClose, leaves, onSelectLeave }) => 
                 const startDate = new Date(l.startDate);
                 const endDate = new Date(l.endDate);
                 
+                const utc1 = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+                const utc2 = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+                const exactDays = (!isNaN(utc1) && !isNaN(utc2)) ? Math.max(1, Math.floor((utc2 - utc1) / (1000 * 3600 * 24)) + 1) : (l.totalDays || 1);
+                
                 return (
                   <div 
                     key={idx} 
@@ -44,12 +48,14 @@ const ViewLeaveRequestsDrawer = ({ isOpen, onClose, leaves, onSelectLeave }) => 
                     className="p-3 border border-gray-150 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-gray-900/30 hover:border-indigo-500 transition-colors cursor-pointer"
                   >
                     <div className="flex justify-between items-start mb-1.5">
-                      <h4 className="font-bold text-gray-950 dark:text-white text-xs capitalize">{l.leaveType} Leave</h4>
+                      <h4 className="font-bold text-gray-950 dark:text-white text-xs capitalize">
+                        {l.leaveType ? (l.leaveType.toLowerCase().endsWith('leave') ? l.leaveType : `${l.leaveType} Leave`) : 'Leave'}
+                      </h4>
                       <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${getStatusColor(l.status)} capitalize`}>{l.status}</span>
                     </div>
                     
                     <div className="space-y-0.5 text-[11px] text-gray-500 dark:text-gray-400">
-                      <p><span className="font-semibold text-gray-400">Duration:</span> {startDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} to {endDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} ({l.totalDays} days)</p>
+                      <p><span className="font-semibold text-gray-400">Duration:</span> {startDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} to {endDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} ({exactDays} {exactDays === 1 ? 'day' : 'days'})</p>
                       <div className="flex justify-between items-end">
                         <p className="line-clamp-2 pr-2"><span className="font-semibold text-gray-400">Reason:</span> {l.reason || 'N/A'}</p>
                         <p className="text-[9px] text-gray-400 shrink-0 pb-0.5 font-medium">Applied: {new Date(l.createdAt || l.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>

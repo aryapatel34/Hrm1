@@ -47,7 +47,7 @@ export const menuConfig = {
     { label: 'Dashboard', path: '/manager/dashboard', keywords: ['dashboard', 'home', 'overview', 'main'] },
     { label: 'Team & Employees', path: '/manager/employees', keywords: ['employee', 'employees', 'team', 'staff', 'my team'] },
     { label: 'Team Attendance', path: '/manager/attendance', keywords: ['attendance', 'team attendance', 'check in', 'clock in', 'working hours'] },
-    { label: 'Leave Requests', path: '/manager/leaves', keywords: ['leave', 'leaves', 'team leaves', 'leave approval', 'vacation'] },
+    { label: 'Apply Leave', path: '/manager/leave', keywords: ['leave', 'leaves', 'apply leave', 'team leaves', 'leave approval', 'vacation'] },
     { label: 'Daily Tasks Board', path: '/manager/tasks', keywords: ['task', 'tasks', 'team tasks', 'task management', 'board', 'to do'] },
     { label: 'Monitoring Logs & Screenshots', path: '/manager/screenshots', keywords: ['screenshot', 'screenshots', 'logs', 'monitoring', 'activity'] },
     { label: 'Team Chat', path: '/manager/chat', keywords: ['chat', 'team chat', 'message', 'messages', 'conversation'] }

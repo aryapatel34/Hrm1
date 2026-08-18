@@ -365,17 +365,40 @@ const EmployeeDashboard = () => {
   const totalWeeklySeconds = pastDaysWeeklySeconds + (timer || 0);
   const weeklyHours = fmtHrs(totalWeeklySeconds);
 
-  const approvedLeavesArray = leaves.filter(l => l.status === 'approved');
-  const usedEarned = approvedLeavesArray.filter(l => l.leaveType === 'earned').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
-  const usedSick = approvedLeavesArray.filter(l => l.leaveType === 'sick').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
-  const usedCasual = approvedLeavesArray.filter(l => l.leaveType === 'casual').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
+  const getCatKey = (typeStr) => {
+    if (!typeStr) return '';
+    const str = String(typeStr).toLowerCase().trim();
+    if (str.includes('casual') || str.includes('cl') || str === 'cl') return 'casual';
+    if (str.includes('sick') || str.includes('sl') || str === 'sl') return 'sick';
+    if (str.includes('earned') || str.includes('el') || str.includes('annual') || str === 'el') return 'earned';
+    if (str.includes('comp') || str === 'co') return 'compoff';
+    if (str.includes('optional') || str.includes('oh')) return 'optional';
+    return str;
+  };
+
+  const calcDays = (s, e) => {
+    if (!s || !e) return 0;
+    const diff = new Date(e).getTime() - new Date(s).getTime();
+    return Math.max(1, Math.ceil(diff / (1000 * 3600 * 24)));
+  };
+
+  const getLeaveDays = (l) => {
+    if (typeof l.totalDays === 'number' && l.totalDays > 0) return l.totalDays;
+    return calcDays(l.startDate, l.endDate);
+  };
+
+  const approvedLeavesArray = leaves.filter(l => l.status?.toLowerCase() === 'approved');
+  const usedEarned = approvedLeavesArray.filter(l => getCatKey(l.leaveType) === 'earned').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
+  const usedSick = approvedLeavesArray.filter(l => getCatKey(l.leaveType) === 'sick').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
+  const usedCasual = approvedLeavesArray.filter(l => getCatKey(l.leaveType) === 'casual').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
+  const usedOptional = approvedLeavesArray.filter(l => getCatKey(l.leaveType) === 'optional').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
 
   const totalAllocated = (leaveQuotas.sick || 10) + (leaveQuotas.earned || 20) + (leaveQuotas.casual || 12) + (leaveQuotas.emergency || 5);
-  const totalUsedLeaves = usedEarned + usedSick + usedCasual;
-  const totalLeaveBalance = totalAllocated - totalUsedLeaves;
+  const totalUsedLeaves = usedEarned + usedSick + usedCasual + usedOptional;
+  const totalLeaveBalance = Math.max(0, totalAllocated - totalUsedLeaves);
 
   const approvedLeaves = approvedLeavesArray.length;
-  const pendingLeaves = leaves.filter(l => l.status === 'pending').length;
+  const pendingLeaves = leaves.filter(l => l.status?.toLowerCase() === 'pending' || l.status?.toLowerCase() === 'cancellation_pending').length;
   const leavesTakenThisMonth = leaves.filter(l => l.status === 'approved' && new Date(l.startDate).getMonth() === new Date().getMonth()).length;
 
   const completedTasks = tasks.filter(t => (t.status || '').toLowerCase() === 'completed').length;
@@ -729,14 +752,14 @@ const EmployeeDashboard = () => {
           {/* Total Leaves */}
           <div
             onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-[#38352e] hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/20 dark:hover:bg-blue-950/20 transition-all duration-300 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-[#1a1714] hover:shadow-md cursor-pointer hover:-translate-y-0.5"
+            className="group border border-gray-200 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/20 dark:hover:bg-blue-950/30 transition-all duration-300 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
           >
             <div>
-              <p className="text-xs text-[#939084] dark:text-[#a09c8d] font-semibold uppercase tracking-wider mb-1">Total Leaves</p>
-              <p className="text-2xl font-bold text-[#36342e] dark:text-[#e5e2da]" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAllocated}</p>
-              <p className="text-[10px] text-[#939084] dark:text-[#a09c8d] mt-1">Days Allocated</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-extrabold uppercase tracking-wider mb-1">Total Leaves</p>
+              <p className="text-2xl font-black text-gray-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAllocated}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-1">Days Allocated</p>
             </div>
-            <div className="bg-blue-50 dark:bg-blue-950/60 p-2.5 rounded-xl text-blue-600 dark:text-blue-400 transition-colors duration-300">
+            <div className="bg-blue-50 dark:bg-blue-950/60 p-2.5 rounded-xl text-blue-600 dark:text-blue-400 transition-colors duration-300 border border-blue-100 dark:border-blue-900/40">
               <Calendar size={20} />
             </div>
           </div>
@@ -744,14 +767,14 @@ const EmployeeDashboard = () => {
           {/* Used Leaves */}
           <div
             onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-[#38352e] hover:border-orange-500 dark:hover:border-orange-400 hover:bg-orange-50/20 dark:hover:bg-orange-950/20 transition-all duration-300 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-[#1a1714] hover:shadow-md cursor-pointer hover:-translate-y-0.5"
+            className="group border border-gray-200 dark:border-gray-800 hover:border-amber-500 dark:hover:border-amber-400 hover:bg-amber-50/20 dark:hover:bg-amber-950/30 transition-all duration-300 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
           >
             <div>
-              <p className="text-xs text-[#939084] dark:text-[#a09c8d] font-semibold uppercase tracking-wider mb-1">Used Leaves</p>
-              <p className="text-2xl font-bold text-[#36342e] dark:text-[#e5e2da]" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalUsedLeaves}</p>
-              <p className="text-[10px] text-[#939084] dark:text-[#a09c8d] mt-1">Days Used</p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 font-extrabold uppercase tracking-wider mb-1">Used Leaves</p>
+              <p className="text-2xl font-black text-gray-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalUsedLeaves}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-1">Days Used</p>
             </div>
-            <div className="bg-orange-50 dark:bg-orange-950/60 p-2.5 rounded-xl text-orange-600 dark:text-orange-400 transition-colors duration-300">
+            <div className="bg-amber-50 dark:bg-amber-950/60 p-2.5 rounded-xl text-amber-600 dark:text-amber-400 transition-colors duration-300 border border-amber-100 dark:border-amber-900/40">
               <CalendarCheck size={20} />
             </div>
           </div>
@@ -759,14 +782,14 @@ const EmployeeDashboard = () => {
           {/* Pending Leaves */}
           <div
             onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-[#38352e] hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50/20 dark:hover:bg-purple-950/20 transition-all duration-300 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-[#1a1714] hover:shadow-md cursor-pointer hover:-translate-y-0.5"
+            className="group border border-gray-200 dark:border-gray-800 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50/20 dark:hover:bg-purple-950/30 transition-all duration-300 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
           >
             <div>
-              <p className="text-xs text-[#939084] dark:text-[#a09c8d] font-semibold uppercase tracking-wider mb-1">Pending Leaves</p>
-              <p className="text-2xl font-bold text-[#36342e] dark:text-[#e5e2da]" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingLeaves}</p>
-              <p className="text-[10px] text-[#939084] dark:text-[#a09c8d] mt-1">Requests Pending</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 font-extrabold uppercase tracking-wider mb-1">Pending Leaves</p>
+              <p className="text-2xl font-black text-gray-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingLeaves}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-1">Requests Pending</p>
             </div>
-            <div className="bg-purple-50 dark:bg-purple-950/60 p-2.5 rounded-xl text-purple-600 dark:text-purple-400 transition-colors duration-300">
+            <div className="bg-purple-50 dark:bg-purple-950/60 p-2.5 rounded-xl text-purple-600 dark:text-purple-400 transition-colors duration-300 border border-purple-100 dark:border-purple-900/40">
               <CalendarX size={20} />
             </div>
           </div>
@@ -774,14 +797,14 @@ const EmployeeDashboard = () => {
           {/* Approved Leaves */}
           <div
             onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-[#38352e] hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/20 transition-all duration-300 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-[#1a1714] hover:shadow-md cursor-pointer hover:-translate-y-0.5"
+            className="group border border-gray-200 dark:border-gray-800 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/30 transition-all duration-300 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
           >
             <div>
-              <p className="text-xs text-[#939084] dark:text-[#a09c8d] font-semibold uppercase tracking-wider mb-1">Approved Leaves</p>
-              <p className="text-2xl font-bold text-[#36342e] dark:text-[#e5e2da]" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeaves}</p>
-              <p className="text-[10px] text-[#939084] dark:text-[#a09c8d] mt-1">Days Approved</p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-extrabold uppercase tracking-wider mb-1">Approved Leaves</p>
+              <p className="text-2xl font-black text-gray-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeaves}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-1">Days Approved</p>
             </div>
-            <div className="bg-emerald-50 dark:bg-emerald-950/60 p-2.5 rounded-xl text-emerald-600 dark:text-emerald-400 transition-colors duration-300">
+            <div className="bg-emerald-50 dark:bg-emerald-950/60 p-2.5 rounded-xl text-emerald-600 dark:text-emerald-400 transition-colors duration-300 border border-emerald-100 dark:border-emerald-900/40">
               <CheckCircle size={20} />
             </div>
           </div>
