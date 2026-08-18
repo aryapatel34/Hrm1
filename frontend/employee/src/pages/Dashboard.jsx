@@ -303,7 +303,25 @@ const Dashboard = () => {
   const handleCheckOut = async () => {
     setCheckInLoading(true);
     try {
-      await stopDesktopTracker();
+      // 1. Attempt to open desktop tracker window & show confirmation modal
+      const trackerActive = await stopDesktopTracker();
+      if (trackerActive) {
+        toast('Please confirm check-out in FluidHR Tracker app.', {
+          icon: '⚡',
+          duration: 4000,
+          style: {
+            borderRadius: '12px',
+            background: '#1c1917',
+            color: '#fff',
+            border: '1px solid #00a76b',
+            fontSize: '13px',
+            fontWeight: '600'
+          }
+        });
+        return;
+      }
+
+      // 2. Fallback if desktop app is not running: check out directly
       await axios.put('/api/attendance/clock-out', {}, { headers: { Authorization: `Bearer ${token()}` } });
       try {
         await axios.post('/api/time/stop', {}, { headers: { Authorization: `Bearer ${token()}` } });

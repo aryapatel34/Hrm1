@@ -46,6 +46,10 @@ let heartbeatInterval = null; // sends /activity every 10s
 // ── Screenshot ────────────────────────────────────────────
 let screenshotTimeout = null;
 
+// ── Idle Reminder (every 3 minutes while paused/idle) ────
+let idleReminderInterval = null;
+const IDLE_REMINDER_MS = 3 * 60 * 1000; // 3 minutes
+
 // ── Socket ────────────────────────────────────────────────
 let socket = null;
 
@@ -299,6 +303,7 @@ async function startSession() {
     // 🔔 Trigger notification IMMEDIATELY on success (fixes delayed notification bug)
     notifyDesktop('Session Started', 'Your tracking session is now active.');
 
+    stopIdleReminderLoop();
     idleNotificationSent = false;
     lastStartOrResumeTime = Date.now();
     await pollSessionStatus();
@@ -327,7 +332,8 @@ async function pauseSession() {
     }
     stopScreenshotLoop();
     await pollSessionStatus();
-    await notifyDesktop('Session Paused', 'Your tracking session has been paused.');
+    await notifyDesktop('Session Paused', 'Your tracking session has been paused. Please resume when you are back.');
+    startIdleReminderLoop();
   } catch (err) {
     console.error('[PAUSE ERROR]', err);
     alert('Unable to pause session.');
@@ -348,6 +354,7 @@ async function resumeSession() {
       const err = await res.json();
       if (!err.message?.toLowerCase().includes('already')) alert(err.message || 'Unable to resume.');
     }
+    stopIdleReminderLoop();
     idleNotificationSent = false;
     lastStartOrResumeTime = Date.now();
     await pollSessionStatus();
@@ -362,9 +369,25 @@ async function resumeSession() {
 }
 
 // ============================================================
-// 🔴 STOP
+// 🔴 STOP / CHECK OUT (With Confirmation)
 // ============================================================
+function showCheckoutConfirmationModal() {
+  const modal = document.getElementById('checkout-confirm-section');
+  if (modal) modal.style.display = 'flex';
+}
+
+function hideCheckoutConfirmationModal() {
+  const modal = document.getElementById('checkout-confirm-section');
+  if (modal) modal.style.display = 'none';
+}
+
 async function stopSession() {
+  if (!authToken) return alert('Please login first.');
+  showCheckoutConfirmationModal();
+}
+
+async function confirmStopSession() {
+  hideCheckoutConfirmationModal();
   if (!authToken) return alert('Please login first.');
   try {
     const res = await fetch(`${API_BASE}/stop`, {
@@ -378,9 +401,10 @@ async function stopSession() {
     stopPolling();
     stopHeartbeat();
     stopScreenshotLoop();
+    stopIdleReminderLoop();
     idleNotificationSent = false;
     await pollSessionStatus();
-    await notifyDesktop('Session Stopped', 'Your tracking session has ended.');
+    await notifyDesktop('Workday Ended', 'You have successfully checked out for today.');
   } catch (err) {
     console.error('[STOP ERROR]', err);
     alert('Unable to stop session.');
@@ -405,6 +429,7 @@ function setControlState(currentStatus) {
   const startBtn = document.getElementById('start-btn');
   const pauseBtn = document.getElementById('pause-btn');
   const resumeBtn = document.getElementById('resume-btn');
+  const stopBtn = document.getElementById('stop-btn');
   const binaryControls = document.querySelector('.binary-controls');
   if (!startBtn || !pauseBtn || !resumeBtn || !binaryControls) return;
 
@@ -413,18 +438,21 @@ function setControlState(currentStatus) {
   if (currentStatus === 'OFFLINE') {
     startBtn.style.display = 'flex';
     binaryControls.style.display = 'none';
+    if (stopBtn) stopBtn.style.display = 'none';
     if (statusEl) { statusEl.innerText = 'OFFLINE'; statusEl.className = 'status-badge'; }
   } else if (isActuallyActive) {
     startBtn.style.display = 'none';
     binaryControls.style.display = 'flex';
     pauseBtn.style.display = 'flex';
     resumeBtn.style.display = 'none';
+    if (stopBtn) stopBtn.style.display = 'flex';
     if (statusEl) { statusEl.innerText = 'ACTIVE'; statusEl.className = 'status-badge status-active'; }
   } else {
     startBtn.style.display = 'none';
     binaryControls.style.display = 'flex';
     pauseBtn.style.display = 'none';
     resumeBtn.style.display = 'flex';
+    if (stopBtn) stopBtn.style.display = 'flex';
     if (statusEl) {
       statusEl.innerText = isIdle ? 'IDLE' : currentStatus;
       statusEl.className = 'status-badge status-idle';
@@ -474,14 +502,33 @@ function requestNotificationPermission() {
 }
 
 async function showIdleNotification() {
-  await notifyDesktop('Inactivity Detected', 'Timer paused. 1 minute moved to idle time.');
+  await notifyDesktop('Inactivity Detected', 'Timer is paused due to inactivity. Please start the timer.');
   const alertEl = document.getElementById('desktop-alert');
   if (alertEl) {
     const titleEl = alertEl.querySelector('.alert-title');
     const textEl = alertEl.querySelector('.alert-text');
     if (titleEl) titleEl.innerText = 'Inactivity Detected';
-    if (textEl) textEl.innerText = 'Timer paused. Resume when ready.';
+    if (textEl) textEl.innerText = 'Timer is paused. Please resume the timer.';
     alertEl.style.display = 'flex';
+  }
+  startIdleReminderLoop();
+}
+
+function startIdleReminderLoop() {
+  if (idleReminderInterval) clearInterval(idleReminderInterval);
+  idleReminderInterval = setInterval(async () => {
+    if (status === 'IDLE' || status === 'PAUSED') {
+      await notifyDesktop('Timer Paused', 'Your timer is paused. Please resume / start the timer to track your work.');
+    } else {
+      stopIdleReminderLoop();
+    }
+  }, IDLE_REMINDER_MS);
+}
+
+function stopIdleReminderLoop() {
+  if (idleReminderInterval) {
+    clearInterval(idleReminderInterval);
+    idleReminderInterval = null;
   }
 }
 
@@ -695,6 +742,7 @@ async function logout() {
   stopPolling();
   stopHeartbeat();
   stopScreenshotLoop();
+  stopIdleReminderLoop();
   activeSeconds = 0;
   inactiveSeconds = 0;
   status = 'OFFLINE';
@@ -723,6 +771,8 @@ document.getElementById('start-btn')?.addEventListener('click', startSession);
 document.getElementById('pause-btn')?.addEventListener('click', pauseSession);
 document.getElementById('resume-btn')?.addEventListener('click', resumeSession);
 document.getElementById('stop-btn')?.addEventListener('click', stopSession);
+document.getElementById('confirm-checkout-btn')?.addEventListener('click', confirmStopSession);
+document.getElementById('cancel-checkout-btn')?.addEventListener('click', hideCheckoutConfirmationModal);
 document.getElementById('minimize-btn')?.addEventListener('click', () => window.electronAPI.minimizeApp());
 document.getElementById('close-btn')?.addEventListener('click', () => window.electronAPI.closeApp());
 document.getElementById('web-auth-btn')?.addEventListener('click', redirectToWebLogin);

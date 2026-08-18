@@ -11,13 +11,15 @@ const {
   getAllAttendance, 
   getWeeklySummary,
   getTeamStats,
-  getTodayAttendance
+  getTodayAttendance,
+  overrideCheckout
 } = require('../controllers/attendanceController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Check-in and Check-out (Original)
 router.post('/checkin', protect, checkIn);
 router.post('/checkout', protect, checkOut);
+router.post('/override-checkout/:userId', protect, authorize('admin', 'hr', 'manager'), overrideCheckout);
 
 // Clock-in and Clock-out (Designer)
 router.post('/clock-in', protect, clockIn);

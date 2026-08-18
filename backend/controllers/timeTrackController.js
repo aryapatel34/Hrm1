@@ -391,10 +391,24 @@ exports.getSessionStatus = async (req, res) => {
       employeeId: targetId, date: today
     }).sort({ createdAt: -1 });
 
-    if (!session) return res.json({ hasActiveSession: false });
+    if (!session) {
+      return res.json({
+        hasActiveSession: false,
+        status: 'OFFLINE',
+        isRunning: false,
+        activeTime: 0,
+        idleTime: 0
+      });
+    }
 
     if (session.status === 'completed') {
-      return res.json({ hasActiveSession: false, activeTime: Math.floor(session.activeTime || 0) });
+      return res.json({
+        hasActiveSession: false,
+        status: 'completed',
+        isRunning: false,
+        activeTime: Math.floor(session.activeTime || 0),
+        idleTime: Math.floor(session.idleTime || 0)
+      });
     }
 
     // ── Session Status ──

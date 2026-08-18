@@ -100,10 +100,13 @@ function startLocalBridgeServer() {
 
       if (pathname === '/stop') {
         if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore();
+          mainWindow.show();
+          mainWindow.focus();
           mainWindow.webContents.send('deep-link-action', 'stop');
         }
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true, message: 'Tracking stopped' }));
+        res.end(JSON.stringify({ ok: true, message: 'Opened desktop tracker for checkout confirmation' }));
         return;
       }
 
