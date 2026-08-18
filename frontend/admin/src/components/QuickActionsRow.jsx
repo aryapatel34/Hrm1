@@ -4,6 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { LogIn, LogOut, CalendarPlus, Briefcase, Clock, FileText, User, Loader2 } from 'lucide-react';
 import { startDesktopTracker, stopDesktopTracker } from '@shared/services/desktopTrackerService';
+import DesktopAppRequiredModal from '@shared/components/DesktopAppRequiredModal';
 
 const token = () => sessionStorage.getItem('token') || localStorage.getItem('token');
 
@@ -58,15 +59,21 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
     };
   }, []);
 
+  const [showTrackerModal, setShowTrackerModal] = useState(false);
+
   const handleCheckIn = async () => {
     setCheckInLoading(true);
     try {
       const t = token();
+      if (!t) return;
       const headers = { Authorization: `Bearer ${t}` };
 
-      try {
-        await startDesktopTracker(t);
-      } catch (_) {}
+      // 🛡️ Verify that the Desktop Tracker is running / installed
+      const trackerRes = await startDesktopTracker(t);
+      if (!trackerRes || !trackerRes.success) {
+        setShowTrackerModal(true);
+        return;
+      }
 
       try {
         await axios.post('/api/attendance/clock-in', {}, { headers });
@@ -223,6 +230,14 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
           </button>
         ))}
       </div>
+
+      <DesktopAppRequiredModal
+        isOpen={showTrackerModal}
+        onClose={() => setShowTrackerModal(false)}
+        onRetry={handleCheckIn}
+        token={token()}
+        isRetrying={checkInLoading}
+      />
     </div>
   );
 };
