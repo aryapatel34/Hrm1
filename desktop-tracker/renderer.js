@@ -32,12 +32,20 @@ let isSessionRunning = false;
 
 // Local clock loop for smooth UI ticking (matches Web App behavior)
 setInterval(() => {
-  if (isSessionRunning && segmentStartTime) {
-    const elapsed = Math.floor((Date.now() - segmentStartTime) / 1000);
-    activeSeconds = baseActiveSeconds + Math.max(0, elapsed);
+  if (status === 'ACTIVE' && isSessionRunning) {
+    if (segmentStartTime) {
+      const elapsed = Math.floor((Date.now() - segmentStartTime) / 1000);
+      activeSeconds = baseActiveSeconds + Math.max(0, elapsed);
+    } else {
+      activeSeconds += 1;
+    }
+    updateDisplay();
+  } else if (status === 'IDLE') {
+    // 🛡️ When IDLE: Active Work Time is strictly frozen, Idle Time increases
+    inactiveSeconds += 1;
     updateDisplay();
   }
-}, 500);
+}, 1000);
 
 // ── Intervals ─────────────────────────────────────────────
 let pollInterval = null;  // polls /status every 1s
@@ -45,6 +53,10 @@ let heartbeatInterval = null; // sends /activity every 10s
 
 // ── Screenshot ────────────────────────────────────────────
 let screenshotTimeout = null;
+
+// ── Idle Reminder (every 3 minutes while paused/idle) ────
+let idleReminderInterval = null;
+const IDLE_REMINDER_MS = 3 * 60 * 1000; // 3 minutes
 
 // ── Socket ────────────────────────────────────────────────
 let socket = null;
@@ -71,26 +83,24 @@ const syncIndicator = document.getElementById('sync-indicator');
 // ============================================================
 if (window.electronAPI?.onSystemIdleStatus) {
   window.electronAPI.onSystemIdleStatus(({ idleSeconds, isIdle: systemIsIdle }) => {
+    lastSystemIdleSeconds = idleSeconds;
 
-    console.log('IDLE STATUS:', { idleSeconds, isIdle: systemIsIdle });
+    // 🛡️ Never trigger idle if session was started or resumed less than 60 seconds ago
+    if (Date.now() - lastStartOrResumeTime < 60000) {
+      return;
+    }
 
-    if (systemIsIdle) {
-      // ── System has been idle >= threshold ──
-      // Ignore idle triggers during the first 15 seconds of starting/resuming
-      if (Date.now() - lastStartOrResumeTime < 15000) {
-        console.log('[IDLE IGNORED] Ignoring system idle trigger during start/resume grace period.');
-        return;
-      }
-      // Only trigger once per idle event (idleNotificationSent guards re-entry)
+    if (systemIsIdle && idleSeconds >= 60) {
+      // Only trigger once per idle event
       if (status === 'ACTIVE' && !idleNotificationSent) {
-        console.log(`[IDLE TRIGGER] ${idleSeconds}s idle — sending idle signal to backend`);
         triggerIdle(idleSeconds);
       }
-    } else {
-      // ── Activity detected anywhere on PC ──
-      // idleSeconds < threshold means keyboard/mouse used in any app
-      // No local timer math — just used to decide heartbeat type
-      lastSystemIdleSeconds = idleSeconds;
+    } else if (idleSeconds < 5) {
+      // Activity detected anywhere on PC
+      if (status === 'ACTIVE') {
+        idleNotificationSent = false;
+        isIdle = false;
+      }
     }
   });
 }
@@ -188,42 +198,54 @@ function applyServerState(data) {
     return;
   }
 
-  // Set display values directly from backend
-  baseActiveSeconds = data.activeTime ?? 0;
-  inactiveSeconds = data.idleTime ?? 0;
-  segmentStartTime = data.segmentStart ? new Date(data.segmentStart).getTime() : null;
-  isSessionRunning = data.isRunning;
-
-  // Calculate immediate activeSeconds to avoid delay on poll response
-  if (isSessionRunning && segmentStartTime) {
-    const elapsed = Math.floor((Date.now() - segmentStartTime) / 1000);
-    activeSeconds = baseActiveSeconds + Math.max(0, elapsed);
-  } else {
-    activeSeconds = baseActiveSeconds;
-  }
-
   const serverStatus = String(data.status || '').toLowerCase();
 
-  if (serverStatus === 'active' && data.isRunning) {
+  if (serverStatus === 'idle') {
+    status = 'IDLE';
+    isIdle = true;
+    isSessionRunning = false;
+    segmentStartTime = null;
+    inactiveSeconds = data.idleTime ?? inactiveSeconds;
+    // 🛡️ When IDLE: Prefer the higher of local committed activeSeconds or server activeTime to prevent backward rewinds
+    if (data.activeTime !== undefined && data.activeTime > 0) {
+      baseActiveSeconds = Math.max(baseActiveSeconds, data.activeTime);
+      activeSeconds = baseActiveSeconds;
+    }
+  } else if (serverStatus === 'active' && data.isRunning) {
     status = 'ACTIVE';
     isIdle = false;
     idleNotificationSent = false;
+    isSessionRunning = true;
+    baseActiveSeconds = data.activeTime ?? baseActiveSeconds;
+    inactiveSeconds = data.idleTime ?? inactiveSeconds;
+    segmentStartTime = data.segmentStart ? new Date(data.segmentStart).getTime() : segmentStartTime;
+
+    if (segmentStartTime) {
+      const elapsed = Math.floor((Date.now() - segmentStartTime) / 1000);
+      activeSeconds = baseActiveSeconds + Math.max(0, elapsed);
+    } else {
+      activeSeconds = baseActiveSeconds;
+    }
+
     if (!screenshotTimeout) {
       initScreenshotLoop(true);
-    }
-  } else if (serverStatus === 'idle') {
-    status = 'IDLE';
-    isIdle = true;
-    if (!idleNotificationSent) {
-      idleNotificationSent = true;
-      showIdleNotification();
     }
   } else if (serverStatus === 'paused') {
     status = 'PAUSED';
     isIdle = false;
+    isSessionRunning = false;
+    segmentStartTime = null;
+    baseActiveSeconds = data.activeTime ?? baseActiveSeconds;
+    inactiveSeconds = data.idleTime ?? inactiveSeconds;
+    activeSeconds = baseActiveSeconds;
   } else if (serverStatus === 'completed') {
     status = 'OFFLINE';
     isIdle = false;
+    isSessionRunning = false;
+    segmentStartTime = null;
+    baseActiveSeconds = data.activeTime ?? baseActiveSeconds;
+    inactiveSeconds = data.idleTime ?? inactiveSeconds;
+    activeSeconds = baseActiveSeconds;
   }
 
   updateDisplay();
@@ -254,9 +276,19 @@ async function sendHeartbeat() {
 async function triggerIdle(idleSeconds = 60) {
   if (!authToken || status !== 'ACTIVE') return;
 
-  // 🚀 OPTIMISTIC UI: Show idle state instantly on screen
+  // 🚀 OPTIMISTIC UI: Instantly pause active timer and preserve exact active work time
   status = 'IDLE';
   isIdle = true;
+  isSessionRunning = false;
+
+  // Commit current elapsed segment to baseActiveSeconds so it freezes at exact current value
+  if (segmentStartTime) {
+    const elapsed = Math.floor((Date.now() - segmentStartTime) / 1000);
+    baseActiveSeconds += Math.max(0, elapsed);
+    segmentStartTime = null;
+  }
+  activeSeconds = baseActiveSeconds;
+  updateDisplay();
   updateUI();
 
   idleNotificationSent = true;
@@ -269,7 +301,7 @@ async function triggerIdle(idleSeconds = 60) {
       body: JSON.stringify({ type: 'idle', idleSeconds }) // 🎯 Send exact duration
     });
     const data = await res.json();
-    if (data) applyServerState({ hasActiveSession: true, ...data });
+    if (data) applyServerState(data);
     setTimeout(() => syncIndicator?.classList.remove('online'), 2000);
   } catch (err) {
     console.error('[IDLE TRIGGER ERROR]', err.message);
@@ -299,6 +331,7 @@ async function startSession() {
     // 🔔 Trigger notification IMMEDIATELY on success (fixes delayed notification bug)
     notifyDesktop('Session Started', 'Your tracking session is now active.');
 
+    stopIdleReminderLoop();
     idleNotificationSent = false;
     lastStartOrResumeTime = Date.now();
     await pollSessionStatus();
@@ -327,7 +360,8 @@ async function pauseSession() {
     }
     stopScreenshotLoop();
     await pollSessionStatus();
-    await notifyDesktop('Session Paused', 'Your tracking session has been paused.');
+    await notifyDesktop('Session Paused', 'Your tracking session has been paused. Please resume when you are back.');
+    startIdleReminderLoop();
   } catch (err) {
     console.error('[PAUSE ERROR]', err);
     alert('Unable to pause session.');
@@ -339,6 +373,15 @@ async function pauseSession() {
 // ============================================================
 async function resumeSession() {
   if (!authToken) return alert('Please login first.');
+  // 🚀 OPTIMISTIC UI: Instantly clear idle status and banner
+  status = 'ACTIVE';
+  isIdle = false;
+  isSessionRunning = true;
+  segmentStartTime = Date.now(); // 🎯 Start fresh active segment
+  idleNotificationSent = false;
+  lastStartOrResumeTime = Date.now();
+  updateUI();
+
   try {
     const res = await fetch(`${API_BASE}/resume`, {
       method: 'POST',
@@ -348,8 +391,7 @@ async function resumeSession() {
       const err = await res.json();
       if (!err.message?.toLowerCase().includes('already')) alert(err.message || 'Unable to resume.');
     }
-    idleNotificationSent = false;
-    lastStartOrResumeTime = Date.now();
+    stopIdleReminderLoop();
     await pollSessionStatus();
     startPolling();
     startHeartbeat();
@@ -362,9 +404,25 @@ async function resumeSession() {
 }
 
 // ============================================================
-// 🔴 STOP
+// 🔴 STOP / CHECK OUT (With Confirmation)
 // ============================================================
+function showCheckoutConfirmationModal() {
+  const modal = document.getElementById('checkout-confirm-section');
+  if (modal) modal.style.display = 'flex';
+}
+
+function hideCheckoutConfirmationModal() {
+  const modal = document.getElementById('checkout-confirm-section');
+  if (modal) modal.style.display = 'none';
+}
+
 async function stopSession() {
+  if (!authToken) return alert('Please login first.');
+  showCheckoutConfirmationModal();
+}
+
+async function confirmStopSession() {
+  hideCheckoutConfirmationModal();
   if (!authToken) return alert('Please login first.');
   try {
     const res = await fetch(`${API_BASE}/stop`, {
@@ -378,9 +436,10 @@ async function stopSession() {
     stopPolling();
     stopHeartbeat();
     stopScreenshotLoop();
+    stopIdleReminderLoop();
     idleNotificationSent = false;
     await pollSessionStatus();
-    await notifyDesktop('Session Stopped', 'Your tracking session has ended.');
+    await notifyDesktop('Workday Ended', 'You have successfully checked out for today.');
   } catch (err) {
     console.error('[STOP ERROR]', err);
     alert('Unable to stop session.');
@@ -405,6 +464,7 @@ function setControlState(currentStatus) {
   const startBtn = document.getElementById('start-btn');
   const pauseBtn = document.getElementById('pause-btn');
   const resumeBtn = document.getElementById('resume-btn');
+  const stopBtn = document.getElementById('stop-btn');
   const binaryControls = document.querySelector('.binary-controls');
   if (!startBtn || !pauseBtn || !resumeBtn || !binaryControls) return;
 
@@ -413,18 +473,25 @@ function setControlState(currentStatus) {
   if (currentStatus === 'OFFLINE') {
     startBtn.style.display = 'flex';
     binaryControls.style.display = 'none';
+    if (stopBtn) stopBtn.style.display = 'none';
     if (statusEl) { statusEl.innerText = 'OFFLINE'; statusEl.className = 'status-badge'; }
+    const alertEl = document.getElementById('desktop-alert');
+    if (alertEl) alertEl.style.display = 'none';
   } else if (isActuallyActive) {
     startBtn.style.display = 'none';
     binaryControls.style.display = 'flex';
     pauseBtn.style.display = 'flex';
     resumeBtn.style.display = 'none';
+    if (stopBtn) stopBtn.style.display = 'flex';
     if (statusEl) { statusEl.innerText = 'ACTIVE'; statusEl.className = 'status-badge status-active'; }
+    const alertEl = document.getElementById('desktop-alert');
+    if (alertEl) alertEl.style.display = 'none';
   } else {
     startBtn.style.display = 'none';
     binaryControls.style.display = 'flex';
     pauseBtn.style.display = 'none';
     resumeBtn.style.display = 'flex';
+    if (stopBtn) stopBtn.style.display = 'flex';
     if (statusEl) {
       statusEl.innerText = isIdle ? 'IDLE' : currentStatus;
       statusEl.className = 'status-badge status-idle';
@@ -474,14 +541,33 @@ function requestNotificationPermission() {
 }
 
 async function showIdleNotification() {
-  await notifyDesktop('Inactivity Detected', 'Timer paused. 1 minute moved to idle time.');
+  await notifyDesktop('Inactivity Detected', 'Timer is paused due to inactivity. Please start the timer.');
   const alertEl = document.getElementById('desktop-alert');
   if (alertEl) {
     const titleEl = alertEl.querySelector('.alert-title');
     const textEl = alertEl.querySelector('.alert-text');
     if (titleEl) titleEl.innerText = 'Inactivity Detected';
-    if (textEl) textEl.innerText = 'Timer paused. Resume when ready.';
+    if (textEl) textEl.innerText = 'Timer is paused. Please resume the timer.';
     alertEl.style.display = 'flex';
+  }
+  startIdleReminderLoop();
+}
+
+function startIdleReminderLoop() {
+  if (idleReminderInterval) clearInterval(idleReminderInterval);
+  idleReminderInterval = setInterval(async () => {
+    if (status === 'IDLE' || status === 'PAUSED') {
+      await notifyDesktop('Timer Paused', 'Your timer is paused. Please resume / start the timer to track your work.');
+    } else {
+      stopIdleReminderLoop();
+    }
+  }, IDLE_REMINDER_MS);
+}
+
+function stopIdleReminderLoop() {
+  if (idleReminderInterval) {
+    clearInterval(idleReminderInterval);
+    idleReminderInterval = null;
   }
 }
 
@@ -695,6 +781,7 @@ async function logout() {
   stopPolling();
   stopHeartbeat();
   stopScreenshotLoop();
+  stopIdleReminderLoop();
   activeSeconds = 0;
   inactiveSeconds = 0;
   status = 'OFFLINE';
@@ -723,6 +810,8 @@ document.getElementById('start-btn')?.addEventListener('click', startSession);
 document.getElementById('pause-btn')?.addEventListener('click', pauseSession);
 document.getElementById('resume-btn')?.addEventListener('click', resumeSession);
 document.getElementById('stop-btn')?.addEventListener('click', stopSession);
+document.getElementById('confirm-checkout-btn')?.addEventListener('click', confirmStopSession);
+document.getElementById('cancel-checkout-btn')?.addEventListener('click', hideCheckoutConfirmationModal);
 document.getElementById('minimize-btn')?.addEventListener('click', () => window.electronAPI.minimizeApp());
 document.getElementById('close-btn')?.addEventListener('click', () => window.electronAPI.closeApp());
 document.getElementById('web-auth-btn')?.addEventListener('click', redirectToWebLogin);

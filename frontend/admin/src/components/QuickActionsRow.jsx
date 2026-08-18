@@ -4,6 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { LogIn, LogOut, CalendarPlus, Briefcase, Clock, FileText, User, Loader2 } from 'lucide-react';
 import { startDesktopTracker, stopDesktopTracker } from '@shared/services/desktopTrackerService';
+import DesktopAppRequiredModal from '@shared/components/DesktopAppRequiredModal';
 
 const token = () => sessionStorage.getItem('token') || localStorage.getItem('token');
 
@@ -12,6 +13,7 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [initialChecking, setInitialChecking] = useState(true);
+  const [showTrackerModal, setShowTrackerModal] = useState(false);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [checkInHovered, setCheckInHovered] = useState(false);
@@ -30,31 +32,27 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
       if (!t) return;
       const headers = { Authorization: `Bearer ${t}` };
 
-      // 1. Check today attendance
-      const attRes = await axios.get('/api/attendance/today', { headers }).catch(() => null);
+      // Fetch time status and attendance in parallel for instant response
+      const [timerRes, attRes] = await Promise.all([
+        axios.get('/api/time/status', { headers }).catch(() => null),
+        axios.get('/api/attendance/today', { headers }).catch(() => null)
+      ]);
+
+      if (timerRes?.data?.hasActiveSession || ['active', 'paused', 'idle'].includes(timerRes?.data?.status)) {
+        setIsCheckedIn(true);
+        return;
+      }
+
       if (attRes?.data?.attendance) {
         const att = attRes.data.attendance;
-        const hasClockedOut = Boolean((att.clockOut && att.clockOut !== '--') || att.checkOutTime);
-        if (att.checkInTime || att.clockIn) {
-          if (!hasClockedOut) {
-            setIsCheckedIn(true);
-            return;
-          } else {
-            setIsCheckedIn(false);
-            return;
-          }
+        if (att.status === 'present' && att.inTime && !att.outTime) {
+          setIsCheckedIn(true);
+          return;
         }
       }
 
-      // 2. Fallback check timer status
-      const timerRes = await axios.get('/api/time/timer-status', { headers }).catch(() => null);
-      if (timerRes?.data?.isRunning) {
-        setIsCheckedIn(true);
-      } else {
-        setIsCheckedIn(false);
-      }
-    } catch (e) {
-      console.error('Error fetching check-in status:', e);
+      setIsCheckedIn(false);
+    } catch (_) {
     } finally {
       setInitialChecking(false);
     }
@@ -68,34 +66,34 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
     setCheckInLoading(true);
     try {
       const t = token();
+      if (!t) {
+        toast.error('Session expired. Please login again.');
+        setCheckInLoading(false);
+        return;
+      }
       const headers = { Authorization: `Bearer ${t}` };
 
-      try {
-        await startDesktopTracker(t);
-      } catch (_) {}
+      // 1. Direct Backend Check-in (instant attendance record)
+      await axios.post('/api/attendance/clock-in', {}, { headers }).catch(() => null);
 
-      try {
-        await axios.post('/api/attendance/clock-in', {}, { headers });
-      } catch (err) {
-        if (err.response?.status === 400 && (err.response?.data?.message?.includes('Already clocked in') || err.response?.data?.message?.includes('already'))) {
-          setIsCheckedIn(true);
-          toast.success('You are currently checked in.');
-          return;
-        }
-        throw err;
+      // 2. Start Desktop App Tracker
+      const trackerResult = await startDesktopTracker(t);
+      if (!trackerResult.success) {
+        setShowTrackerModal(true);
+        setCheckInLoading(false);
+        return;
       }
 
-      try {
-        await axios.post('/api/time/start', {}, { headers });
-      } catch (_) {}
+      // 3. Start Web Work Session
+      await axios.post('/api/time/start', { taskName: 'General Work' }, { headers }).catch(() => null);
 
       setIsCheckedIn(true);
       toast.success('Check-in successful & Desktop Tracker started!', {
         style: {
           borderRadius: '12px',
-          background: '#0d2a22',
+          background: '#1c1917',
           color: '#fff',
-          border: '1px solid #10b981',
+          border: '1px solid #00a76b',
           fontSize: '13px',
           fontWeight: '600'
         }
@@ -112,11 +110,25 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
     setCheckInLoading(true);
     try {
       const t = token();
+      if (!t) return;
       const headers = { Authorization: `Bearer ${t}` };
 
-      try {
-        await stopDesktopTracker();
-      } catch (_) {}
+      // 1. Stop Desktop Tracker
+      const trackerResult = await stopDesktopTracker();
+      if (!trackerResult.success) {
+        toast.error(trackerResult.message || 'Please close/stop the Desktop Tracker application first to check out.', {
+          style: {
+            borderRadius: '12px',
+            background: '#1c1917',
+            color: '#fff',
+            border: '1px solid #00a76b',
+            fontSize: '13px',
+            fontWeight: '600'
+          }
+        });
+        setCheckInLoading(false);
+        return;
+      }
 
       try {
         await axios.put('/api/attendance/clock-out', {}, { headers });
@@ -249,6 +261,14 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
           );
         })}
       </div>
+
+      <DesktopAppRequiredModal
+        isOpen={showTrackerModal}
+        onClose={() => setShowTrackerModal(false)}
+        onRetry={handleCheckIn}
+        token={token()}
+        isRetrying={checkInLoading}
+      />
     </div>
   );
 };

@@ -178,9 +178,13 @@ exports.resumeTracking = async (req, res) => {
     const { id } = req.user;
     const now = new Date();
     const session = await TimeTrack.findOne({
-      employeeId: id, date: getToday(), status: { $in: ['paused', 'idle'] }
+      employeeId: id, date: getToday(), status: { $in: ['paused', 'idle', 'active'] }
     });
-    if (!session) return res.status(404).json({ message: 'No paused session to resume' });
+    if (!session) return res.status(404).json({ message: 'No session found to resume' });
+
+    if (session.status === 'active' && session.isRunning) {
+      return res.json({ message: 'Tracking already active', session: buildPayload(session) });
+    }
 
     // idleTime is tracked by inactivityCount × IDLE_THRESHOLD — nothing to add on resume
     session.status = 'active';
@@ -391,10 +395,24 @@ exports.getSessionStatus = async (req, res) => {
       employeeId: targetId, date: today
     }).sort({ createdAt: -1 });
 
-    if (!session) return res.json({ hasActiveSession: false });
+    if (!session) {
+      return res.json({
+        hasActiveSession: false,
+        status: 'OFFLINE',
+        isRunning: false,
+        activeTime: 0,
+        idleTime: 0
+      });
+    }
 
     if (session.status === 'completed') {
-      return res.json({ hasActiveSession: false, activeTime: Math.floor(session.activeTime || 0) });
+      return res.json({
+        hasActiveSession: false,
+        status: 'completed',
+        isRunning: false,
+        activeTime: Math.floor(session.activeTime || 0),
+        idleTime: Math.floor(session.idleTime || 0)
+      });
     }
 
     // ── Session Status ──

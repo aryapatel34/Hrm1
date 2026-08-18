@@ -143,6 +143,61 @@ exports.checkOut = async (req, res) => {
   }
 };
 
+// @desc    Override/Reopen Checkout (HR / Manager / Admin)
+// @route   POST /api/attendance/override-checkout/:userId
+exports.overrideCheckout = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const targetUserId = userId || req.user.id;
+    const today = new Date().toISOString().split('T')[0];
+
+    const attendance = await Attendance.findOne({ user: targetUserId, date: today });
+    if (!attendance) {
+      return res.status(404).json({ message: 'No attendance record found for today to override.' });
+    }
+
+    // Clear checkout time
+    attendance.checkOutTime = null;
+    await attendance.save();
+
+    // Reopen TimeTrack session
+    try {
+      const TimeTrack = require('../models/TimeTrack');
+      let session = await TimeTrack.findOne({ employeeId: targetUserId, date: today }).sort({ createdAt: -1 });
+
+      const now = new Date();
+      if (session) {
+        session.status = 'active';
+        session.isRunning = true;
+        session.endTime = null;
+        session.segmentStart = now;
+        session.lastHeartbeat = now;
+        session.sessions.push({ start: now });
+        await session.save();
+
+        const io = req.app.get('io');
+        if (io) {
+          io.to(`user_${targetUserId}`).emit('timer_resumed', {
+            hasActiveSession: true,
+            status: 'active',
+            isRunning: true,
+            activeTime: Math.floor(session.activeTime || 0),
+            idleTime: Math.floor(session.idleTime || 0),
+            segmentStart: now
+          });
+        }
+      }
+    } catch (ttErr) {
+      console.error('[OVERRIDE CHECKOUT TIME TRACK SYNC ERROR]', ttErr);
+    }
+
+    res.json({ message: 'Checkout overridden successfully. Session reopened.', attendance });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 const buildEmployeeAttendanceHistory = async (userId) => {
   const User = require('../models/User');
   const Employee = require('../models/Employee');

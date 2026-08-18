@@ -303,7 +303,26 @@ const EmployeeDashboard = () => {
   const handleCheckOut = async () => {
     setCheckInLoading(true);
     try {
-      await stopDesktopTracker();
+      // 1. Attempt to open desktop tracker window & show confirmation modal
+      const trackerActive = await stopDesktopTracker();
+      if (trackerActive) {
+        toast('Please confirm check-out in FluidHR Tracker app.', {
+          icon: '⚡',
+          duration: 4000,
+          style: {
+            borderRadius: '12px',
+            background: '#1c1917',
+            color: '#fff',
+            border: '1px solid #00a76b',
+            fontSize: '13px',
+            fontWeight: '600'
+          }
+        });
+        setCheckInLoading(false);
+        return;
+      }
+
+      // 2. Fallback if desktop app is not running: check out directly
       await axios.put('/api/attendance/clock-out', {}, { headers: { Authorization: `Bearer ${token()}` } });
       try {
         await axios.post('/api/time/stop', {}, { headers: { Authorization: `Bearer ${token()}` } });
@@ -317,7 +336,12 @@ const EmployeeDashboard = () => {
   };
 
   // ── Derived Data from MongoDB ──
-  const isCheckedIn = timerStatus?.isRunning;
+  const isCheckedIn = Boolean(
+    timerStatus?.isRunning ||
+    timerStatus?.hasActiveSession ||
+    ['active', 'paused', 'idle'].includes(timerStatus?.status) ||
+    (attMetrics?.today?.checkInTime && !attMetrics?.today?.checkOutTime)
+  );
   const checkInTime = attMetrics?.today?.checkInTime
     ? new Date(attMetrics.today.checkInTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
     : (timerStatus?.startTime ? new Date(timerStatus.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : null);

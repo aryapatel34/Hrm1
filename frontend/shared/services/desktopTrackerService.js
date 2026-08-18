@@ -84,9 +84,9 @@ export const startDesktopTracker = async (token) => {
       } catch (_) {}
     }, 2000);
 
-    // Poll local bridge for 2 seconds to see if app launched
+    // Poll local bridge for up to 3.5 seconds to see if app launched and responded
     let attempts = 0;
-    const maxAttempts = 6;
+    const maxAttempts = 10;
     const interval = setInterval(async () => {
       attempts++;
       const alive = await pingDesktopTracker(300);
@@ -106,16 +106,11 @@ export const startDesktopTracker = async (token) => {
         window.removeEventListener('blur', onBlur);
         if (!hasResolved) {
           hasResolved = true;
-          // If window blurred, OS likely handled the protocol or showed prompt
-          if (didBlur) {
-            resolve({ success: true, method: 'deep_link_blurred' });
-          } else {
-            resolve({ 
-              success: false, 
-              error: 'NOT_FOUND',
-              message: 'FluidHR Desktop Application is not running or not installed on your system.' 
-            });
-          }
+          resolve({ 
+            success: false, 
+            error: 'NOT_FOUND',
+            message: 'FluidHR Desktop Application is not running or not installed on your system.' 
+          });
         }
       }
     }, 350);

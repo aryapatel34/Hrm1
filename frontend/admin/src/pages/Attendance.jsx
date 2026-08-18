@@ -6,7 +6,7 @@ import {
   Clock, Calendar, Users, CheckCircle, XCircle, AlertTriangle,
   Search, Filter, Download, RefreshCw, ChevronLeft, ChevronRight, ChevronDown,
   LogIn, LogOut, Timer, TrendingUp, ArrowUpRight, ArrowDownRight,
-  Sun, Moon, Coffee, MoreVertical, Square, Activity
+  Sun, Moon, Coffee, MoreVertical, Square, Activity, Zap
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -1080,6 +1080,28 @@ const Attendance = () => {
     document.body.removeChild(link);
   };
 
+  // Override / Reopen Accidental Checkout
+  const handleOverrideCheckout = async (record) => {
+    const userId = record.user?._id || record.user?.id || record.user;
+    if (!userId) {
+      toast.error('Unable to identify employee for override.');
+      return;
+    }
+    const empName = record.user?.name || 'Employee';
+    const confirmOverride = window.confirm(`Reopen session for ${empName}? This will clear today's checkout and resume time tracking.`);
+    if (!confirmOverride) return;
+
+    try {
+      const res = await axios.post(`/api/attendance/override-checkout/${userId}`, {}, {
+        headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
+      });
+      toast.success(res.data?.message || `Checkout overridden for ${empName}! Session reopened.`);
+      fetchAttendance();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to override checkout.');
+    }
+  };
+
   const periodLabel = statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year';
 
   // ────────────────────────────── RENDER ──────────────────────────────
@@ -1753,10 +1775,11 @@ const Attendance = () => {
                   { key: 'clockIn', label: 'Check In' },
                   { key: 'clockOut', label: 'Check Out' },
                   { key: 'hours', label: 'Working Hours' },
+                  ...(userRole !== 'employee' ? [{ key: 'actions', label: 'Action' }] : [])
                 ].map(col => (
                   <th key={col.key}
-                    onClick={() => col.key !== 'hours' && col.key !== 'clockOut' && handleSort(col.key)}
-                    className={`px-3 py-1.5 text-left text-[9.5px] font-bold text-slate-500 dark:text-[#829e92] uppercase tracking-wider ${col.key !== 'hours' && col.key !== 'clockOut' ? 'cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 select-none' : ''
+                    onClick={() => col.key !== 'hours' && col.key !== 'clockOut' && col.key !== 'actions' && handleSort(col.key)}
+                    className={`px-3 py-1.5 text-left text-[9.5px] font-bold text-slate-500 dark:text-[#829e92] uppercase tracking-wider ${col.key !== 'hours' && col.key !== 'clockOut' && col.key !== 'actions' ? 'cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 select-none' : ''
                       }`}>
                     <div className="flex items-center gap-1">
                       {col.label}
@@ -1771,7 +1794,7 @@ const Attendance = () => {
             <tbody className="divide-y divide-[#e2eae7] dark:divide-[#133029]">
               {paginatedRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center">
+                  <td colSpan={userRole !== 'employee' ? 7 : 6} className="py-8 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <Calendar size={28} className="text-slate-300 dark:text-slate-600" />
                       <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">No attendance records found</p>
@@ -1781,6 +1804,9 @@ const Attendance = () => {
                 </tr>
               ) : paginatedRecords.map((record, i) => {
                 const sc = STATUS_COLORS[record.status] || STATUS_COLORS['Present'];
+                const isToday = record.date === new Date().toISOString().split('T')[0];
+                const hasCheckedOut = !!(record.clockOut || record.clock_out || record.checkOutTime);
+
                 return (
                   <tr key={record._id || i} className="hover:bg-slate-50/50 dark:hover:bg-[#0d2a22]/50 transition-colors">
                     <td className="px-3 py-1.5">
@@ -1840,6 +1866,22 @@ const Attendance = () => {
                         })()}
                       </span>
                     </td>
+                    {userRole !== 'employee' && (
+                      <td className="px-3 py-1.5">
+                        {isToday && hasCheckedOut ? (
+                          <button
+                            onClick={() => handleOverrideCheckout(record)}
+                            title="Reopen accidental checkout"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white border border-amber-500/30 text-[10.5px] font-bold transition-all shadow-xs cursor-pointer"
+                          >
+                            <Zap size={11} />
+                            <span>Override</span>
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-600 text-[11px] font-mono">--</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 );
               })}

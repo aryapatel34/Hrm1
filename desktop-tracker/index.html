@@ -29,7 +29,7 @@
             <span class="alert-dot"></span>
             <div>
                 <p class="alert-title">Inactivity Detected</p>
-                <p class="alert-text">No activity for 10 minutes. Time tracking paused.</p>
+                <p class="alert-text">Timer is paused due to inactivity. Please resume the timer.</p>
             </div>
         </div>
 
@@ -58,6 +58,10 @@
                     RESUME
                 </button>
             </div>
+            <button id="stop-btn" class="ctrl-btn danger" style="display: none;">
+                <span class="material-symbols-outlined">stop_circle</span>
+                CHECK OUT
+            </button>
             <button id="logout-btn" class="ctrl-btn secondary" style="margin-top: 16px;">
                 <span class="material-symbols-outlined">logout</span>
                 LOGOUT
@@ -71,7 +75,7 @@
             </div>
             <div class="footer-node text-right">
                 <p class="node-label">PROTOCOL VERSION</p>
-                <p class="node-value" id="version-display">V1.0.4 PRO</p>
+                <p class="node-value" id="version-display">V1.1.5 PRO</p>
             </div>
         </div>
 
@@ -102,7 +106,7 @@
 
         <!-- Update Dialog Overlay -->
         <div class="auth-overlay" id="update-section" style="display: none; z-index: 2000; background: rgba(248, 249, 250, 0.95); justify-content: center; align-items: center; backdrop-filter: blur(10px);">
-            <div class="auth-card" style="max-width: 320px; text-align: center; border: 1px solid rgba(0, 167, 107, 0.2);">
+            <div class="auth-card" style="max-width: 320px; text-align: center; border: none; box-shadow: none; outline: none;">
                 <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(0, 167, 107, 0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: #00a76b;">
                     <span class="material-symbols-outlined" style="font-size: 32px;">system_update_alt</span>
                 </div>
@@ -116,6 +120,27 @@
                     <button id="update-later-btn" class="ctrl-btn secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <span class="material-symbols-outlined">schedule</span>
                         LATER
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Checkout Confirmation Modal -->
+        <div class="auth-overlay" id="checkout-confirm-section" style="display: none; z-index: 2100; background: rgba(248, 249, 250, 0.96); justify-content: center; align-items: center; backdrop-filter: blur(10px);">
+            <div class="auth-card" style="max-width: 320px; text-align: center; border: none; box-shadow: none;">
+                <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #EF4444;">
+                    <span class="material-symbols-outlined" style="font-size: 32px;">stop_circle</span>
+                </div>
+                <h3 style="margin-bottom: 8px; font-weight: 800; color: var(--text-white); letter-spacing: 0.05em;">END WORKDAY?</h3>
+                <p style="font-size: 11px; font-weight: 600; line-height: 1.6; color: #6B7280; margin-bottom: 20px;">Checking out finalizes your work hours for today. If you're taking a break, click <strong style="color: #00a76b;">Pause</strong> instead.</p>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button id="confirm-checkout-btn" class="ctrl-btn danger" style="width: 100%; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 0;">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        YES, CHECK OUT
+                    </button>
+                    <button id="cancel-checkout-btn" class="ctrl-btn secondary" style="width: 100%; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span class="material-symbols-outlined">close</span>
+                        CANCEL
                     </button>
                 </div>
             </div>

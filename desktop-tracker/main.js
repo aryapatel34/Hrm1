@@ -100,10 +100,13 @@ function startLocalBridgeServer() {
 
       if (pathname === '/stop') {
         if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore();
+          mainWindow.show();
+          mainWindow.focus();
           mainWindow.webContents.send('deep-link-action', 'stop');
         }
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true, message: 'Tracking stopped' }));
+        res.end(JSON.stringify({ ok: true, message: 'Opened desktop tracker for checkout confirmation' }));
         return;
       }
 
@@ -140,7 +143,7 @@ const IDLE_THRESHOLD = 60; // 1 minute (60 seconds)
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 350,
-    height: 640,
+    height: 680,
     resizable: false,
     frame: false,
     transparent: false,
@@ -164,14 +167,12 @@ function createWindow() {
   mainWindow.loadFile('index.html');
 
   mainWindow.once('ready-to-show', () => {
-    setTimeout(() => {
-      mainWindow.show();
-      mainWindow.focus();
-      if (app.readyUrl) {
-        handleDeepLink(app.readyUrl);
-        app.readyUrl = null;
-      }
-    }, 600);
+    mainWindow.show();
+    mainWindow.focus();
+    if (app.readyUrl) {
+      handleDeepLink(app.readyUrl);
+      app.readyUrl = null;
+    }
   });
 }
 
@@ -218,15 +219,17 @@ if (!gotTheLock) {
       const idleSeconds = powerMonitor.getSystemIdleTime();
       const isIdle = idleSeconds >= IDLE_THRESHOLD;
 
-      // Always log so you can verify in terminal
-      console.log(`[DEBUG] System Idle Seconds: ${idleSeconds} | Threshold: ${IDLE_THRESHOLD}`);
+      // Real-time diagnostic log
+      if (idleSeconds % 5 === 0 || isIdle) {
+        console.log(`[IDLE MONITOR] System Idle: ${idleSeconds}s | Threshold: ${IDLE_THRESHOLD}s | Status: ${isIdle ? 'IDLE' : 'ACTIVE'}`);
+      }
 
       // Send to renderer via IPC — renderer ONLY displays/reacts
       mainWindow.webContents.send('system-idle-status', {
         idleSeconds,
         isIdle
       });
-    }, 500); // 🚀 Higher precision for snappier sync
+    }, 1000); // 🚀 1s interval matches real-time seconds
     // ============================================================
   });
 }
