@@ -236,8 +236,13 @@ exports.stopTracking = async (req, res) => {
       if (attendance && !attendance.checkOutTime) {
         attendance.checkOutTime = now;
         if (attendance.checkInTime) {
-          const diffMs = now - new Date(attendance.checkInTime);
-          attendance.totalHours = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
+          const activeSecs = session.activeTime || 0;
+          if (activeSecs > 0) {
+            attendance.totalHours = parseFloat((activeSecs / 3600).toFixed(4));
+          } else {
+            const diffMs = now - new Date(attendance.checkInTime);
+            attendance.totalHours = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(4));
+          }
         }
         await attendance.save();
       }
@@ -331,7 +336,7 @@ exports.updateActivity = async (req, res) => {
           const idleTimeStart = new Date(now.getTime() - rewindAmount * 1000);
           const lastIdx = session.sessions.length - 1;
           if (lastIdx >= 0 && !session.sessions[lastIdx].pause && !session.sessions[lastIdx].end) {
-             session.sessions[lastIdx].pause = idleTimeStart;
+            session.sessions[lastIdx].pause = idleTimeStart;
           }
 
           console.log(`[IDLE DYNAMIC] User ${id} — status set to idle, activeTime rewound by ${rewindAmount}s`);
@@ -387,7 +392,7 @@ exports.getSessionStatus = async (req, res) => {
     }).sort({ createdAt: -1 });
 
     if (!session) return res.json({ hasActiveSession: false });
-    
+
     if (session.status === 'completed') {
       return res.json({ hasActiveSession: false, activeTime: Math.floor(session.activeTime || 0) });
     }
@@ -459,13 +464,13 @@ exports.getMyTime = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     let filter = { employeeId: req.user.id };
-    
+
     if (startDate && endDate) {
       filter.date = { $gte: startDate, $lte: endDate };
     } else if (startDate) {
       filter.date = startDate;
     }
-    
+
     res.json(await TimeTrack.find(filter).sort({ date: -1 }));
   } catch (err) { res.status(500).json({ message: 'My logs failed', error: err.message }); }
 };

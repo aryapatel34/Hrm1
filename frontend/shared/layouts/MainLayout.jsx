@@ -532,19 +532,32 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
       toast(data.message, { icon: '🔔', style: { borderRadius: '5px', background: '#201515', color: '#fff', fontWeight: 900, fontSize: '12px' } });
     });
 
-    s.on('timer_paused', (data) => {
+    s.on('timer_paused', () => {
       setIsTrackingActive(false);
-      if (data.reason === 'inactivity') {
-        setIsPausedByIdle(true);
-        console.log("Inactivity Trace: Web-side idle state synchronized");
-      }
-      setTrackerRawStatus(data.status || 'paused');
+      setIsPausedByIdle(true);
+      setTrackerRawStatus('paused');
+    });
+
+    s.on('timer_stopped', () => {
+      setIsTrackingActive(false);
+      setIsPausedByIdle(true);
+      setTrackerRawStatus('stopped');
     });
 
     s.on('timer_resumed', () => {
       setIsTrackingActive(true);
       setIsPausedByIdle(false);
       setTrackerRawStatus('active');
+    });
+
+    s.on('timer_update', () => {
+      axios.get('/api/time/status', { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => {
+          const isRunning = !!(res.data?.isRunning && res.data?.status === 'active');
+          setIsTrackingActive(isRunning);
+          setIsPausedByIdle(!isRunning);
+          setTrackerRawStatus(res.data?.status || 'offline');
+        }).catch(() => {});
     });
 
     setSocket(s);
@@ -557,8 +570,9 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
       if (!token) return;
       try {
         const res = await axios.get('/api/time/status', { headers: { Authorization: `Bearer ${token}` } });
-        setIsTrackingActive(!!res.data?.isRunning);
-        if (res.data?.status === 'idle') setIsPausedByIdle(true);
+        const isRunning = !!(res.data?.isRunning && res.data?.status === 'active');
+        setIsTrackingActive(isRunning);
+        setIsPausedByIdle(!isRunning);
         setTrackerRawStatus(res.data?.status || 'offline');
 
         if (res.data?.lastActiveTime && res.data?.serverTime) {
@@ -770,28 +784,21 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
             </div>
 
             {/* ⏱️ GLOBAL INACTIVITY TRACKER */}
-            {isPausedByIdle && (
-              <button
-                onClick={handleResume}
-                className="flex items-center gap-2 px-4 py-1.5 bg-[#00a76b] text-white rounded-full border-none cursor-pointer hover:bg-[#e64600] transition-all animate-pulse"
-              >
-                <Play size={14} fill="currentColor" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Resume Timer</span>
-              </button>
-            )}
-            {isTrackingActive && (
+            {isTrackingActive ? (
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#eceae3] dark:bg-[#111c18] rounded-full border border-[#c5c0b1] dark:border-[#1a2d29]">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#24a148]"></div>
                 <span className="text-[10px] font-black text-[#201515] dark:text-[#e2e8f0] uppercase tracking-widest tabular-nums">
                   Active
                 </span>
               </div>
-            )}
-            {!isTrackingActive && !isPausedByIdle && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#eceae3] dark:bg-[#111c18] rounded-full border border-[#c5c0b1] dark:border-[#1a2d29] opacity-50">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#939084]"></div>
-                <span className="text-[10px] font-black text-[#201515] dark:text-[#e2e8f0] uppercase tracking-widest">Offline</span>
-              </div>
+            ) : (
+              <button
+                onClick={handleResume}
+                className="flex items-center gap-2 px-4 py-1.5 bg-[#00a76b] text-white rounded-full border-none cursor-pointer hover:bg-[#059669] transition-all"
+              >
+                <Play size={14} fill="currentColor" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Resume Timer</span>
+              </button>
             )}
 
             {/* Language Selector Removed */}

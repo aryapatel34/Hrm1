@@ -7,19 +7,27 @@ async function updateDatabase() {
     await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/hrms');
     console.log('Connected to MongoDB');
 
-    const result = await Attendance.updateMany(
-      { totalHours: { $lt: 7.5, $ne: null }, status: { $ne: 'Half Day' } },
+    // 1. Mark records under 7.5 hours (where check-out has completed) as Half Day
+    const halfDayResult = await Attendance.updateMany(
+      { totalHours: { $lt: 7.5, $ne: null } },
       { $set: { status: 'Half Day' } }
     );
 
-    console.log(`Successfully updated ${result.modifiedCount} records to Half Day.`);
-    
-    // Also, find those that are over 7.5 and might be marked Half Day incorrectly? Not requested, but good to know.
-    // The user just requested those less than 7:30 to be marked as half day.
+    // 2. Mark records with 7.5 hours or more as Present / Late based on check-in time
+    const fullDayRecords = await Attendance.find({ totalHours: { $gte: 7.5 } });
+    let fullDayCount = 0;
+    for (const att of fullDayRecords) {
+      const cTime = att.checkInTime ? new Date(att.checkInTime) : null;
+      const mins = cTime ? cTime.getHours() * 60 + cTime.getMinutes() : 0;
+      att.status = mins >= 11 * 60 ? 'Late' : 'Present';
+      await att.save();
+      fullDayCount++;
+    }
 
+    console.log(`Updated database: ${halfDayResult.modifiedCount} records marked Half Day (< 7.5 hrs), ${fullDayCount} records marked Present/Late (>= 7.5 hrs).`);
     process.exit(0);
   } catch (error) {
-    console.error('Error connecting to database:', error);
+    console.error('Error updating database:', error);
     process.exit(1);
   }
 }

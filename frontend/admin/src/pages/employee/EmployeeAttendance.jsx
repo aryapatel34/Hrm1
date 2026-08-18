@@ -451,8 +451,8 @@ const EmployeeAttendance = () => {
                   key={p}
                   onClick={() => setStatsPeriod(p)}
                   className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${statsPeriod === p
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                 >
                   {p}

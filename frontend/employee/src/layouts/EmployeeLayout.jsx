@@ -159,12 +159,20 @@ const EmployeeLayout = () => {
     return () => clearInterval(id);
   }, [token]);
 
-  // ── Timer Status ───────────────────────────────────────────
   useEffect(() => {
     if (!token) return;
-    axios.get('/api/time/timer/status', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => { setTimerActive(!!r.data?.isRunning); if (r.data?.status === 'idle') setIsPaused(true); })
-      .catch(() => { });
+    const fetchStatus = () => {
+      axios.get('/api/time/status', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => {
+          const isRunning = !!(r.data?.isRunning && r.data?.status === 'active');
+          setTimerActive(isRunning);
+          setIsPaused(!isRunning);
+        })
+        .catch(() => { });
+    };
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 5000);
+    return () => clearInterval(interval);
   }, [token]);
 
   // ── Socket ─────────────────────────────────────────────────
@@ -177,8 +185,17 @@ const EmployeeLayout = () => {
     });
     s.on('notification', d => setNotifications(p => [d, ...p].slice(0, 50)));
     s.on('new_notification', d => setNotifications(p => [d, ...p].slice(0, 50)));
-    s.on('timer_paused', d => { setTimerActive(false); if (d.reason === 'inactivity') setIsPaused(true); });
+    s.on('timer_paused', () => { setTimerActive(false); setIsPaused(true); });
+    s.on('timer_stopped', () => { setTimerActive(false); setIsPaused(true); });
     s.on('timer_resumed', () => { setTimerActive(true); setIsPaused(false); });
+    s.on('timer_update', () => {
+      axios.get('/api/time/status', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => {
+          const isRunning = !!(r.data?.isRunning && r.data?.status === 'active');
+          setTimerActive(isRunning);
+          setIsPaused(!isRunning);
+        }).catch(() => {});
+    });
     return () => s.disconnect();
   }, [token]);
 
@@ -228,9 +245,15 @@ const EmployeeLayout = () => {
   }, [isProfileDropdownOpen]);
 
   const handleLogout = () => { logout(); navigate('/login'); };
-  const handleResume = () =>
+  const handleResume = () => {
     axios.post('/api/time/resume', {}, { headers: { Authorization: `Bearer ${token}` } })
-      .then(() => { setTimerActive(true); setIsPaused(false); }).catch(() => { });
+      .then(() => { setTimerActive(true); setIsPaused(false); })
+      .catch(() => {
+        axios.post('/api/time/start', {}, { headers: { Authorization: `Bearer ${token}` } })
+          .then(() => { setTimerActive(true); setIsPaused(false); })
+          .catch(() => {});
+      });
+  };
 
   const displayName = profile?.name || profile?.fullName || 'Employee';
   const displayEmail = profile?.email || 'employee@fluidhr.com';
@@ -407,28 +430,21 @@ const EmployeeLayout = () => {
 
           <div className="ml-auto flex items-center h-full gap-2">
             {/* Inactivity banner / timer controls */}
-            {isPaused && (
-              <button
-                onClick={handleResume}
-                className="flex items-center gap-2 px-4 py-1.5 bg-[#00a76b] text-white rounded-full border-none cursor-pointer hover:bg-[#e64600] transition-all animate-pulse mr-2"
-              >
-                <Play size={14} fill="currentColor" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Resume Timer</span>
-              </button>
-            )}
-            {timerActive && (
+            {timerActive ? (
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#eceae3] rounded-full border border-[#c5c0b1] mr-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#24a148]"></div>
                 <span className="text-[10px] font-black text-[#201515] uppercase tracking-widest tabular-nums">
                   Active
                 </span>
               </div>
-            )}
-            {!timerActive && !isPaused && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#eceae3] rounded-full border border-[#c5c0b1] opacity-50 mr-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#939084]"></div>
-                <span className="text-[10px] font-black text-[#201515] uppercase tracking-widest">Offline</span>
-              </div>
+            ) : (
+              <button
+                onClick={handleResume}
+                className="flex items-center gap-2 px-4 py-1.5 bg-[#00a76b] text-white rounded-full border-none cursor-pointer hover:bg-[#059669] transition-all mr-2"
+              >
+                <Play size={14} fill="currentColor" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Resume Timer</span>
+              </button>
             )}
 
             {/* Utility Icons */}
@@ -495,7 +511,7 @@ const EmployeeLayout = () => {
                               navigate(n.path || '/employee/dashboard');
                               setNotifOpen(false);
                               setNotifications(prev => prev.filter(notif => notif._id !== n._id));
-                              if (n._id) axios.put(`/api/notifications/${n._id}/read`, {}, { headers: { Authorization: `Bearer ${token}` } }).catch(()=> {});
+                              if (n._id) axios.put(`/api/notifications/${n._id}/read`, {}, { headers: { Authorization: `Bearer ${token}` } }).catch(() => { });
                             }}
                             className="p-4 border-b border-[#eceae3] dark:border-[#1a2d29] hover:bg-[#fffdf9] dark:hover:bg-[#162722]/50 transition-all cursor-pointer group"
                           >
@@ -505,7 +521,7 @@ const EmployeeLayout = () => {
                                 <p className="text-[12px] font-bold text-[#201515] dark:text-[#e2e8f0] leading-snug group-hover:text-[#00a76b] transition-colors break-words">
                                   {n.message || n.text}
                                 </p>
-                                
+
                                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                   {senderName ? (
                                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#00a76b] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200/80 dark:border-emerald-800/50">

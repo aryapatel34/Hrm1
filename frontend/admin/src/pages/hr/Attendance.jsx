@@ -7,7 +7,7 @@ import {
   Users, Activity, User, ShieldCheck, HelpCircle, Settings, ChevronRight, Briefcase, FileClock, Trash2,
   Sun, Moon
 } from 'lucide-react';
-import WeeklyAttendanceChart from '@shared/components/WeeklyAttendanceChart';
+import TimeTrackerWidget from '@shared/components/TimeTrackerWidget';
 
 const Attendance = () => {
   // --- THEME ---
@@ -503,9 +503,9 @@ const Attendance = () => {
       {/* 3. ROW 2: CHART + QUICK ACTIONS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
 
-        {/* Weekly Attendance Chart Card */}
+        {/* Current Session Time Tracker Card (Replaced Weekly Attendance Graph) */}
         <div className="lg:col-span-2">
-          <WeeklyAttendanceChart isZapTheme={true} className="zap-card flex flex-col w-full transition-all duration-300" />
+          <TimeTrackerWidget isDark={isDark} className="h-full" />
         </div>
 
         {/* Quick Actions Panel Card */}

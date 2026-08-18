@@ -21,10 +21,15 @@ const RoleSearchBar = ({ activeRole }) => {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Filter items
-  const filteredItems = menuItems.filter(item =>
-    item.label.toLowerCase().includes(debouncedQuery.toLowerCase())
-  );
+  // Filter items by label, keywords, or path
+  const filteredItems = menuItems.filter(item => {
+    if (!debouncedQuery.trim()) return false;
+    const q = debouncedQuery.toLowerCase().trim();
+    const labelMatch = item.label.toLowerCase().includes(q);
+    const keywordMatch = Array.isArray(item.keywords) && item.keywords.some(k => k.toLowerCase().includes(q));
+    const pathMatch = item.path.toLowerCase().includes(q);
+    return labelMatch || keywordMatch || pathMatch;
+  });
 
   // Reset selected index when query changes
   useEffect(() => {

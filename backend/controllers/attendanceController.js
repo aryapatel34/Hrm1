@@ -179,6 +179,12 @@ const buildEmployeeAttendanceHistory = async (userId) => {
     date: { $gte: startStr, $lte: todayStr }
   }).lean();
 
+  const TimeTrack = require('../models/TimeTrack');
+  const timeTrackRecords = await TimeTrack.find({
+    employeeId: userId,
+    date: { $gte: startStr, $lte: todayStr }
+  }).lean();
+
   const approvedLeaves = await Leave.find({
     user: userId,
     status: 'approved',
@@ -211,6 +217,15 @@ const buildEmployeeAttendanceHistory = async (userId) => {
         clockOutStr = new Date(existingAtt.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
       }
 
+      const tt = timeTrackRecords.find(t => t.date === dStr);
+      let hoursVal = existingAtt.totalHours;
+      let activeSecs = null;
+
+      if (tt && typeof tt.activeTime === 'number' && tt.activeTime > 0) {
+        activeSecs = tt.activeTime;
+        hoursVal = parseFloat((tt.activeTime / 3600).toFixed(4));
+      }
+
       fullLogs.push({
         _id: existingAtt._id,
         user: { _id: user._id, name: user.name, email: user.email, role: user.role },
@@ -220,7 +235,9 @@ const buildEmployeeAttendanceHistory = async (userId) => {
         checkOutTime: existingAtt.checkOutTime,
         clockIn: clockInStr,
         clockOut: clockOutStr,
-        totalHours: existingAtt.totalHours
+        totalHours: hoursVal,
+        totalActiveTime: activeSecs,
+        activeTime: activeSecs
       });
     } else {
       const dStart = new Date(d);
@@ -388,6 +405,32 @@ exports.getAttendance = async (req, res) => {
     }
     const combined = Array.from(uniqueCombinedMap.values());
     combined.sort((a, b) => b.date.localeCompare(a.date));
+
+    try {
+      const TimeTrack = require('../models/TimeTrack');
+      const allDates = Array.from(new Set(combined.map(r => r.date).filter(Boolean)));
+      if (allDates.length > 0) {
+        const timeTrackRecords = await TimeTrack.find({
+          date: { $in: allDates }
+        }).lean();
+
+        for (const rec of combined) {
+          const uId = rec.user?._id ? rec.user._id.toString() : (rec.user ? rec.user.toString() : '');
+          const tt = timeTrackRecords.find(t => {
+            const tEmpId = t.employeeId?._id ? t.employeeId._id.toString() : (t.employeeId ? t.employeeId.toString() : '');
+            return tEmpId === uId && t.date === rec.date;
+          });
+
+          if (tt && typeof tt.activeTime === 'number' && tt.activeTime > 0) {
+            rec.totalActiveTime = tt.activeTime;
+            rec.activeTime = tt.activeTime;
+            rec.totalHours = parseFloat((tt.activeTime / 3600).toFixed(4));
+          }
+        }
+      }
+    } catch (ttErr) {
+      console.error('[ATTENDANCE HISTORY TIME TRACK SYNC ERROR]', ttErr);
+    }
 
     res.json(combined);
   } catch (error) {
@@ -696,6 +739,16 @@ exports.clockOut = async (req, res) => {
       attendance.totalHours = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
       if (attendance.totalHours < 7.5) {
         attendance.status = 'Half Day';
+      } else {
+        const cTime = new Date(attendance.checkInTime);
+        const timeInMinutes = cTime.getHours() * 60 + cTime.getMinutes();
+        if (timeInMinutes >= 14 * 60 + 30) {
+          attendance.status = 'Half Day';
+        } else if (timeInMinutes >= 11 * 60) {
+          attendance.status = 'Late';
+        } else {
+          attendance.status = 'Present';
+        }
       }
     }
     await attendance.save();
@@ -729,7 +782,15 @@ exports.clockOut = async (req, res) => {
           if (attendance.totalHours < 7.5) {
             attendance.status = 'Half Day';
           } else {
-            attendance.status = 'Present';
+            const cTime = new Date(attendance.checkInTime);
+            const timeInMinutes = cTime.getHours() * 60 + cTime.getMinutes();
+            if (timeInMinutes >= 14 * 60 + 30) {
+              attendance.status = 'Half Day';
+            } else if (timeInMinutes >= 11 * 60) {
+              attendance.status = 'Late';
+            } else {
+              attendance.status = 'Present';
+            }
           }
           await attendance.save();
         }

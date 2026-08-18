@@ -412,354 +412,352 @@ const Attendance = () => {
                 <button
                   key={p}
                   onClick={() => setStatsPeriod(p)}
-                  className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
-                    statsPeriod === p
+                  className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${statsPeriod === p
                       ? 'bg-emerald-600 text-white shadow-sm'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                    }`}
                 >
                   {p}
                 </button>
               ))}
             </div>
           </div>
-          
+
           {/* ── KPI METRIC CARDS ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        {[
-          {
-            label: `Present (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
-            value: (periodStats || yearlyStats)?.present || 0,
-            icon: <CheckCircle size={20} className="text-[#10B981]" />,
-            bg: 'bg-emerald-50 dark:bg-emerald-950/20'
-          },
-          {
-            label: `Late (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
-            value: (periodStats || yearlyStats)?.late || 0,
-            icon: <Clock size={20} className="text-amber-500" />,
-            bg: 'bg-amber-50 dark:bg-amber-950/20'
-          },
-          {
-            label: `Absent (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
-            value: (periodStats || yearlyStats)?.absent || 0,
-            icon: <XCircle size={20} className="text-red-500" />,
-            bg: 'bg-red-50 dark:bg-red-950/20'
-          },
-          {
-            label: `Half Day (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
-            value: (periodStats || yearlyStats)?.halfDay || 0,
-            icon: <Sun size={20} className="text-blue-500" />,
-            bg: 'bg-blue-50 dark:bg-blue-950/20'
-          },
-          {
-            label: `Leave (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
-            value: (periodStats || yearlyStats)?.leave || 0,
-            icon: <CalendarIcon size={20} className="text-purple-500" />,
-            bg: 'bg-purple-50 dark:bg-purple-950/20'
-          }
-        ].map((card, i) => (
-          <div
-            key={i}
-            className="group bg-white dark:bg-slate-900 p-5 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 flex flex-col justify-between"
-          >
-            <div className="flex justify-between items-center mb-6">
-              <div className={`p-2.5 rounded-xl ${card.bg}`}>
-                {card.icon}
-              </div>
-              {/* Select removed from here */}
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{card.label}</p>
-              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-1 tabular-nums">{card.value}</h2>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── MAIN CONTENT AREA ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Weekly Attendance — Donut Pie Chart (2/3 width) */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 flex flex-col justify-between">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
-                {chartPeriod === 'week' ? 'Weekly' : chartPeriod === 'month' ? 'Monthly' : 'Yearly'} Attendance
-              </h3>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                This {chartPeriod === 'week' ? "week's" : chartPeriod === 'month' ? "month's" : "year's"} attendance breakdown
-              </p>
-            </div>
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-              {['week', 'month', 'year'].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setChartPeriod(p)}
-                  className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
-                    chartPeriod === p
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Donut + Legend */}
-          {(() => {
-            const activeData = chartStats || {};
-            const totals = {
-              Present: activeData.present || 0,
-              Late: activeData.late || 0,
-              'Half Day': activeData.halfDay || 0,
-              Leave: activeData.leave || 0,
-              Absent: activeData.absent || 0,
-            };
-
-            const pieData = [
-              { name: 'Present',  value: totals.Present,  color: '#10B981' },
-              { name: 'Late',     value: totals.Late,     color: '#F59E0B' },
-              { name: 'Half Day', value: totals['Half Day'], color: '#3B82F6' },
-              { name: 'Leave',    value: totals.Leave,    color: '#8B5CF6' },
-              { name: 'Absent',   value: totals.Absent,   color: '#EF4444' },
-            ];
-
-            const total = totals.Present + totals.Late + totals['Half Day'] + totals.Leave + totals.Absent;
-            const working = totals.Present + totals.Late + totals['Half Day'];
-            const rate  = total > 0 ? Math.round((working / total) * 100) : 0;
-            const activePie   = pieData.filter(d => d.value > 0);
-            const displayPie  = activePie.length > 0 ? activePie : [{ name: 'No Data', value: 1, color: '#e2e8f0' }];
-
-            return (
-              <div className="flex flex-col sm:flex-row items-center gap-8 flex-1 justify-center">
-
-                {/* Donut */}
-                <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={displayPie}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={72}
-                        outerRadius={98}
-                        paddingAngle={activePie.length > 1 ? 4 : 0}
-                        dataKey="value"
-                        stroke="none"
-                        isAnimationActive
-                        animationDuration={900}
-                        onMouseLeave={() => setHoveredWeeklySlice(null)}
-                      >
-                        {displayPie.map((entry, i) => (
-                          <Cell
-                            key={i}
-                            fill={entry.color}
-                            className="transition-all cursor-pointer hover:opacity-85"
-                            onMouseEnter={() => entry.name !== 'No Data' && setHoveredWeeklySlice(entry)}
-                          />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  {/* Dynamic Centre label - No overlapping tooltip */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200">
-                    {hoveredWeeklySlice ? (
-                      <>
-                        <span className="text-4xl font-black tabular-nums leading-none" style={{ color: hoveredWeeklySlice.color }}>
-                          {hoveredWeeklySlice.value}
-                        </span>
-                        <span className="text-[11px] font-extrabold uppercase tracking-wider mt-1.5" style={{ color: hoveredWeeklySlice.color }}>
-                          {hoveredWeeklySlice.name} ({total > 0 ? Math.round((hoveredWeeklySlice.value / total) * 100) : 0}%)
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-4xl font-black text-slate-800 dark:text-white tabular-nums leading-none">{rate}%</span>
-                        <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1.5">
-                          {chartPeriod === 'week' ? 'Weekly' : chartPeriod === 'month' ? 'Monthly' : 'Yearly'} Rate
-                        </span>
-                      </>
-                    )}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            {[
+              {
+                label: `Present (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+                value: (periodStats || yearlyStats)?.present || 0,
+                icon: <CheckCircle size={20} className="text-[#10B981]" />,
+                bg: 'bg-emerald-50 dark:bg-emerald-950/20'
+              },
+              {
+                label: `Late (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+                value: (periodStats || yearlyStats)?.late || 0,
+                icon: <Clock size={20} className="text-amber-500" />,
+                bg: 'bg-amber-50 dark:bg-amber-950/20'
+              },
+              {
+                label: `Absent (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+                value: (periodStats || yearlyStats)?.absent || 0,
+                icon: <XCircle size={20} className="text-red-500" />,
+                bg: 'bg-red-50 dark:bg-red-950/20'
+              },
+              {
+                label: `Half Day (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+                value: (periodStats || yearlyStats)?.halfDay || 0,
+                icon: <Sun size={20} className="text-blue-500" />,
+                bg: 'bg-blue-50 dark:bg-blue-950/20'
+              },
+              {
+                label: `Leave (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
+                value: (periodStats || yearlyStats)?.leave || 0,
+                icon: <CalendarIcon size={20} className="text-purple-500" />,
+                bg: 'bg-purple-50 dark:bg-purple-950/20'
+              }
+            ].map((card, i) => (
+              <div
+                key={i}
+                className="group bg-white dark:bg-slate-900 p-5 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 flex flex-col justify-between"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <div className={`p-2.5 rounded-xl ${card.bg}`}>
+                    {card.icon}
                   </div>
+                  {/* Select removed from here */}
                 </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{card.label}</p>
+                  <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-1 tabular-nums">{card.value}</h2>
+                </div>
+              </div>
+            ))}
+          </div>
 
-                {/* Legend Table */}
-                <div className="flex-1 w-full space-y-4">
-                  {pieData.map((d, i) => {
-                    const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
-                    const isHovered = hoveredWeeklySlice?.name === d.name;
-                    return (
-                      <div
-                        key={i}
-                        className={`p-1.5 rounded-xl transition-all cursor-pointer ${isHovered ? 'bg-slate-50 dark:bg-slate-800/60 scale-[1.02]' : ''}`}
-                        onMouseEnter={() => setHoveredWeeklySlice(d)}
-                        onMouseLeave={() => setHoveredWeeklySlice(null)}
-                      >
-                        <div className="flex items-center gap-3 mb-1.5">
-                          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
-                          <span className={`text-sm flex-1 transition-colors ${isHovered ? 'font-black text-slate-900 dark:text-white' : 'font-semibold text-slate-600 dark:text-slate-300'}`}>
-                            {d.name}
-                          </span>
-                          <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">({pct}%)</span>
-                          <span className="text-sm font-black text-slate-800 dark:text-white tabular-nums">{d.value}</span>
-                        </div>
-                        {/* Progress bar */}
-                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full ml-6">
-                          <div
-                            className="h-full rounded-full transition-all duration-700"
-                            style={{ width: `${pct}%`, backgroundColor: d.color }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium ml-6 mt-1">
-                    Total this {statsPeriod === 'week' ? 'week' : statsPeriod === 'month' ? 'month' : 'year'}: <span className="font-black text-slate-700 dark:text-slate-300">{total}</span> days
+          {/* ── MAIN CONTENT AREA ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            {/* Weekly Attendance — Donut Pie Chart (2/3 width) */}
+            <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 flex flex-col justify-between">
+              {/* Header */}
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
+                    {chartPeriod === 'week' ? 'Weekly' : chartPeriod === 'month' ? 'Monthly' : 'Yearly'} Attendance
+                  </h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                    This {chartPeriod === 'week' ? "week's" : chartPeriod === 'month' ? "month's" : "year's"} attendance breakdown
                   </p>
                 </div>
-
-              </div>
-            );
-          })()}
-        </div>
-
-        {/* Clock In / Clock Out console (1/3 width) */}
-        <div className="lg:col-span-1 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 flex flex-col justify-between">
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Quick Actions</h3>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 uppercase tracking-wider">Attendance console</p>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={handleCheckIn}
-                disabled={session?.isRunning || actionLoading}
-                className="flex items-center justify-center gap-2.5 h-12 w-full rounded-xl border-none bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-40 transition-all font-bold text-xs cursor-pointer shadow-lg shadow-emerald-500/10 hover:scale-[1.01]"
-              >
-                <Play size={15} fill="currentColor" />
-                <span>Check In</span>
-              </button>
-
-              <button
-                onClick={handleCheckOut}
-                disabled={!session?.isRunning || actionLoading}
-                className="flex items-center justify-center gap-2.5 h-12 w-full rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950 text-slate-700 dark:text-slate-300 disabled:opacity-40 transition-all font-bold text-xs cursor-pointer bg-white dark:bg-slate-900 hover:scale-[1.01]"
-              >
-                <Square size={12} fill="currentColor" />
-                <span>Check Out</span>
-              </button>
-
-              <button
-                onClick={() => setIsCorrectionModalOpen(true)}
-                className="flex items-center justify-center gap-2.5 h-12 w-full rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950 text-slate-700 dark:text-slate-300 transition-all font-bold text-xs cursor-pointer bg-slate-50 dark:bg-slate-950/20 hover:scale-[1.01]"
-              >
-                <FileClock size={15} className="text-emerald-500" />
-                <span>Request Correction</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-8 bg-slate-50 dark:bg-slate-950/40 p-4.5 rounded-2xl border border-slate-200/50 dark:border-slate-800/50">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">Current Session</span>
-            <div className="flex items-baseline justify-between mt-2.5">
-              <h4 className="font-mono text-3xl font-black tracking-widest text-slate-900 dark:text-white tabular-nums">
-                {session ? formatTimer(timerSeconds) : '00:00:00'}
-              </h4>
-              <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wide ${session ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-[#10B981]' : 'bg-slate-200/60 text-slate-500 dark:bg-slate-900 dark:text-slate-400'
-                }`}>
-                {session ? 'Active' : 'Inactive'}
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2 font-medium">
-              {session ? `Started at ${new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Session inactive'}
-            </p>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ── MODAL: REQUEST CORRECTION ── */}
-      {isCorrectionModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setIsCorrectionModalOpen(false)} />
-
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-50 animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Request Clock Correction</h3>
-              <button
-                onClick={() => setIsCorrectionModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-slate-105 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 border-none bg-transparent cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCorrectionSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Date Node</label>
-                <input
-                  type="date"
-                  value={correctionForm.date}
-                  onChange={(e) => setCorrectionForm({ ...correctionForm, date: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Requested Clock-In</label>
-                  <input
-                    type="time"
-                    value={correctionForm.clockIn}
-                    onChange={(e) => setCorrectionForm({ ...correctionForm, clockIn: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-955 text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Requested Clock-Out</label>
-                  <input
-                    type="time"
-                    value={correctionForm.clockOut}
-                    onChange={(e) => setCorrectionForm({ ...correctionForm, clockOut: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-955 text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none"
-                  />
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                  {['week', 'month', 'year'].map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setChartPeriod(p)}
+                      className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${chartPeriod === p
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Reason / Justification</label>
-                <textarea
-                  placeholder="Explain why regularization is required..."
-                  rows="3"
-                  value={correctionForm.reason}
-                  onChange={(e) => setCorrectionForm({ ...correctionForm, reason: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-955 text-slate-850 dark:text-slate-100 text-xs font-semibold focus:outline-none resize-none"
-                />
+              {/* Donut + Legend */}
+              {(() => {
+                const activeData = chartStats || {};
+                const totals = {
+                  Present: activeData.present || 0,
+                  Late: activeData.late || 0,
+                  'Half Day': activeData.halfDay || 0,
+                  Leave: activeData.leave || 0,
+                  Absent: activeData.absent || 0,
+                };
+
+                const pieData = [
+                  { name: 'Present', value: totals.Present, color: '#10B981' },
+                  { name: 'Late', value: totals.Late, color: '#F59E0B' },
+                  { name: 'Half Day', value: totals['Half Day'], color: '#3B82F6' },
+                  { name: 'Leave', value: totals.Leave, color: '#8B5CF6' },
+                  { name: 'Absent', value: totals.Absent, color: '#EF4444' },
+                ];
+
+                const total = totals.Present + totals.Late + totals['Half Day'] + totals.Leave + totals.Absent;
+                const working = totals.Present + totals.Late + totals['Half Day'];
+                const rate = total > 0 ? Math.round((working / total) * 100) : 0;
+                const activePie = pieData.filter(d => d.value > 0);
+                const displayPie = activePie.length > 0 ? activePie : [{ name: 'No Data', value: 1, color: '#e2e8f0' }];
+
+                return (
+                  <div className="flex flex-col sm:flex-row items-center gap-8 flex-1 justify-center">
+
+                    {/* Donut */}
+                    <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={displayPie}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={72}
+                            outerRadius={98}
+                            paddingAngle={activePie.length > 1 ? 4 : 0}
+                            dataKey="value"
+                            stroke="none"
+                            isAnimationActive
+                            animationDuration={900}
+                            onMouseLeave={() => setHoveredWeeklySlice(null)}
+                          >
+                            {displayPie.map((entry, i) => (
+                              <Cell
+                                key={i}
+                                fill={entry.color}
+                                className="transition-all cursor-pointer hover:opacity-85"
+                                onMouseEnter={() => entry.name !== 'No Data' && setHoveredWeeklySlice(entry)}
+                              />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                      {/* Dynamic Centre label - No overlapping tooltip */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200">
+                        {hoveredWeeklySlice ? (
+                          <>
+                            <span className="text-4xl font-black tabular-nums leading-none" style={{ color: hoveredWeeklySlice.color }}>
+                              {hoveredWeeklySlice.value}
+                            </span>
+                            <span className="text-[11px] font-extrabold uppercase tracking-wider mt-1.5" style={{ color: hoveredWeeklySlice.color }}>
+                              {hoveredWeeklySlice.name} ({total > 0 ? Math.round((hoveredWeeklySlice.value / total) * 100) : 0}%)
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-4xl font-black text-slate-800 dark:text-white tabular-nums leading-none">{rate}%</span>
+                            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1.5">
+                              {chartPeriod === 'week' ? 'Weekly' : chartPeriod === 'month' ? 'Monthly' : 'Yearly'} Rate
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Legend Table */}
+                    <div className="flex-1 w-full space-y-4">
+                      {pieData.map((d, i) => {
+                        const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
+                        const isHovered = hoveredWeeklySlice?.name === d.name;
+                        return (
+                          <div
+                            key={i}
+                            className={`p-1.5 rounded-xl transition-all cursor-pointer ${isHovered ? 'bg-slate-50 dark:bg-slate-800/60 scale-[1.02]' : ''}`}
+                            onMouseEnter={() => setHoveredWeeklySlice(d)}
+                            onMouseLeave={() => setHoveredWeeklySlice(null)}
+                          >
+                            <div className="flex items-center gap-3 mb-1.5">
+                              <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                              <span className={`text-sm flex-1 transition-colors ${isHovered ? 'font-black text-slate-900 dark:text-white' : 'font-semibold text-slate-600 dark:text-slate-300'}`}>
+                                {d.name}
+                              </span>
+                              <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">({pct}%)</span>
+                              <span className="text-sm font-black text-slate-800 dark:text-white tabular-nums">{d.value}</span>
+                            </div>
+                            {/* Progress bar */}
+                            <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full ml-6">
+                              <div
+                                className="h-full rounded-full transition-all duration-700"
+                                style={{ width: `${pct}%`, backgroundColor: d.color }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium ml-6 mt-1">
+                        Total this {statsPeriod === 'week' ? 'week' : statsPeriod === 'month' ? 'month' : 'year'}: <span className="font-black text-slate-700 dark:text-slate-300">{total}</span> days
+                      </p>
+                    </div>
+
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Clock In / Clock Out console (1/3 width) */}
+            <div className="lg:col-span-1 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 flex flex-col justify-between">
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Quick Actions</h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 uppercase tracking-wider">Attendance console</p>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={handleCheckIn}
+                    disabled={session?.isRunning || actionLoading}
+                    className="flex items-center justify-center gap-2.5 h-12 w-full rounded-xl border-none bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-40 transition-all font-bold text-xs cursor-pointer shadow-lg shadow-emerald-500/10 hover:scale-[1.01]"
+                  >
+                    <Play size={15} fill="currentColor" />
+                    <span>Check In</span>
+                  </button>
+
+                  <button
+                    onClick={handleCheckOut}
+                    disabled={!session?.isRunning || actionLoading}
+                    className="flex items-center justify-center gap-2.5 h-12 w-full rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950 text-slate-700 dark:text-slate-300 disabled:opacity-40 transition-all font-bold text-xs cursor-pointer bg-white dark:bg-slate-900 hover:scale-[1.01]"
+                  >
+                    <Square size={12} fill="currentColor" />
+                    <span>Check Out</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsCorrectionModalOpen(true)}
+                    className="flex items-center justify-center gap-2.5 h-12 w-full rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950 text-slate-700 dark:text-slate-300 transition-all font-bold text-xs cursor-pointer bg-slate-50 dark:bg-slate-950/20 hover:scale-[1.01]"
+                  >
+                    <FileClock size={15} className="text-emerald-500" />
+                    <span>Request Correction</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="flex justify-end gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCorrectionModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 bg-transparent cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-[#10B981] hover:bg-emerald-600 text-white rounded-xl text-xs font-bold border-none cursor-pointer"
-                >
-                  Submit Request
-                </button>
+              <div className="mt-8 bg-slate-50 dark:bg-slate-950/40 p-4.5 rounded-2xl border border-slate-200/50 dark:border-slate-800/50">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">Current Session</span>
+                <div className="flex items-baseline justify-between mt-2.5">
+                  <h4 className="font-mono text-3xl font-black tracking-widest text-slate-900 dark:text-white tabular-nums">
+                    {session ? formatTimer(timerSeconds) : '00:00:00'}
+                  </h4>
+                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wide ${session ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-[#10B981]' : 'bg-slate-200/60 text-slate-500 dark:bg-slate-900 dark:text-slate-400'
+                    }`}>
+                    {session ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2 font-medium">
+                  {session ? `Started at ${new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Session inactive'}
+                </p>
               </div>
-            </form>
+            </div>
+
           </div>
-        </div>
-      )}
+
+          {/* ── MODAL: REQUEST CORRECTION ── */}
+          {isCorrectionModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setIsCorrectionModalOpen(false)} />
+
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-50 animate-in zoom-in-95 duration-200">
+                <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Request Clock Correction</h3>
+                  <button
+                    onClick={() => setIsCorrectionModalOpen(false)}
+                    className="p-1 rounded-lg hover:bg-slate-105 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 border-none bg-transparent cursor-pointer"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleCorrectionSubmit} className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Date Node</label>
+                    <input
+                      type="date"
+                      value={correctionForm.date}
+                      onChange={(e) => setCorrectionForm({ ...correctionForm, date: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Requested Clock-In</label>
+                      <input
+                        type="time"
+                        value={correctionForm.clockIn}
+                        onChange={(e) => setCorrectionForm({ ...correctionForm, clockIn: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-955 text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Requested Clock-Out</label>
+                      <input
+                        type="time"
+                        value={correctionForm.clockOut}
+                        onChange={(e) => setCorrectionForm({ ...correctionForm, clockOut: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-955 text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Reason / Justification</label>
+                    <textarea
+                      placeholder="Explain why regularization is required..."
+                      rows="3"
+                      value={correctionForm.reason}
+                      onChange={(e) => setCorrectionForm({ ...correctionForm, reason: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-955 text-slate-850 dark:text-slate-100 text-xs font-semibold focus:outline-none resize-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2.5 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsCorrectionModalOpen(false)}
+                      className="px-4 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 bg-transparent cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#10B981] hover:bg-emerald-600 text-white rounded-xl text-xs font-bold border-none cursor-pointer"
+                    >
+                      Submit Request
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
         </>
       ) : (

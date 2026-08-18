@@ -584,8 +584,8 @@ const AdminDashboard = () => {
       </div>
 
       {/* 5. Fourth Row (Quick Actions, Pending Approvals) */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Card className="p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <Card className="p-6 lg:col-span-4 xl:col-span-4">
           <h3 className="font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
           <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
             {[
@@ -664,7 +664,7 @@ const AdminDashboard = () => {
           </div>
         </Card>
 
-        <Card className="p-6 flex flex-col">
+        <Card className="p-6 flex flex-col lg:col-span-8 xl:col-span-8">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-gray-900 dark:text-white">Pending Approvals</h3>
             <button onClick={() => navigate(`/${pathRole}/leave`)} className="text-xs font-bold text-[#00a76b] hover:underline cursor-pointer">View All</button>
