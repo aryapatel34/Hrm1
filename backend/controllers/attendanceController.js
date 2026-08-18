@@ -141,6 +141,8 @@ exports.checkOut = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
 // @desc    Override/Reopen Checkout (HR / Manager / Admin)
 // @route   POST /api/attendance/override-checkout/:userId
 exports.overrideCheckout = async (req, res) => {
