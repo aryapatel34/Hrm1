@@ -254,6 +254,23 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
 
       // Notify all open pages/tabs to stop active timers immediately
       window.dispatchEvent(new CustomEvent('desktop_tracker_stopped', { detail: { logoutTime } }));
+      window.dispatchEvent(new CustomEvent('timerStatusChanged', { detail: { status: 'stopped' } }));
+    });
+
+    socket.on('timer_started', (data) => {
+      window.dispatchEvent(new CustomEvent('timerStatusChanged', { detail: { status: 'started', ...data } }));
+    });
+
+    socket.on('timer_resumed', (data) => {
+      window.dispatchEvent(new CustomEvent('timerStatusChanged', { detail: { status: 'resumed', ...data } }));
+    });
+
+    socket.on('timer_paused', (data) => {
+      window.dispatchEvent(new CustomEvent('timerStatusChanged', { detail: { status: 'paused', ...data } }));
+    });
+
+    socket.on('timer_stopped', (data) => {
+      window.dispatchEvent(new CustomEvent('timerStatusChanged', { detail: { status: 'stopped', ...data } }));
     });
 
     return () => socket.disconnect();

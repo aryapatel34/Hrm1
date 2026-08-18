@@ -51,6 +51,15 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
 
   useEffect(() => {
     fetchStatus();
+
+    const handleSync = () => fetchStatus();
+    window.addEventListener('timerStatusChanged', handleSync);
+    window.addEventListener('focus', handleSync);
+
+    return () => {
+      window.removeEventListener('timerStatusChanged', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
   }, []);
 
   const handleCheckIn = async () => {
