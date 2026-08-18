@@ -17,6 +17,7 @@ import {
 
 
 import QuickActionsRow from '../../components/QuickActionsRow';
+import ActionConfirmModal from '../../components/ActionConfirmModal';
 
 const COLORS = ['#00a76b', '#3b82f6', '#f43f5e', '#f59e0b', '#8b5cf6', '#64748b'];
 
@@ -236,22 +237,40 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleOverrideLeave = async (id, currentStatus) => {
+  const [overrideModal, setOverrideModal] = useState({
+    isOpen: false,
+    leaveId: null,
+    currentStatus: '',
+    targetStatus: '',
+    loading: false
+  });
+
+  const handleOverrideLeave = (id, currentStatus) => {
     const targetStatus = currentStatus === 'approved' ? 'rejected' : 'approved';
-    const confirmMsg = `Are you sure you want to override the decision from ${currentStatus.toUpperCase()} to ${targetStatus.toUpperCase()}?`;
-    if (!window.confirm(confirmMsg)) return;
+    setOverrideModal({
+      isOpen: true,
+      leaveId: id,
+      currentStatus,
+      targetStatus,
+      loading: false
+    });
+  };
 
-    const reason = window.prompt("Enter reason for override:");
-    if (reason === null) return;
-
+  const confirmOverrideLeave = async (reason) => {
     try {
+      setOverrideModal(prev => ({ ...prev, loading: true }));
       const token = sessionStorage.getItem('token');
-      await axios.put(`/api/leaves/override/${id}`, { targetStatus, reason }, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.put(`/api/leaves/override/${overrideModal.leaveId}`, {
+        targetStatus: overrideModal.targetStatus,
+        reason
+      }, { headers: { Authorization: `Bearer ${token}` } });
       toast.success('Leave status overridden successfully');
-      fetchData(); // refresh data
+      setOverrideModal({ isOpen: false, leaveId: null, currentStatus: '', targetStatus: '', loading: false });
+      fetchData();
     } catch (err) {
       console.error('Error overriding leave:', err);
       toast.error(err.response?.data?.message || 'Failed to override leave');
+      setOverrideModal(prev => ({ ...prev, loading: false }));
       fetchData();
     }
   };
@@ -323,27 +342,90 @@ const AdminDashboard = () => {
       {/* 2. Stats Cards Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
         {[
-          { label: 'Total Employees', val: stats.totalEmployees, subtext: '+12 this month', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50', hoverBorder: 'hover:border-blue-400 hover:shadow-blue-500/10' },
-          { label: 'Active Employees', val: stats.activeEmployees, subtext: `${stats.activeEmployeesPercent}% of total`, icon: CheckCircle, color: 'text-[#00a76b]', bg: 'bg-green-50', hoverBorder: 'hover:border-[#00a76b] hover:shadow-green-500/10' },
-          { label: 'New Joiners', val: stats.newJoiners, subtext: '+3 this month', icon: UserPlus, color: 'text-indigo-500', bg: 'bg-indigo-50', hoverBorder: 'hover:border-indigo-400 hover:shadow-indigo-500/10' },
-          { label: 'Employees on Leave', val: stats.employeesOnLeave, subtext: `${stats.employeesOnLeavePercent}% of total`, icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50', hoverBorder: 'hover:border-orange-400 hover:shadow-orange-500/10' },
-          { label: 'Pending Leave', val: stats.pendingLeaveApprovals, subtext: 'Requires your action', icon: Clock, color: 'text-red-500', bg: 'bg-red-50', hoverBorder: 'hover:border-red-400 hover:shadow-red-500/10' },
-        ].map((stat, i) => (
-          <Card key={i} className={`py-3.5 px-4 flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md ${stat.hoverBorder}`}>
-            <div className="flex items-center gap-2.5 mb-2.5">
-              <div className={`inline-flex p-2 rounded-lg shrink-0 ${stat.bg} ${stat.color}`}>
-                <stat.icon size={20} strokeWidth={2.5} />
+          { 
+            label: 'Total Employees', 
+            val: stats.totalEmployees, 
+            subtext: '+12 this month', 
+            icon: Users, 
+            color: 'text-blue-600 dark:text-blue-400', 
+            bg: 'bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/40', 
+            badge: 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/50 dark:border-blue-800/40',
+            borderColor: '#3b82f6',
+            glowColor: 'rgba(59, 130, 246, 0.45)'
+          },
+          { 
+            label: 'Active Employees', 
+            val: stats.activeEmployees, 
+            subtext: `${stats.activeEmployeesPercent}% of total`, 
+            icon: CheckCircle, 
+            color: 'text-emerald-600 dark:text-emerald-400', 
+            bg: 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40', 
+            badge: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/50 dark:border-emerald-800/40',
+            borderColor: '#10b981',
+            glowColor: 'rgba(16, 185, 129, 0.45)'
+          },
+          { 
+            label: 'New Joiners', 
+            val: stats.newJoiners, 
+            subtext: '+3 this month', 
+            icon: UserPlus, 
+            color: 'text-indigo-600 dark:text-indigo-400', 
+            bg: 'bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/40', 
+            badge: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/50 dark:border-indigo-800/40',
+            borderColor: '#6366f1',
+            glowColor: 'rgba(99, 102, 241, 0.45)'
+          },
+          { 
+            label: 'Employees on Leave', 
+            val: stats.employeesOnLeave, 
+            subtext: `${stats.employeesOnLeavePercent}% of total`, 
+            icon: Calendar, 
+            color: 'text-amber-600 dark:text-amber-400', 
+            bg: 'bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900/40', 
+            badge: 'text-amber-600 dark:text-amber-400 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/50 dark:border-amber-800/40',
+            borderColor: '#f59e0b',
+            glowColor: 'rgba(245, 158, 11, 0.45)'
+          },
+          { 
+            label: 'Pending Leave', 
+            val: stats.pendingLeaveApprovals, 
+            subtext: 'Requires action', 
+            icon: Clock, 
+            color: 'text-rose-600 dark:text-rose-400', 
+            bg: 'bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900/40', 
+            badge: 'text-rose-600 dark:text-rose-400 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/50 dark:border-rose-800/40',
+            borderColor: '#ef4444',
+            glowColor: 'rgba(239, 68, 68, 0.45)'
+          },
+        ].map((stat, i) => {
+          const isHovered = hoveredStatCard === i;
+          return (
+            <Card 
+              key={i} 
+              onMouseEnter={() => setHoveredStatCard(i)}
+              onMouseLeave={() => setHoveredStatCard(null)}
+              style={{
+                borderColor: isHovered ? stat.borderColor : undefined,
+                borderWidth: isHovered ? '2px' : undefined,
+                boxShadow: isHovered ? `0 0 16px ${stat.glowColor}` : undefined
+              }}
+              className="py-3.5 px-4 flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm"
+            >
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <div className={`inline-flex p-2 rounded-xl shrink-0 ${stat.bg}`}>
+                  <stat.icon size={18} strokeWidth={2.5} className={stat.color} />
+                </div>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider leading-tight">{stat.label}</p>
               </div>
-              <p className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider leading-tight">{stat.label}</p>
-            </div>
-            <div className="flex items-baseline gap-3 mt-1 flex-nowrap overflow-hidden">
-              <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none shrink-0">{stat.val}</h3>
-              <p className={`text-[11px] font-bold whitespace-nowrap shrink-0 ${stat.subtext.includes('+') ? 'text-green-600 dark:text-green-500' : 'text-gray-400 dark:text-gray-500'}`}>
-                {stat.subtext}
-              </p>
-            </div>
-          </Card>
-        ))}
+              <div className="flex items-center justify-between gap-2 mt-1 flex-nowrap overflow-hidden">
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none shrink-0">{stat.val}</h3>
+                <span className={`text-[10px] font-extrabold whitespace-nowrap shrink-0 px-2 py-0.5 rounded-full ${stat.badge}`}>
+                  {stat.subtext}
+                </span>
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
       {/* 3. Quick Actions Row */}
@@ -1213,7 +1295,21 @@ const AdminDashboard = () => {
         )
       }
 
-    </div >
+      {/* Override Decision Confirmation Modal */}
+      <ActionConfirmModal
+        isOpen={overrideModal.isOpen}
+        onClose={() => setOverrideModal({ isOpen: false, leaveId: null, currentStatus: '', targetStatus: '', loading: false })}
+        onConfirm={confirmOverrideLeave}
+        title="Override Leave Decision"
+        subtitle={`Are you sure you want to override the decision to ${overrideModal.targetStatus?.toUpperCase()}?`}
+        currentStatus={overrideModal.currentStatus}
+        targetStatus={overrideModal.targetStatus}
+        confirmText={`Override to ${overrideModal.targetStatus?.toUpperCase()}`}
+        confirmVariant={overrideModal.targetStatus === 'rejected' ? 'danger' : 'success'}
+        loading={overrideModal.loading}
+      />
+
+    </div>
   );
 };
 

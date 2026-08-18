@@ -3,7 +3,7 @@ import axios from 'axios';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
-const LeaveAllocationSummary = () => {
+const LeaveAllocationSummary = ({ refreshTrigger }) => {
   const [allocationData, setAllocationData] = useState([]);
   const [totalDays, setTotalDays] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -30,7 +30,7 @@ const LeaveAllocationSummary = () => {
       }
     };
     fetchData();
-  }, [token, filter]);
+  }, [token, filter, refreshTrigger]);
 
   return (
     <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col h-full transition-all duration-200 hover:border-indigo-500">

@@ -28,9 +28,8 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", has
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full border rounded-lg py-2.5 px-4 bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white text-xs font-semibold text-left flex justify-between items-center focus:outline-none focus:border-blue-500 cursor-pointer ${
-          hasError ? 'border-[#ff4f00]' : 'border-gray-300 dark:border-gray-600'
-        }`}
+        className={`w-full border rounded-lg py-2.5 px-4 bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white text-xs font-semibold text-left flex justify-between items-center focus:outline-none focus:border-blue-500 cursor-pointer ${hasError ? 'border-[#ff4f00]' : 'border-gray-300 dark:border-gray-600'
+          }`}
       >
         <span className={selectedOption ? "text-gray-900 dark:text-white" : "text-gray-400"}>
           {selectedOption ? selectedOption.label : placeholder}
@@ -52,11 +51,10 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", has
                   onChange(opt.value);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer ${
-                  value === opt.value 
-                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20' 
+                className={`w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer ${value === opt.value
+                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20'
                     : 'text-gray-700 dark:text-gray-300'
-                }`}
+                  }`}
               >
                 {opt.label}
               </button>
@@ -126,6 +124,7 @@ const LeaveManagement = ({ isChild = false }) => {
   // NEW STATE: reference date for the dashboard and tabs
   const [refDate, setRefDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState('All');
+  const [hoveredKpiIndex, setHoveredKpiIndex] = useState(null);
 
   const token = sessionStorage.getItem('token');
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -208,8 +207,12 @@ const LeaveManagement = ({ isChild = false }) => {
 
   const calculateDays = (start, end) => {
     if (!start || !end) return 0;
-    const diff = new Date(end).getTime() - new Date(start).getTime();
-    return Math.max(1, Math.ceil(diff / (1000 * 3600 * 24)));
+    const s = new Date(start);
+    const e = new Date(end);
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
+    const utc1 = Date.UTC(s.getFullYear(), s.getMonth(), s.getDate());
+    const utc2 = Date.UTC(e.getFullYear(), e.getMonth(), e.getDate());
+    return Math.max(1, Math.floor((utc2 - utc1) / (1000 * 3600 * 24)) + 1);
   };
 
   const handleSubmit = async (e) => {
@@ -344,25 +347,49 @@ const LeaveManagement = ({ isChild = false }) => {
     });
   };
 
-  const approvedLeaves = leaves.filter(l => l.status === 'approved');
+  const getCatKey = (typeStr) => {
+    if (!typeStr) return '';
+    const str = String(typeStr).toLowerCase().trim();
+    if (str.includes('casual') || str.includes('cl') || str === 'cl') return 'casual';
+    if (str.includes('sick') || str.includes('sl') || str === 'sl') return 'sick';
+    if (str.includes('earned') || str.includes('el') || str.includes('annual') || str === 'el') return 'earned';
+    if (str.includes('comp') || str === 'co') return 'compoff';
+    if (str.includes('optional') || str.includes('oh')) return 'optional';
+    return str;
+  };
 
-  const usedEarned = approvedLeaves.filter(l => l.leaveType === 'earned').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
-  const usedSick = approvedLeaves.filter(l => l.leaveType === 'sick').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
-  const usedCasual = approvedLeaves.filter(l => l.leaveType === 'casual').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
+  const getLeaveDays = (l) => {
+    if (!l) return 0;
+    if (l.startDate && l.endDate) {
+      return calculateDays(l.startDate, l.endDate);
+    }
+    return l.totalDays || 1;
+  };
 
-  const sickBalance = Math.max(0, QUOTAS.sick - usedSick);
-  const annualBalance = Math.max(0, QUOTAS.earned - usedEarned);
+  const approvedLeaves = leaves.filter(l => l.status?.toLowerCase() === 'approved');
 
-  const clAllowance = policies.find(p => p.type === 'casual' || p.name?.toLowerCase().includes('casual'))?.annualAllowance ?? 12;
-  const slAllowance = policies.find(p => p.type === 'sick' || p.name?.toLowerCase().includes('sick'))?.annualAllowance ?? 10;
-  const elAllowance = policies.find(p => p.type === 'earned' || p.name?.toLowerCase().includes('earned'))?.annualAllowance ?? 20;
-  const cfEarned = policies.find(p => p.type === 'earned' || p.name?.toLowerCase().includes('earned'))?.carryForwardLimit ?? 5;
+  const usedEarned = approvedLeaves.filter(l => getCatKey(l.leaveType) === 'earned').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
+  const usedSick = approvedLeaves.filter(l => getCatKey(l.leaveType) === 'sick').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
+  const usedCasual = approvedLeaves.filter(l => getCatKey(l.leaveType) === 'casual').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
+  const usedCompOff = approvedLeaves.filter(l => getCatKey(l.leaveType) === 'compoff').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
+  const usedOptional = approvedLeaves.filter(l => getCatKey(l.leaveType) === 'optional').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
 
-  const totalAllocated = QUOTAS.earned + QUOTAS.sick + QUOTAS.casual + QUOTAS.compOff + QUOTAS.optionalHoliday;
-  const totalUsed = usedEarned + usedSick + usedCasual; // simplistic sum for demo
-  const totalBalance = totalAllocated - totalUsed;
+  const casualBalance = Math.max(0, (QUOTAS.casual || 12) - usedCasual);
+  const sickBalance = Math.max(0, (QUOTAS.sick || 10) - usedSick);
+  const annualBalance = Math.max(0, (QUOTAS.earned || 20) - usedEarned);
+  const compOffBalance = Math.max(0, (QUOTAS.compOff || 3) - usedCompOff);
+  const optionalBalance = Math.max(0, (QUOTAS.optionalHoliday || 1) - usedOptional);
+
+  const clAllowance = policies.find(p => getCatKey(p.type || p.name) === 'casual')?.annualAllowance ?? (QUOTAS.casual || 12);
+  const slAllowance = policies.find(p => getCatKey(p.type || p.name) === 'sick')?.annualAllowance ?? (QUOTAS.sick || 10);
+  const elAllowance = policies.find(p => getCatKey(p.type || p.name) === 'earned')?.annualAllowance ?? (QUOTAS.earned || 20);
+  const cfEarned = policies.find(p => getCatKey(p.type || p.name) === 'earned')?.carryForwardLimit ?? 5;
+
+  const totalAllocated = (QUOTAS.earned || 20) + (QUOTAS.sick || 10) + (QUOTAS.casual || 12) + (QUOTAS.compOff || 3) + (QUOTAS.optionalHoliday || 1);
+  const totalUsed = usedEarned + usedSick + usedCasual + usedOptional;
+  const totalBalance = Math.max(0, totalAllocated - totalUsed);
   const activeLeaveTypesCount = 5;
-  const pendingCount = leaves.filter(l => l.status === 'pending').length;
+  const pendingCount = leaves.filter(l => l.status?.toLowerCase() === 'pending' || l.status?.toLowerCase() === 'cancellation_pending').length;
 
   const currentMonth = refDate.getMonth();
   const currentYear = refDate.getFullYear();
@@ -490,7 +517,7 @@ const LeaveManagement = ({ isChild = false }) => {
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Leave Management</h1>
           <div className="flex flex-wrap items-center gap-3">
-            <button 
+            <button
               onClick={() => {
                 setFormErrors({});
                 setFormData({ leaveType: '', startDate: '', endDate: '', reason: '' });
@@ -505,39 +532,52 @@ const LeaveManagement = ({ isChild = false }) => {
       )}
 
       {/* 2. Summary Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
         {[
-          { title: 'Total Leave Balance', value: totalBalance, unit: 'Days', icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-100', hoverBorder: 'hover:border-purple-500 hover:shadow-purple-500/5', link: 'View Details' },
-          { title: 'Active Leave Types', value: activeLeaveTypesCount, unit: '', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-100', hoverBorder: 'hover:border-green-500 hover:shadow-green-500/5', link: 'View Types' },
-          { title: 'Total Leave Allocated', value: totalAllocated, unit: 'Days', icon: Clock, color: 'text-purple-600', bg: 'bg-purple-100', hoverBorder: 'hover:border-purple-500 hover:shadow-purple-500/5', link: 'View Allocation' },
-          { title: 'Leaves Taken (YTD)', value: totalUsed, unit: 'Days', icon: CalendarDays, color: 'text-blue-600', bg: 'bg-blue-100', hoverBorder: 'hover:border-blue-500 hover:shadow-blue-500/5', link: 'View Report' },
-          { title: 'Pending Requests', value: pendingCount, unit: pendingCount === 1 ? 'Request' : 'Requests', icon: User, color: 'text-orange-600', bg: 'bg-orange-100', hoverBorder: 'hover:border-orange-500 hover:shadow-orange-500/5', link: 'View Requests' }
-        ].map((card, idx) => (
-          <div key={idx} className={`bg-white dark:bg-[#111c18] py-2 px-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2.5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all group ${card.hoverBorder}`}>
-            <div className="flex items-center gap-2 min-w-0">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${card.bg} group-hover:scale-110 transition-transform duration-200`}>
-                <card.icon size={16} className={card.color} />
-              </div>
-              <div className="min-w-0 relative group">
-                <h3 className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider truncate cursor-help">{card.title}</h3>
-                <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover:block z-50 bg-gray-900 dark:bg-gray-750 text-white text-[9px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap pointer-events-none uppercase tracking-wider">
-                  {card.title}
+          { title: 'Total Leave Allocated', value: totalAllocated, unit: 'Days', icon: Clock, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/60 border border-purple-100 dark:border-purple-900/40', borderColor: '#a855f7', glowColor: 'rgba(168, 85, 247, 0.35)', link: 'View Allocation' },
+          { title: 'Total Leave Balance', value: totalBalance, unit: 'Days', icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/60 border border-purple-100 dark:border-purple-900/40', borderColor: '#a855f7', glowColor: 'rgba(168, 85, 247, 0.35)', link: 'View Details' },
+          { title: 'Leaves Taken (YTD)', value: totalUsed, unit: 'Days', icon: CalendarDays, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/40', borderColor: '#3b82f6', glowColor: 'rgba(59, 130, 246, 0.35)', link: 'View Report' },
+          { title: 'Pending Requests', value: pendingCount, unit: pendingCount === 1 ? 'Request' : 'Requests', icon: User, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/60 border border-amber-100 dark:border-amber-900/40', borderColor: '#f59e0b', glowColor: 'rgba(245, 158, 11, 0.35)', link: 'View Requests' }
+        ].map((card, idx) => {
+          const isHovered = hoveredKpiIndex === idx;
+          return (
+            <div
+              key={idx}
+              onMouseEnter={() => setHoveredKpiIndex(idx)}
+              onMouseLeave={() => setHoveredKpiIndex(null)}
+              style={{
+                borderColor: isHovered ? card.borderColor : (isDark ? '#1f2d26' : '#f1f5f9'),
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                boxShadow: isHovered ? `0 0 16px ${card.glowColor}` : undefined
+              }}
+              className="bg-white dark:bg-[#111c18] py-2 px-3 rounded-xl shadow-xs flex items-center justify-between gap-2.5 cursor-pointer transition-colors duration-200 group select-none"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${card.bg} group-hover:scale-110 transition-transform duration-200`}>
+                  <card.icon size={16} className={card.color} />
+                </div>
+                <div className="min-w-0 relative group">
+                  <h3 className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider truncate cursor-help">{card.title}</h3>
+                  <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover:block z-50 bg-gray-900 dark:bg-gray-750 text-white text-[9px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap pointer-events-none uppercase tracking-wider">
+                    {card.title}
+                  </div>
                 </div>
               </div>
+              <div className="flex items-baseline shrink-0 ml-2">
+                <span className="text-xl font-black text-gray-900 dark:text-white mr-1 leading-none">{card.value}</span>
+                {card.unit && <span className="text-[9px] font-bold text-gray-400 leading-none">{card.unit}</span>}
+              </div>
             </div>
-            <div className="flex items-baseline shrink-0 ml-2">
-              <span className="text-xl font-black text-gray-900 dark:text-white mr-1 leading-none">{card.value}</span>
-              {card.unit && <span className="text-[9px] font-bold text-gray-400 leading-none">{card.unit}</span>}
-            </div>
-          </div>
-        ))}
+          );
+        })}
         <ViewPolicyDrawer isOpen={isPolicyDrawerOpen} onClose={() => setIsPolicyDrawerOpen(false)} />
         <ViewHolidaysDrawer isOpen={isHolidaysDrawerOpen} onClose={() => setIsHolidaysDrawerOpen(false)} holidays={holidays} />
         <ViewUpcomingLeavesDrawer isOpen={isUpcomingLeavesDrawerOpen} onClose={() => setIsUpcomingLeavesDrawerOpen(false)} leaves={leaves} />
-        <ViewLeaveRequestsDrawer 
-          isOpen={isLeaveRequestsDrawerOpen} 
-          onClose={() => setIsLeaveRequestsDrawerOpen(false)} 
-          leaves={leaves} 
+        <ViewLeaveRequestsDrawer
+          isOpen={isLeaveRequestsDrawerOpen}
+          onClose={() => setIsLeaveRequestsDrawerOpen(false)}
+          leaves={leaves}
           onSelectLeave={(l) => {
             setSelectedLeave(l);
             setOpenedFromHistory(true);
@@ -571,10 +611,11 @@ const LeaveManagement = ({ isChild = false }) => {
               </thead>
               <tbody>
                 {[
-                  { name: 'Casual Leave (CL)', balance: QUOTAS.casual - usedCasual, used: usedCasual, total: QUOTAS.casual, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-100' },
-                  { name: 'Sick Leave (SL)', balance: sickBalance, used: usedSick, total: QUOTAS.sick, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-100' },
-                  { name: 'Earned Leave (EL)', balance: annualBalance, used: usedEarned, total: QUOTAS.earned, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-100' },
-                  { name: 'Optional Holiday (OH)', balance: QUOTAS.optionalHoliday, used: 0, total: QUOTAS.optionalHoliday, icon: FileText, color: 'text-pink-600', bg: 'bg-pink-100' }
+                  { name: 'Casual Leave (CL)', balance: casualBalance, used: usedCasual, total: QUOTAS.casual || 12, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/60 border border-purple-100 dark:border-purple-900/40' },
+                  { name: 'Sick Leave (SL)', balance: sickBalance, used: usedSick, total: QUOTAS.sick || 10, icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-100 dark:border-emerald-900/40' },
+                  { name: 'Earned Leave (EL)', balance: annualBalance, used: usedEarned, total: QUOTAS.earned || 20, icon: FileText, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/60 border border-amber-100 dark:border-amber-900/40' },
+                  { name: 'Compensatory Off (CO)', balance: compOffBalance, used: usedCompOff, total: QUOTAS.compOff || 3, icon: Clock, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/40' },
+                  { name: 'Optional Holiday (OH)', balance: optionalBalance, used: usedOptional, total: QUOTAS.optionalHoliday || 1, icon: FileText, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/60 border border-rose-100 dark:border-rose-900/40' }
                 ].map((row, idx) => (
                   <tr key={idx} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-[#162722]/50 transition-all duration-150 cursor-pointer">
                     <td className="px-4 py-2 flex items-center gap-3">
@@ -717,8 +758,8 @@ const LeaveManagement = ({ isChild = false }) => {
             <button onClick={() => setIsPolicyDrawerOpen(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">View Full Policy</button>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="py-2 px-3 border border-gray-100 dark:border-gray-850 hover:border-purple-500 dark:hover:border-purple-500 transition-colors rounded-xl flex items-center gap-3 cursor-pointer">
-              <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+            <div className="py-2 px-3 border border-gray-100 dark:border-gray-800 hover:border-purple-500 dark:hover:border-purple-500 transition-colors rounded-xl flex items-center gap-3 cursor-pointer">
+              <div className="w-7 h-7 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40 flex items-center justify-center shrink-0">
                 <Calendar size={14} />
               </div>
               <div>
@@ -728,8 +769,8 @@ const LeaveManagement = ({ isChild = false }) => {
                 </p>
               </div>
             </div>
-            <div className="py-2 px-3 border border-gray-100 dark:border-gray-850 hover:border-green-500 dark:hover:border-green-500 transition-colors rounded-xl flex items-center gap-3 cursor-pointer">
-              <div className="w-7 h-7 rounded-lg bg-green-100 text-green-600 flex items-center justify-center shrink-0">
+            <div className="py-2 px-3 border border-gray-100 dark:border-gray-800 hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors rounded-xl flex items-center gap-3 cursor-pointer">
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 flex items-center justify-center shrink-0">
                 <Clock size={14} />
               </div>
               <div>
@@ -793,8 +834,12 @@ const LeaveManagement = ({ isChild = false }) => {
                         return isNaN(d.getTime()) ? '' : ` - ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
                       })()}
                     </td>
-                    <td className="py-2 px-3 font-medium text-gray-700 dark:text-gray-300 capitalize whitespace-nowrap">{lv.leaveType} Leave</td>
-                    <td className="py-2 px-3 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">{lv.totalDays} {lv.totalDays === 1 ? 'Day' : 'Days'}</td>
+                    <td className="py-2 px-3 font-medium text-gray-700 dark:text-gray-300 capitalize whitespace-nowrap">
+                      {lv.leaveType ? (lv.leaveType.toLowerCase().endsWith('leave') ? lv.leaveType : `${lv.leaveType} Leave`) : 'Leave'}
+                    </td>
+                    <td className="py-2 px-3 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {getLeaveDays(lv)} {getLeaveDays(lv) === 1 ? 'Day' : 'Days'}
+                    </td>
                     <td className="py-2 px-3 text-gray-500 max-w-[200px] truncate">{lv.reason || '-'}</td>
                     <td className="py-2 px-3 whitespace-nowrap">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getStatusColor(lv.status)} capitalize`}>
@@ -832,18 +877,29 @@ const LeaveManagement = ({ isChild = false }) => {
               const hDate = new Date(h.date);
               const dateStr = hDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
               const dayStr = hDate.toLocaleDateString('en-GB', { weekday: 'long' });
+
+              const accentThemes = [
+                { pillar: 'bg-purple-500 dark:bg-purple-400', iconBg: 'bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400', bg: 'bg-slate-50/90 dark:bg-[#162420]/80 hover:bg-purple-50/60 dark:hover:bg-[#1e322c]' },
+                { pillar: 'bg-indigo-500 dark:bg-indigo-400', iconBg: 'bg-indigo-100 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400', bg: 'bg-slate-50/90 dark:bg-[#162420]/80 hover:bg-indigo-50/60 dark:hover:bg-[#1e322c]' },
+                { pillar: 'bg-pink-500 dark:bg-pink-400', iconBg: 'bg-pink-100 dark:bg-pink-950/70 text-pink-600 dark:text-pink-400', bg: 'bg-slate-50/90 dark:bg-[#162420]/80 hover:bg-pink-50/60 dark:hover:bg-[#1e322c]' },
+                { pillar: 'bg-emerald-500 dark:bg-emerald-400', iconBg: 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400', bg: 'bg-slate-50/90 dark:bg-[#162420]/80 hover:bg-emerald-50/60 dark:hover:bg-[#1e322c]' },
+                { pillar: 'bg-amber-500 dark:bg-amber-400', iconBg: 'bg-amber-100 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400', bg: 'bg-slate-50/90 dark:bg-[#162420]/80 hover:bg-amber-50/60 dark:hover:bg-[#1e322c]' }
+              ];
+              const theme = accentThemes[idx % accentThemes.length];
+
               return (
-                <div key={idx} className="flex items-center justify-between py-1.5 px-3 border border-gray-100 dark:border-gray-850 rounded-xl transition-all duration-200 hover:border-purple-500 hover:bg-purple-50/20 dark:hover:bg-purple-950/10 cursor-pointer hover:shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center shrink-0">
+                <div key={idx} className={`flex items-center justify-between py-2 px-3 rounded-xl transition-all duration-200 cursor-pointer hover:shadow-md hover:translate-x-0.5 ${theme.bg}`}>
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-1.5 h-6 rounded-full shrink-0 ${theme.pillar}`} />
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${theme.iconBg}`}>
                       <Calendar size={14} />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black text-gray-900 dark:text-gray-100 leading-tight">{dateStr}</h4>
-                      <p className="text-[9px] text-gray-500 leading-none mt-0.5">{dayStr}</p>
+                      <h4 className="text-xs font-black text-gray-900 dark:text-white leading-tight">{dateStr}</h4>
+                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-none mt-0.5">{dayStr}</p>
                     </div>
                   </div>
-                  <div className="font-semibold text-xs text-gray-700 dark:text-gray-300 text-right">
+                  <div className="font-bold text-xs text-gray-900 dark:text-white text-right">
                     {h.name}
                   </div>
                 </div>
@@ -892,100 +948,100 @@ const LeaveManagement = ({ isChild = false }) => {
                 <form onSubmit={handleSubmit} noValidate className="flex-1 flex flex-col justify-between h-full overflow-hidden">
                   <div className="overflow-y-auto pr-1 flex-1 space-y-4 pb-2">
 
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Leave Type</label>
-                    <CustomSelect
-                      value={formData.leaveType}
-                      hasError={!!formErrors.leaveType}
-                      onChange={val => {
-                        setFormErrors(prev => ({ ...prev, leaveType: null }));
-                        if (val === 'comp-off') {
-                          setIsRequestModalOpen(false);
-                          setTimeout(() => setIsCompOffModalOpen(true), 100);
-                        } else if (val === 'on-duty') {
-                          setIsRequestModalOpen(false);
-                          setTimeout(() => setIsOnDutyModalOpen(true), 100);
-                        } else {
-                          setFormData({ ...formData, leaveType: val });
-                        }
-                      }}
-                      placeholder="Choose Leave Type"
-                      options={[
-                        { value: 'sick', label: 'Sick Leave (SL)' },
-                        { value: 'casual', label: 'Casual Leave (CL)' },
-                        { value: 'earned', label: 'Earned Leave (EL)' },
-                        { value: 'emergency', label: 'Emergency Leave' },
-                        { value: 'comp-off', label: 'Comp-Off' },
-                        { value: 'on-duty', label: 'On Duty' }
-                      ]}
-                    />
-                    {formErrors.leaveType && (
-                      <p className="text-[#ff4f00] text-[10px] font-bold leading-none mt-1">{formErrors.leaveType}</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2">
-                      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Start Date</label>
-                      <CustomDatePicker
-                        name="startDate"
-                        value={formData.startDate}
-                        onChange={e => {
-                          setFormErrors(prev => ({ ...prev, startDate: null }));
-                          setFormData({ ...formData, startDate: e.target.value });
+                      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Leave Type</label>
+                      <CustomSelect
+                        value={formData.leaveType}
+                        hasError={!!formErrors.leaveType}
+                        onChange={val => {
+                          setFormErrors(prev => ({ ...prev, leaveType: null }));
+                          if (val === 'comp-off') {
+                            setIsRequestModalOpen(false);
+                            setTimeout(() => setIsCompOffModalOpen(true), 100);
+                          } else if (val === 'on-duty') {
+                            setIsRequestModalOpen(false);
+                            setTimeout(() => setIsOnDutyModalOpen(true), 100);
+                          } else {
+                            setFormData({ ...formData, leaveType: val });
+                          }
                         }}
-                        placeholder="dd-mm-yyyy"
-                        className={`w-full bg-gray-50 dark:bg-[#0f172a] border rounded-lg h-10 flex items-center text-xs text-gray-900 dark:text-white ${formErrors.startDate ? 'border-[#ff4f00]' : 'border-gray-300 dark:border-gray-600'}`}
+                        placeholder="Choose Leave Type"
+                        options={[
+                          { value: 'sick', label: 'Sick Leave (SL)' },
+                          { value: 'casual', label: 'Casual Leave (CL)' },
+                          { value: 'earned', label: 'Earned Leave (EL)' },
+                          { value: 'emergency', label: 'Emergency Leave' },
+                          { value: 'comp-off', label: 'Comp-Off' },
+                          { value: 'on-duty', label: 'On Duty' }
+                        ]}
                       />
-                      {formErrors.startDate && (
-                        <p className="text-[#ff4f00] text-[10px] font-bold leading-none mt-1">{formErrors.startDate}</p>
+                      {formErrors.leaveType && (
+                        <p className="text-[#ff4f00] text-[10px] font-bold leading-none mt-1">{formErrors.leaveType}</p>
                       )}
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Start Date</label>
+                        <CustomDatePicker
+                          name="startDate"
+                          value={formData.startDate}
+                          onChange={e => {
+                            setFormErrors(prev => ({ ...prev, startDate: null }));
+                            setFormData({ ...formData, startDate: e.target.value });
+                          }}
+                          placeholder="dd-mm-yyyy"
+                          className={`w-full bg-gray-50 dark:bg-[#0f172a] border rounded-lg h-10 flex items-center text-xs text-gray-900 dark:text-white ${formErrors.startDate ? 'border-[#ff4f00]' : 'border-gray-300 dark:border-gray-600'}`}
+                        />
+                        {formErrors.startDate && (
+                          <p className="text-[#ff4f00] text-[10px] font-bold leading-none mt-1">{formErrors.startDate}</p>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">End Date</label>
+                        <CustomDatePicker
+                          name="endDate"
+                          value={formData.endDate}
+                          onChange={e => {
+                            setFormErrors(prev => ({ ...prev, endDate: null }));
+                            setFormData({ ...formData, endDate: e.target.value });
+                          }}
+                          placeholder="dd-mm-yyyy"
+                          align="right"
+                          className={`w-full bg-gray-50 dark:bg-[#0f172a] border rounded-lg h-10 flex items-center text-xs text-gray-900 dark:text-white ${formErrors.endDate ? 'border-[#ff4f00]' : 'border-gray-300 dark:border-gray-600'}`}
+                        />
+                        {formErrors.endDate && (
+                          <p className="text-[#ff4f00] text-[10px] font-bold leading-none mt-1">{formErrors.endDate}</p>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="flex flex-col gap-2">
-                      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">End Date</label>
-                      <CustomDatePicker
-                        name="endDate"
-                        value={formData.endDate}
+                      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Reason</label>
+                      <textarea
+                        value={formData.reason}
                         onChange={e => {
-                          setFormErrors(prev => ({ ...prev, endDate: null }));
-                          setFormData({ ...formData, endDate: e.target.value });
+                          setFormErrors(prev => ({ ...prev, reason: null }));
+                          setFormData({ ...formData, reason: e.target.value });
                         }}
-                        placeholder="dd-mm-yyyy"
-                        align="right"
-                        className={`w-full bg-gray-50 dark:bg-[#0f172a] border rounded-lg h-10 flex items-center text-xs text-gray-900 dark:text-white ${formErrors.endDate ? 'border-[#ff4f00]' : 'border-gray-300 dark:border-gray-600'}`}
+                        placeholder="State your reason..."
+                        className={`w-full min-h-[120px] bg-gray-50 dark:bg-[#0f172a] border rounded-lg px-4 py-3 text-xs outline-none focus:border-blue-500 resize-none text-gray-900 dark:text-white ${formErrors.reason ? 'border-[#ff4f00]' : 'border-gray-300 dark:border-gray-600'}`}
                       />
-                      {formErrors.endDate && (
-                        <p className="text-[#ff4f00] text-[10px] font-bold leading-none mt-1">{formErrors.endDate}</p>
+                      {formErrors.reason && (
+                        <p className="text-[#ff4f00] text-[10px] font-bold leading-none mt-1">{formErrors.reason}</p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Reason</label>
-                    <textarea
-                      value={formData.reason}
-                      onChange={e => {
-                        setFormErrors(prev => ({ ...prev, reason: null }));
-                        setFormData({ ...formData, reason: e.target.value });
-                      }}
-                      placeholder="State your reason..."
-                      className={`w-full min-h-[120px] bg-gray-50 dark:bg-[#0f172a] border rounded-lg px-4 py-3 text-xs outline-none focus:border-blue-500 resize-none text-gray-900 dark:text-white ${formErrors.reason ? 'border-[#ff4f00]' : 'border-gray-300 dark:border-gray-600'}`}
-                    />
-                    {formErrors.reason && (
-                      <p className="text-[#ff4f00] text-[10px] font-bold leading-none mt-1">{formErrors.reason}</p>
-                    )}
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-800 flex justify-end gap-3 mt-4">
+                    <button type="button" onClick={() => setIsRequestModalOpen(false)} className="px-4 py-2 rounded-lg font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 text-xs">
+                      Cancel
+                    </button>
+                    <button type="submit" disabled={isSubmitting} className="px-5 py-2.5 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-700 text-xs disabled:opacity-50 disabled:cursor-not-allowed">
+                      {isSubmitting ? 'Submitting...' : 'Submit Request'}
+                    </button>
                   </div>
-                </div>
-
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-800 flex justify-end gap-3 mt-4">
-                  <button type="button" onClick={() => setIsRequestModalOpen(false)} className="px-4 py-2 rounded-lg font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 text-xs">
-                    Cancel
-                  </button>
-                  <button type="submit" disabled={isSubmitting} className="px-5 py-2.5 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-700 text-xs disabled:opacity-50 disabled:cursor-not-allowed">
-                    {isSubmitting ? 'Submitting...' : 'Submit Request'}
-                  </button>
-                </div>
-              </form>
+                </form>
               )}
             </div>
           </div>
@@ -1096,7 +1152,7 @@ const LeaveManagement = ({ isChild = false }) => {
                 <div className="flex-1 flex flex-col justify-between h-full overflow-hidden">
                   <div className="overflow-y-auto pr-1 flex-1 space-y-4 pb-2">
                     <div>
-                       <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Reason for Cancellation</label>
+                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Reason for Cancellation</label>
                       <textarea
                         required
                         value={cancellationReason}

@@ -82,11 +82,10 @@ const Dropdown = ({ value, onChange, options }) => {
                   onChange(opt.value);
                   setIsOpen(false);
                 }}
-                className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
-                  isSelected
-                    ? 'bg-emerald-50 dark:bg-[#28251e] text-[#00a76b] font-bold'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#28251e]/60 hover:text-slate-900 dark:hover:text-white'
-                }`}
+                className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${isSelected
+                  ? 'bg-emerald-50 dark:bg-[#28251e] text-[#00a76b] font-bold'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#28251e]/60 hover:text-slate-900 dark:hover:text-white'
+                  }`}
               >
                 <span>{opt.label}</span>
                 {isSelected && <Check size={13} className="text-[#00a76b]" />}
@@ -512,8 +511,11 @@ const ManagerDashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} tickFormatter={v => `${v}%`} />
-                <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 10px 25px rgba(0,0,0,0.4)' }} />
-                <Area type="monotone" dataKey="att" stroke="#22c55e" strokeWidth={3} fill="url(#colorAtt)" dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#22c55e' }} activeDot={{ r: 6 }} />
+                <Tooltip
+                  formatter={(value) => [`${value}%`, 'Attendance Rate']}
+                  contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 10px 25px rgba(0,0,0,0.4)', fontSize: '12px', fontWeight: '600' }}
+                />
+                <Area name="Attendance Rate" type="monotone" dataKey="att" stroke="#22c55e" strokeWidth={3} fill="url(#colorAtt)" dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#22c55e' }} activeDot={{ r: 6 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -576,7 +578,13 @@ const ManagerDashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 600 }} tickFormatter={v => `${v}%`} domain={[0, 100]} />
-                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }} itemStyle={{ color: '#e5e7eb' }} labelStyle={{ color: '#ffffff', fontWeight: 'bold' }} />
+                <Tooltip
+                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                  contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}
+                  itemStyle={{ color: '#e5e7eb' }}
+                  labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+                  formatter={(val) => [`${val}%`, 'Performance']}
+                />
                 <Bar dataKey="performance" radius={[6, 6, 6, 6]} barSize={28}>
                   {teamPerfData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -610,7 +618,7 @@ const ManagerDashboard = () => {
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-3xl font-extrabold text-[#0f172a] dark:text-white leading-none">68%</span>
-                <span className="text-[9px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-widest mt-1 text-center leading-tight">Overall<br/>Progress</span>
+                <span className="text-[9px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-widest mt-1 text-center leading-tight">Overall<br />Progress</span>
               </div>
             </div>
 
@@ -712,7 +720,7 @@ const ManagerDashboard = () => {
                 const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
                 const offset = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
                 const totalCells = offset + daysInMonth > 35 ? 42 : 35;
-                
+
                 return [...Array(totalCells)].map((_, i) => {
                   const day = i - offset + 1;
                   if (day < 1 || day > daysInMonth) return <div key={i} className="p-0.5"></div>;
@@ -802,21 +810,21 @@ const ManagerDashboard = () => {
         {/* Workload */}
         <Card className="h-80 flex flex-col">
           <SectionHeader title="Workload Distribution" />
-          <div className="flex-1 flex items-center justify-between">
-            <div className="w-[160px] h-[160px] shrink-0">
+          <div className="flex-1 flex items-center justify-between px-2">
+            <div className="relative w-[160px] h-[160px] shrink-0 flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={workloadData} innerRadius={45} outerRadius={75} paddingAngle={2} dataKey="value" stroke="none">
+                  <Pie data={workloadData} innerRadius={48} outerRadius={75} paddingAngle={3} dataKey="value" stroke="none" cornerRadius={3}>
                     {workloadData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip 
+                  <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload;
                         return (
                           <div style={{ backgroundColor: data.color, color: '#fff', padding: '8px 12px', borderRadius: '8px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
                             <p className="text-sm font-bold m-0 leading-none">{data.name}</p>
-                            <p className="text-xs font-semibold m-0 mt-1 leading-none">{data.value}%</p>
+                            <p className="text-xs font-semibold m-0 mt-1 leading-none">{data.value}% Workload</p>
                           </div>
                         );
                       }
@@ -825,15 +833,23 @@ const ManagerDashboard = () => {
                   />
                 </PieChart>
               </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                <span className="text-2xl font-black text-gray-900 dark:text-white leading-none tracking-tight">
+                  {Math.round(workloadData.reduce((acc, curr) => acc + curr.value, 0) / (workloadData.length || 1))}%
+                </span>
+                <span className="text-[10px] font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">
+                  Avg Workload
+                </span>
+              </div>
             </div>
             <div className="flex-1 pl-4 flex flex-col gap-3 justify-center">
               {workloadData.map((d, i) => (
                 <div key={i} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
-                    <span className="text-[11px] font-bold text-[#0f172a] dark:text-white">{d.name}</span>
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                    <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200">{d.name}</span>
                   </div>
-                  <span className="text-[11px] font-bold text-gray-500 dark:text-[#a3a094]">{d.value}%</span>
+                  <span className="text-[11px] font-extrabold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800/80 px-2 py-0.5 rounded-md">{d.value}%</span>
                 </div>
               ))}
             </div>

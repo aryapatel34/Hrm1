@@ -24,6 +24,7 @@ import OnDutyApprovalModal from '../../components/modals/OnDutyApprovalModal';
 import AddHolidayModal from '../../components/modals/AddHolidayModal';
 import CompOffApprovalModal from '../../components/modals/CompOffApprovalModal';
 import LeaveEncashmentModal from '../../components/modals/LeaveEncashmentModal';
+import ActionConfirmModal from '../../components/ActionConfirmModal';
 
 const Leaves = () => {
   const [leaves, setLeaves] = useState([]);
@@ -82,22 +83,40 @@ const Leaves = () => {
     }
   };
 
-  const handleOverrideLeave = async (id, currentStatus) => {
+  const [overrideModal, setOverrideModal] = useState({
+    isOpen: false,
+    leaveId: null,
+    currentStatus: '',
+    targetStatus: '',
+    loading: false
+  });
+
+  const handleOverrideLeave = (id, currentStatus) => {
     const targetStatus = currentStatus === 'approved' ? 'rejected' : 'approved';
-    const confirmMsg = `Are you sure you want to override the decision to ${targetStatus.toUpperCase()}?`;
-    if (!window.confirm(confirmMsg)) return;
+    setOverrideModal({
+      isOpen: true,
+      leaveId: id,
+      currentStatus,
+      targetStatus,
+      loading: false
+    });
+  };
 
-    const reason = window.prompt("Enter reason for override:");
-    if (reason === null) return; // cancelled
-
+  const confirmOverrideLeave = async (reason) => {
     try {
-      await axios.put(`/api/leaves/override/${id}`, { targetStatus, reason }, {
+      setOverrideModal(prev => ({ ...prev, loading: true }));
+      await axios.put(`/api/leaves/override/${overrideModal.leaveId}`, {
+        targetStatus: overrideModal.targetStatus,
+        reason
+      }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Leave status overrode successfully');
+      toast.success(`Leave decision overridden to ${overrideModal.targetStatus.toUpperCase()}`);
+      setOverrideModal({ isOpen: false, leaveId: null, currentStatus: '', targetStatus: '', loading: false });
       triggerRefresh();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to override leave');
+      setOverrideModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -497,25 +516,23 @@ const Leaves = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
             <div className="h-[400px] overflow-hidden"><HolidayManagement refreshTrigger={refreshTrigger} /></div>
             <div className="h-[400px] overflow-hidden"><CompanyShutdowns /></div>
-            <div className="h-[400px] overflow-hidden"><LeaveAllocationSummary /></div>
+            <div className="h-[400px] overflow-hidden"><LeaveAllocationSummary refreshTrigger={refreshTrigger} /></div>
           </div>
-
-
 
           {/* 7. Leave Policy Overview (Full Width - Row 6) */}
           <div className="w-full mb-8">
-            <LeavePolicyOverview />
+            <LeavePolicyOverview refreshTrigger={refreshTrigger} />
           </div>
         </>
       )}
 
       {/* Modals */}
-      <CreatePolicyModal isOpen={activeModal === 'createPolicy'} onClose={() => setActiveModal(null)} onSuccess={() => { }} />
-      <AllocateLeaveModal isOpen={activeModal === 'allocateLeave'} onClose={() => setActiveModal(null)} />
-      <OnDutyApprovalModal isOpen={activeModal === 'onDutyApproval'} onClose={() => setActiveModal(null)} />
+      <CreatePolicyModal isOpen={activeModal === 'createPolicy'} onClose={() => setActiveModal(null)} onSuccess={triggerRefresh} />
+      <AllocateLeaveModal isOpen={activeModal === 'allocateLeave'} onClose={() => setActiveModal(null)} onSuccess={triggerRefresh} />
+      <OnDutyApprovalModal isOpen={activeModal === 'onDutyApproval'} onClose={() => setActiveModal(null)} onSuccess={triggerRefresh} />
       <AddHolidayModal isOpen={activeModal === 'addHoliday'} onClose={() => setActiveModal(null)} onSuccess={triggerRefresh} />
-      <CompOffApprovalModal isOpen={activeModal === 'compOff'} onClose={() => setActiveModal(null)} />
-      <LeaveEncashmentModal isOpen={activeModal === 'leaveEncashment'} onClose={() => setActiveModal(null)} />
+      <CompOffApprovalModal isOpen={activeModal === 'compOff'} onClose={() => setActiveModal(null)} onSuccess={triggerRefresh} />
+      <LeaveEncashmentModal isOpen={activeModal === 'leaveEncashment'} onClose={() => setActiveModal(null)} onSuccess={triggerRefresh} />
 
       {/* Leave Details & Override Modal */}
       {selectedLeaveDetails && createPortal(
@@ -605,6 +622,20 @@ const Leaves = () => {
         </div>,
         document.body
       )}
+
+      {/* Override Decision Confirmation Modal */}
+      <ActionConfirmModal
+        isOpen={overrideModal.isOpen}
+        onClose={() => setOverrideModal({ isOpen: false, leaveId: null, currentStatus: '', targetStatus: '', loading: false })}
+        onConfirm={confirmOverrideLeave}
+        title="Override Leave Decision"
+        subtitle={`Are you sure you want to override the decision to ${overrideModal.targetStatus?.toUpperCase()}?`}
+        currentStatus={overrideModal.currentStatus}
+        targetStatus={overrideModal.targetStatus}
+        confirmText={`Override to ${overrideModal.targetStatus?.toUpperCase()}`}
+        confirmVariant={overrideModal.targetStatus === 'rejected' ? 'danger' : 'success'}
+        loading={overrideModal.loading}
+      />
     </div>
   );
 };

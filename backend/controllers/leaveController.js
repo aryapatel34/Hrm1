@@ -270,16 +270,33 @@ exports.applyLeave = async (req, res) => {
     const m = startObj.getMonth() + 1;
     const y = startObj.getFullYear();
 
-    let balance = await LeaveBalance.findOne({ employeeId: req.user.id, month: m, year: y });
-    if (!balance) {
-      await updateLeaveBalanceForUser(req.user.id, startObj);
-      balance = await LeaveBalance.findOne({ employeeId: req.user.id, month: m, year: y });
+    // Calculate category leave quota matching Leave Balance Summary
+    const lType = (leaveType || 'casual').toLowerCase();
+    let totalCategoryQuota = 15; // default fallback
+
+    if (lType.includes('casual') || lType === 'cl') {
+      totalCategoryQuota = 18;
+    } else if (lType.includes('sick') || lType === 'sl') {
+      totalCategoryQuota = 14;
+    } else if (lType.includes('earned') || lType === 'el') {
+      totalCategoryQuota = 30.5;
+    } else if (lType.includes('optional') || lType === 'oh') {
+      totalCategoryQuota = 1;
     }
 
-    const remaining = balance ? balance.remainingLeave : 1.5;
-    if (remaining < (totalDays || 1)) {
+    // Subtract used approved leaves for this category
+    const usedApproved = await Leave.find({
+      user: req.user.id,
+      status: { $in: ['approved', 'pending'] }
+    });
+    const usedForCategory = usedApproved
+      .filter(l => (l.leaveType || '').toLowerCase().includes(lType.substring(0, 4)))
+      .reduce((sum, l) => sum + (l.totalDays || 1), 0);
+
+    const netAvailable = Math.max(0, totalCategoryQuota - usedForCategory);
+    if (netAvailable < (totalDays || 1)) {
       return res.status(400).json({
-        message: `Insufficient leave balance. Available: ${remaining} day(s). Requested: ${totalDays || 1} day(s).`
+        message: `Insufficient leave balance. Available: ${netAvailable} day(s). Requested: ${totalDays || 1} day(s).`
       });
     }
 
@@ -866,23 +883,59 @@ exports.getManagerStats = async (req, res) => {
 exports.getTeamLeaves = async (req, res) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 5;
+    const limit = parseInt(req.query.limit, 10) || 10;
     const skip = (page - 1) * limit;
+    const { status, startDate, endDate } = req.query;
 
     const subordinates = await User.find({ reportingManager: req.user.id }).select('_id');
     const subIds = subordinates.map(s => s._id);
 
-    const query = { user: { $in: subIds }, status: 'pending' };
+    const query = { user: { $in: subIds } };
+
+    if (status && status !== 'all') {
+      query.status = status;
+    } else if (!status) {
+      query.status = 'pending';
+    }
+
+    if (startDate) {
+      const start = new Date(startDate);
+      if (!isNaN(start.getTime())) {
+        query.startDate = { ...query.startDate, $gte: start };
+      }
+    }
+
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      if (!isNaN(end.getTime())) {
+        query.endDate = { ...query.endDate, $lte: end };
+      }
+    }
+
+    // Calculate status counts
+    const baseQuery = { user: { $in: subIds } };
+    const allTeamLeaves = await Leave.find(baseQuery);
+
+    const counts = {
+      all: allTeamLeaves.length,
+      pending: allTeamLeaves.filter(l => l.status === 'pending').length,
+      approved: allTeamLeaves.filter(l => l.status === 'approved').length,
+      cancellation_pending: allTeamLeaves.filter(l => l.status === 'cancellation_pending').length,
+      rejected: allTeamLeaves.filter(l => l.status === 'rejected').length,
+      cancelled: allTeamLeaves.filter(l => l.status === 'cancelled').length,
+    };
 
     const total = await Leave.countDocuments(query);
     const leaves = await Leave.find(query)
-      .populate('user', 'name profileImage department designation')
+      .populate('user', 'name email profileImage department designation')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
     res.json({
       data: leaves,
+      counts,
       pagination: {
         total,
         page,

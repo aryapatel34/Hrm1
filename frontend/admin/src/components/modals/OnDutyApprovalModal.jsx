@@ -4,7 +4,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { X, CheckCircle, XCircle } from 'lucide-react';
 
-const OnDutyApprovalModal = ({ isOpen, onClose }) => {
+const OnDutyApprovalModal = ({ isOpen, onClose, onSuccess }) => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const token = sessionStorage.getItem('token');
@@ -37,6 +37,7 @@ const OnDutyApprovalModal = ({ isOpen, onClose }) => {
       });
       toast.success(`Request ${status} successfully`);
       fetchRequests();
+      if (onSuccess) onSuccess();
     } catch (err) {
       toast.error('Failed to update request');
     } finally {

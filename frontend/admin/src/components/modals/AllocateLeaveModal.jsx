@@ -49,7 +49,7 @@ const CustomSelect = ({ value, onChange, options }) => {
   );
 };
 
-const AllocateLeaveModal = ({ isOpen, onClose }) => {
+const AllocateLeaveModal = ({ isOpen, onClose, onSuccess }) => {
   const [employees, setEmployees] = useState([]);
   const [formData, setFormData] = useState({
     userId: '',
@@ -83,6 +83,7 @@ const AllocateLeaveModal = ({ isOpen, onClose }) => {
         headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
       });
       toast.success('Leave allocated successfully');
+      if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to allocate leave');

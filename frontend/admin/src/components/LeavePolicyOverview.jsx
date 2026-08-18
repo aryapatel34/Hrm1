@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const LeavePolicyOverview = () => {
+const LeavePolicyOverview = ({ refreshTrigger }) => {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const token = sessionStorage.getItem('token');
@@ -20,7 +20,7 @@ const LeavePolicyOverview = () => {
       }
     };
     fetchData();
-  }, [token]);
+  }, [token, refreshTrigger]);
 
   return (
     <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col h-full transition-all duration-200 hover:border-indigo-500">
@@ -42,15 +42,32 @@ const LeavePolicyOverview = () => {
             ) : policies.length === 0 ? (
               <tr><td colSpan="3" className="text-center py-8 text-gray-400">No leave policies defined.</td></tr>
             ) : (
-              policies.map((policy) => (
-                <tr key={policy._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                  <td className="px-4 py-4 font-bold text-gray-900 dark:text-white text-xs">{policy.name}</td>
-                  <td className="px-4 py-4 text-xs font-black text-gray-900 dark:text-white text-center tabular-nums">{policy.annualAllowance || 0}</td>
-                  <td className="px-4 py-4 text-xs font-bold text-gray-700 dark:text-gray-300 text-center">
-                    {policy.carryForwardLimit > 0 ? `Yes (Max: ${policy.carryForwardLimit})` : 'No'}
-                  </td>
-                </tr>
-              ))
+              (() => {
+                const getCatKey = (p) => {
+                  const str = `${p?.type || ''} ${p?.name || ''}`.toLowerCase();
+                  if (str.includes('casual') || str.includes('cl') || str.trim() === 'cl') return 'casual';
+                  if (str.includes('sick') || str.includes('sl') || str.trim() === 'sl') return 'sick';
+                  if (str.includes('earned') || str.includes('el') || str.trim() === 'el') return 'earned';
+                  if (str.includes('comp') || str.includes('co') || str.trim() === 'co') return 'compoff';
+                  if (str.includes('maternity')) return 'maternity';
+                  if (str.includes('paternity')) return 'paternity';
+                  return str.trim();
+                };
+                const uniqueMap = new Map();
+                policies.forEach(p => {
+                  const key = getCatKey(p);
+                  if (!uniqueMap.has(key)) uniqueMap.set(key, p);
+                });
+                return Array.from(uniqueMap.values()).map((policy) => (
+                  <tr key={policy._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <td className="px-4 py-4 font-bold text-gray-900 dark:text-white text-xs">{policy.name}</td>
+                    <td className="px-4 py-4 text-xs font-black text-gray-900 dark:text-white text-center tabular-nums">{policy.annualAllowance || 0}</td>
+                    <td className="px-4 py-4 text-xs font-bold text-gray-700 dark:text-gray-300 text-center">
+                      {policy.carryForwardLimit > 0 ? `Yes (Max: ${policy.carryForwardLimit})` : 'No'}
+                    </td>
+                  </tr>
+                ));
+              })()
             )}
           </tbody>
         </table>

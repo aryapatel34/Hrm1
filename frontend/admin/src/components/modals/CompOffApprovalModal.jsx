@@ -4,7 +4,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { X, Check, XCircle } from 'lucide-react';
 
-const CompOffApprovalModal = ({ isOpen, onClose }) => {
+const CompOffApprovalModal = ({ isOpen, onClose, onSuccess }) => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const token = sessionStorage.getItem('token');
@@ -45,6 +45,7 @@ const CompOffApprovalModal = ({ isOpen, onClose }) => {
       });
       toast.success(`Request ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
       fetchRequests();
+      if (onSuccess) onSuccess();
     } catch (err) {
       toast.error('Failed to update request status');
     }

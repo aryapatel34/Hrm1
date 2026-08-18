@@ -416,7 +416,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Team Attendance', path: '/manager/attendance', icon: Calendar },
           { name: 'Monitoring Logs', path: '/manager/screenshots', icon: Camera },
           { name: 'Notifications', path: '/manager/notifications', icon: Bell },
-          { name: 'Leave Management', path: '/manager/leave', icon: FileText },
+          { name: 'Apply Leave', path: '/manager/leave', icon: FileText },
         ];
       case 'admin':
       default:
@@ -557,7 +557,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           setIsTrackingActive(isRunning);
           setIsPausedByIdle(!isRunning);
           setTrackerRawStatus(res.data?.status || 'offline');
-        }).catch(() => {});
+        }).catch(() => { });
     });
 
     setSocket(s);

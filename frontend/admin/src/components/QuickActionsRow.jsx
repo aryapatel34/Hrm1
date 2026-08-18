@@ -12,6 +12,17 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [initialChecking, setInitialChecking] = useState(true);
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [checkInHovered, setCheckInHovered] = useState(false);
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   const fetchStatus = async () => {
     try {
@@ -107,13 +118,25 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
         await stopDesktopTracker();
       } catch (_) {}
 
-      await axios.put('/api/attendance/clock-out', {}, { headers });
+      try {
+        await axios.put('/api/attendance/clock-out', {}, { headers });
+      } catch (_) {}
+
       try {
         await axios.post('/api/time/stop', {}, { headers });
       } catch (_) {}
 
       setIsCheckedIn(false);
-      toast.success('Checked out successfully!');
+      toast.success('Check-out successful & Desktop Tracker stopped!', {
+        style: {
+          borderRadius: '12px',
+          background: '#2a0d0d',
+          color: '#fff',
+          border: '1px solid #ef4444',
+          fontSize: '13px',
+          fontWeight: '600'
+        }
+      });
       await fetchStatus();
     } catch (e) {
       toast.error(e.response?.data?.message || 'Check-out failed');
@@ -137,11 +160,11 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
   const routes = getRoutes();
 
   const actions = [
-    { icon: <CalendarPlus size={20} />, label: 'Apply Leave', color: '#3b82f6', border: '#bfdbfe', bgHover: '#eff6ff', to: routes.leave },
-    { icon: <Briefcase size={20} />, label: 'My Tasks', color: '#8b5cf6', border: '#ddd6fe', bgHover: '#f5f3ff', to: routes.tasks },
-    { icon: <Clock size={20} />, label: 'Time Tracker', color: '#f59e0b', border: '#fde68a', bgHover: '#fffbeb', to: routes.timeTracker },
-    { icon: <FileText size={20} />, label: 'Payslip', color: '#ec4899', border: '#fbcfe8', bgHover: '#fdf2f8', to: routes.payroll },
-    { icon: <User size={20} />, label: 'View Profile', color: '#10b981', border: '#a7f3d0', bgHover: '#ecfdf5', to: routes.profile },
+    { icon: <CalendarPlus size={20} />, label: 'Apply Leave', color: '#3b82f6', border: '#3b82f6', darkBorder: '#3b82f6', bgHover: '#eff6ff', darkBgHover: 'rgba(59, 130, 246, 0.18)', to: routes.leave },
+    { icon: <Briefcase size={20} />, label: 'My Tasks', color: '#8b5cf6', border: '#8b5cf6', darkBorder: '#8b5cf6', bgHover: '#f5f3ff', darkBgHover: 'rgba(139, 92, 246, 0.18)', to: routes.tasks },
+    { icon: <Clock size={20} />, label: 'Time Tracker', color: '#f59e0b', border: '#f59e0b', darkBorder: '#f59e0b', bgHover: '#fffbeb', darkBgHover: 'rgba(245, 158, 11, 0.18)', to: routes.timeTracker },
+    { icon: <FileText size={20} />, label: 'Payslip', color: '#ec4899', border: '#ec4899', darkBorder: '#ec4899', bgHover: '#fdf2f8', darkBgHover: 'rgba(236, 72, 153, 0.18)', to: routes.payroll },
+    { icon: <User size={20} />, label: 'View Profile', color: '#10b981', border: '#10b981', darkBorder: '#10b981', bgHover: '#ecfdf5', darkBgHover: 'rgba(16, 185, 129, 0.18)', to: routes.profile },
   ];
 
   return (
@@ -158,11 +181,18 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
           <button
             type="button"
             onClick={handleCheckOut}
+            onMouseEnter={() => setCheckInHovered(true)}
+            onMouseLeave={() => setCheckInHovered(false)}
             disabled={checkInLoading || initialChecking}
-            className="flex items-center justify-center gap-2.5 px-3 py-2.5 bg-white dark:bg-[#0f0d0a] border rounded-2xl w-full h-14 transition-all shadow-xs hover:shadow-md cursor-pointer disabled:opacity-50"
-            style={{ borderColor: '#fca5a5', color: '#ef4444' }}
-            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fef2f2'}
-            onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
+            className="flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
+            style={{ 
+              backgroundColor: checkInHovered ? (isDark ? 'rgba(239, 68, 68, 0.18)' : '#fef2f2') : (isDark ? '#151c28' : '#ffffff'),
+              borderWidth: checkInHovered ? '2px' : '1px',
+              borderStyle: 'solid',
+              borderColor: checkInHovered ? '#ef4444' : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'), 
+              color: '#ef4444',
+              boxShadow: checkInHovered ? (isDark ? '0 0 16px rgba(239, 68, 68, 0.50)' : '0 4px 12px rgba(239, 68, 68, 0.20)') : 'none'
+            }}
           >
             {checkInLoading ? <Loader2 size={20} className="animate-spin shrink-0" /> : <LogOut size={20} className="shrink-0" />}
             <span className="text-xs font-bold whitespace-nowrap">
@@ -173,11 +203,18 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
           <button
             type="button"
             onClick={handleCheckIn}
+            onMouseEnter={() => setCheckInHovered(true)}
+            onMouseLeave={() => setCheckInHovered(false)}
             disabled={checkInLoading || initialChecking}
-            className="flex items-center justify-center gap-2.5 px-3 py-2.5 bg-white dark:bg-[#0f0d0a] border rounded-2xl w-full h-14 transition-all shadow-xs hover:shadow-md cursor-pointer disabled:opacity-50"
-            style={{ borderColor: '#86efac', color: '#00a76b' }}
-            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0fdf4'}
-            onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
+            className="flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
+            style={{ 
+              backgroundColor: checkInHovered ? (isDark ? 'rgba(16, 185, 129, 0.18)' : '#f0fdf4') : (isDark ? '#151c28' : '#ffffff'),
+              borderWidth: checkInHovered ? '2px' : '1px',
+              borderStyle: 'solid',
+              borderColor: checkInHovered ? (isDark ? '#10b981' : '#00a76b') : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'), 
+              color: '#00a76b',
+              boxShadow: checkInHovered ? (isDark ? '0 0 16px rgba(16, 185, 129, 0.50)' : '0 4px 12px rgba(16, 185, 129, 0.20)') : 'none'
+            }}
           >
             {checkInLoading ? <Loader2 size={20} className="animate-spin shrink-0" /> : <LogIn size={20} className="shrink-0" />}
             <span className="text-xs font-bold whitespace-nowrap">
@@ -187,20 +224,30 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
         )}
 
         {/* Other Quick Action Buttons */}
-        {actions.map((act, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => navigate(act.to)}
-            className="flex items-center justify-center gap-2.5 px-3 py-2.5 bg-white dark:bg-[#0f0d0a] border rounded-2xl w-full h-14 transition-all shadow-xs hover:shadow-md cursor-pointer"
-            style={{ borderColor: act.border, color: act.color }}
-            onMouseEnter={e => e.currentTarget.style.backgroundColor = act.bgHover}
-            onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
-          >
-            <span className="shrink-0">{act.icon}</span>
-            <span className="text-xs font-bold whitespace-nowrap">{act.label}</span>
-          </button>
-        ))}
+        {actions.map((act, i) => {
+          const isHovered = hoveredIndex === i;
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => navigate(act.to)}
+              onMouseEnter={() => setHoveredIndex(i)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              className="flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer"
+              style={{ 
+                backgroundColor: isHovered ? (isDark ? act.darkBgHover : act.bgHover) : (isDark ? '#151c28' : '#ffffff'),
+                borderWidth: isHovered ? '2px' : '1px',
+                borderStyle: 'solid',
+                borderColor: isHovered ? (isDark ? act.darkBorder : act.border) : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'), 
+                color: act.color,
+                boxShadow: isHovered ? (isDark ? `0 0 16px ${act.darkBorder}60` : `0 4px 12px ${act.color}25`) : 'none'
+              }}
+            >
+              <span className="shrink-0">{act.icon}</span>
+              <span className="text-xs font-bold whitespace-nowrap">{act.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
