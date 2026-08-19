@@ -120,6 +120,8 @@ const AdminDashboard = () => {
   const [payrollPeriod, setPayrollPeriod] = useState(new Date().toLocaleString('default', { month: 'long', year: 'numeric' }));
   const [selectedLeaveApproval, setSelectedLeaveApproval] = useState(null);
   const [hoveredStatCard, setHoveredStatCard] = useState(null);
+  const [hoveredDeptIndex, setHoveredDeptIndex] = useState(null);
+  const [hoveredGenderIndex, setHoveredGenderIndex] = useState(null);
 
   // Wishes states
   const [wishedEvents, setWishedEvents] = useState([]);
@@ -345,55 +347,45 @@ const AdminDashboard = () => {
           { 
             label: 'Total Employees', 
             val: stats.totalEmployees, 
-            subtext: '+12 this month', 
             icon: Users, 
             color: 'text-blue-600 dark:text-blue-400', 
             bg: 'bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/40', 
-            badge: 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/50 dark:border-blue-800/40',
             borderColor: '#3b82f6',
             glowColor: 'rgba(59, 130, 246, 0.45)'
           },
           { 
             label: 'Active Employees', 
             val: stats.activeEmployees, 
-            subtext: `${stats.activeEmployeesPercent}% of total`, 
             icon: CheckCircle, 
             color: 'text-emerald-600 dark:text-emerald-400', 
             bg: 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40', 
-            badge: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/50 dark:border-emerald-800/40',
             borderColor: '#10b981',
             glowColor: 'rgba(16, 185, 129, 0.45)'
           },
           { 
             label: 'New Joiners', 
             val: stats.newJoiners, 
-            subtext: '+3 this month', 
             icon: UserPlus, 
             color: 'text-indigo-600 dark:text-indigo-400', 
             bg: 'bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/40', 
-            badge: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/50 dark:border-indigo-800/40',
             borderColor: '#6366f1',
             glowColor: 'rgba(99, 102, 241, 0.45)'
           },
           { 
             label: 'Employees on Leave', 
             val: stats.employeesOnLeave, 
-            subtext: `${stats.employeesOnLeavePercent}% of total`, 
             icon: Calendar, 
             color: 'text-amber-600 dark:text-amber-400', 
             bg: 'bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900/40', 
-            badge: 'text-amber-600 dark:text-amber-400 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/50 dark:border-amber-800/40',
             borderColor: '#f59e0b',
             glowColor: 'rgba(245, 158, 11, 0.45)'
           },
           { 
             label: 'Pending Leave', 
             val: stats.pendingLeaveApprovals, 
-            subtext: 'Requires action', 
             icon: Clock, 
             color: 'text-rose-600 dark:text-rose-400', 
             bg: 'bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900/40', 
-            badge: 'text-rose-600 dark:text-rose-400 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/50 dark:border-rose-800/40',
             borderColor: '#ef4444',
             glowColor: 'rgba(239, 68, 68, 0.45)'
           },
@@ -409,20 +401,15 @@ const AdminDashboard = () => {
                 borderWidth: isHovered ? '2px' : undefined,
                 boxShadow: isHovered ? `0 0 16px ${stat.glowColor}` : undefined
               }}
-              className="py-3.5 px-4 flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm"
+              className="py-2 px-3.5 flex items-center justify-between hover:-translate-y-0.5 transition-all duration-200 cursor-pointer shadow-xs min-h-[52px]"
             >
-              <div className="flex items-center gap-2.5 mb-2.5">
-                <div className={`inline-flex p-2 rounded-xl shrink-0 ${stat.bg}`}>
-                  <stat.icon size={18} strokeWidth={2.5} className={stat.color} />
+              <div className="flex items-center gap-2 min-w-0 mr-2">
+                <div className={`inline-flex p-1.5 rounded-lg shrink-0 ${stat.bg}`}>
+                  <stat.icon size={16} strokeWidth={2.5} className={stat.color} />
                 </div>
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider leading-tight">{stat.label}</p>
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider leading-tight">{stat.label}</p>
               </div>
-              <div className="flex items-center justify-between gap-2 mt-1 flex-nowrap overflow-hidden">
-                <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none shrink-0">{stat.val}</h3>
-                <span className={`text-[10px] font-extrabold whitespace-nowrap shrink-0 px-2 py-0.5 rounded-full ${stat.badge}`}>
-                  {stat.subtext}
-                </span>
-              </div>
+              <h3 className="text-xl font-black text-gray-900 dark:text-white leading-none shrink-0">{stat.val}</h3>
             </Card>
           );
         })}
@@ -475,9 +462,9 @@ const AdminDashboard = () => {
           </div>
         </Card>
 
-        {/* Role Distribution */}
+        {/* Department Distribution */}
         <Card className="p-4 sm:p-5">
-          <h3 className="font-bold text-gray-900 dark:text-white mb-3">Role-wise Employees</h3>
+          <h3 className="font-bold text-gray-900 dark:text-white mb-3">Department Distribution</h3>
           <div className="flex flex-col items-center justify-center">
             {charts.departmentDistribution.length > 0 ? (
               <>
@@ -485,29 +472,60 @@ const AdminDashboard = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={charts.departmentDistribution} cx="50%" cy="50%"
-                        innerRadius={75} outerRadius={105} paddingAngle={2} dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        labelLine={true}
-                        className="text-[10px] font-semibold"
+                        data={charts.departmentDistribution}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={75}
+                        outerRadius={105}
+                        paddingAngle={2}
+                        dataKey="value"
+                        onMouseEnter={(_, index) => setHoveredDeptIndex(index)}
+                        onMouseLeave={() => setHoveredDeptIndex(null)}
                       >
-                        {charts.departmentDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                        {charts.departmentDistribution.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                            opacity={hoveredDeptIndex === null || hoveredDeptIndex === index ? 1 : 0.35}
+                            style={{ transition: 'all 0.2s ease', cursor: 'pointer' }}
+                          />
+                        ))}
                       </Pie>
-                      <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-[18px] font-black text-gray-900 dark:text-white">{stats.totalEmployees}</span>
-                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200">
+                    <span className="text-2xl font-black text-gray-900 dark:text-white transition-all duration-150">
+                      {hoveredDeptIndex !== null && charts.departmentDistribution[hoveredDeptIndex]
+                        ? charts.departmentDistribution[hoveredDeptIndex].value
+                        : stats.totalEmployees}
+                    </span>
+                    <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center max-w-[100px] truncate transition-all duration-150">
+                      {hoveredDeptIndex !== null && charts.departmentDistribution[hoveredDeptIndex]
+                        ? charts.departmentDistribution[hoveredDeptIndex].name
+                        : 'Total'}
+                    </span>
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 w-full">
-                  {charts.departmentDistribution.map((entry, index) => (
-                    <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
-                      {entry.name}: <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
-                    </div>
-                  ))}
+                  {charts.departmentDistribution.map((entry, index) => {
+                    const isHovered = hoveredDeptIndex === index;
+                    return (
+                      <div
+                        key={index}
+                        onMouseEnter={() => setHoveredDeptIndex(index)}
+                        onMouseLeave={() => setHoveredDeptIndex(null)}
+                        className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-lg cursor-pointer transition-all duration-200 ${
+                          isHovered
+                            ? 'bg-gray-100 dark:bg-gray-800 scale-105 shadow-xs'
+                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
+                        <span>{entry.name}:</span>
+                        <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             ) : (
@@ -526,29 +544,60 @@ const AdminDashboard = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={charts.genderDistribution} cx="50%" cy="50%"
-                        innerRadius={75} outerRadius={105} paddingAngle={2} dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        labelLine={true}
-                        className="text-[10px] font-semibold"
+                        data={charts.genderDistribution}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={75}
+                        outerRadius={105}
+                        paddingAngle={2}
+                        dataKey="value"
+                        onMouseEnter={(_, index) => setHoveredGenderIndex(index)}
+                        onMouseLeave={() => setHoveredGenderIndex(null)}
                       >
-                        {charts.genderDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={['#3b82f6', '#f43f5e', '#f59e0b'][index % 3]} />)}
+                        {charts.genderDistribution.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={['#3b82f6', '#f43f5e', '#f59e0b'][index % 3]}
+                            opacity={hoveredGenderIndex === null || hoveredGenderIndex === index ? 1 : 0.35}
+                            style={{ transition: 'all 0.2s ease', cursor: 'pointer' }}
+                          />
+                        ))}
                       </Pie>
-                      <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-[18px] font-black text-gray-900 dark:text-white">{stats.totalEmployees}</span>
-                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200">
+                    <span className="text-2xl font-black text-gray-900 dark:text-white transition-all duration-150">
+                      {hoveredGenderIndex !== null && charts.genderDistribution[hoveredGenderIndex]
+                        ? charts.genderDistribution[hoveredGenderIndex].value
+                        : ((charts.genderDistribution || []).reduce((acc, curr) => acc + (Number(curr.value) || 0), 0) || stats.totalEmployees || 0)}
+                    </span>
+                    <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center max-w-[100px] truncate transition-all duration-150">
+                      {hoveredGenderIndex !== null && charts.genderDistribution[hoveredGenderIndex]
+                        ? charts.genderDistribution[hoveredGenderIndex].name
+                        : 'Total'}
+                    </span>
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 w-full">
-                  {charts.genderDistribution.map((entry, index) => (
-                    <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ['#3b82f6', '#f43f5e', '#f59e0b'][index % 3] }}></span>
-                      {entry.name}: <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
-                    </div>
-                  ))}
+                  {charts.genderDistribution.map((entry, index) => {
+                    const isHovered = hoveredGenderIndex === index;
+                    return (
+                      <div
+                        key={index}
+                        onMouseEnter={() => setHoveredGenderIndex(index)}
+                        onMouseLeave={() => setHoveredGenderIndex(null)}
+                        className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-lg cursor-pointer transition-all duration-200 ${
+                          isHovered
+                            ? 'bg-gray-100 dark:bg-gray-800 scale-105 shadow-xs'
+                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: ['#3b82f6', '#f43f5e', '#f59e0b'][index % 3] }}></span>
+                        <span>{entry.name}:</span>
+                        <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             ) : (

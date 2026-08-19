@@ -43,7 +43,8 @@ import {
   IdCard,
   Plug,
   Award,
-  RefreshCw
+  RefreshCw,
+  UserPlus
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { API_BASE_URL, getImageUrl } from '@shared/services/api';
@@ -405,6 +406,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Attendance', path: '/hr/attendance', icon: Calendar },
           { name: 'Team Chat', path: '/hr/chat', icon: MessageSquare },
           { name: 'Payroll', path: '/hr/payroll', icon: Wallet },
+          { name: 'Recruitment', path: '/hr/recruitment', icon: UserPlus },
           { name: 'Performance', path: '/hr/performance', icon: TrendingUp },
           { name: 'Reports', path: '/hr/reports', icon: BarChart3 },
           { name: 'Monitoring Logs', path: '/hr/screenshots', icon: Camera },
@@ -447,6 +449,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Attendance', path: `/${currentRole}/attendance`, icon: Calendar },
           { name: 'Global Chat', path: `/${currentRole}/chat`, icon: MessageSquare },
           { name: 'Payroll', path: `/${currentRole}/payroll`, icon: Wallet },
+          { name: 'Recruitment', path: `/${currentRole}/recruitment`, icon: UserPlus },
           { name: 'Performance', path: `/${currentRole}/performance`, icon: TrendingUp },
           { name: 'Reports', path: `/${currentRole}/reports`, icon: BarChart3 },
           { name: 'Monitoring Logs', path: `/${currentRole}/screenshots`, icon: Camera },
