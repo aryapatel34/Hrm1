@@ -534,10 +534,10 @@ const EmployeeDashboard = () => {
   }
 
   return (
-    <div className="space-y-6 pb-4 font-['Inter',sans-serif]" style={{ color: 'var(--zap-charcoal)' }}>
+    <div className="space-y-4 pt-0 pb-4 font-['Inter',sans-serif]" style={{ color: 'var(--zap-charcoal)' }}>
 
       {/* 1. WELCOME SECTION */}
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
         <div>
           <h1 className="text-[32px] font-bold text-[#201515] dark:text-white leading-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
             {getGreeting()}, {firstName}! 👋
@@ -714,24 +714,16 @@ const EmployeeDashboard = () => {
             </div>
 
             {/* Stat Cards below Attendance Chart */}
-            <div className="grid grid-cols-2 gap-3 mt-2.5 h-14 items-center">
-              <div className="bg-amber-50/80 dark:bg-[#241a0e] px-3 py-2.5 rounded-xl border border-amber-200/80 dark:border-amber-500/30 flex items-center justify-between transition-all h-full">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
-                    <Clock size={16} />
-                  </div>
-                  <span className="text-xs text-amber-700 dark:text-amber-400 font-bold">Late Arrivals</span>
-                </div>
-                <span className="text-base font-black text-amber-800 dark:text-amber-300" style={{ fontFamily: 'Manrope, sans-serif' }}>{attMetrics?.lateCount || 0}</span>
+            <div className="flex items-center justify-center gap-8 mt-2.5 h-14 w-full">
+              <div className="flex items-center gap-1.5 transition-all">
+                <span className="w-2 h-2 rounded-full bg-[#f59e0b] shrink-0"></span>
+                <span className="text-xs text-amber-700 dark:text-amber-400 font-bold">Late Arrivals</span>
+                <span className="text-sm font-black text-amber-800 dark:text-amber-300 ml-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{attMetrics?.lateCount || 0}</span>
               </div>
-              <div className="bg-rose-50/80 dark:bg-[#281315] px-3 py-2.5 rounded-xl border border-rose-200/80 dark:border-rose-500/30 flex items-center justify-between transition-all h-full">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
-                    <CalendarX size={16} />
-                  </div>
-                  <span className="text-xs text-rose-700 dark:text-rose-400 font-bold">Absences</span>
-                </div>
-                <span className="text-base font-black text-rose-800 dark:text-rose-300" style={{ fontFamily: 'Manrope, sans-serif' }}>{leavesTakenThisMonth}</span>
+              <div className="flex items-center gap-1.5 transition-all">
+                <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0"></span>
+                <span className="text-xs text-rose-700 dark:text-rose-400 font-bold">Absences</span>
+                <span className="text-sm font-black text-rose-800 dark:text-rose-300 ml-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{leavesTakenThisMonth}</span>
               </div>
             </div>
           </Card>
@@ -767,103 +759,41 @@ const EmployeeDashboard = () => {
                 </div>
               </div>
 
-              {/* 4 Stat Items below Pie Chart */}
+              {/* 4 Stat Items below Pie Chart styled same as Attendance Overview */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2.5 h-14 items-center">
-                <div className="px-2 py-2.5 flex items-center justify-between h-full">
+                <div className="px-2 py-2 flex items-center justify-between transition-all h-full">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="w-2 h-2 rounded-full bg-[#3b82f6] shrink-0"></span>
-                    <span className="text-xs text-blue-600 dark:text-blue-400 font-bold truncate">Pending</span>
+                    <span className="text-xs text-blue-700 dark:text-blue-400 font-bold truncate">Pending</span>
                   </div>
-                  <span className="text-xs font-black text-blue-700 dark:text-blue-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingTasks}</span>
+                  <span className="text-sm font-black text-blue-800 dark:text-blue-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingTasks}</span>
                 </div>
 
-                <div className="px-2 py-2.5 flex items-center justify-between h-full">
+                <div className="px-2 py-2 flex items-center justify-between transition-all h-full">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="w-2 h-2 rounded-full bg-[#f59e0b] shrink-0"></span>
-                    <span className="text-xs text-amber-600 dark:text-amber-400 font-bold truncate">In Progress</span>
+                    <span className="text-xs text-amber-700 dark:text-amber-400 font-bold truncate">In Progress</span>
                   </div>
-                  <span className="text-xs font-black text-amber-700 dark:text-amber-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{ongoingTasks}</span>
+                  <span className="text-sm font-black text-amber-800 dark:text-amber-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{ongoingTasks}</span>
                 </div>
 
-                <div className="px-2 py-2.5 flex items-center justify-between h-full">
+                <div className="px-2 py-2 flex items-center justify-between transition-all h-full">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="w-2 h-2 rounded-full bg-[#8b5cf6] shrink-0"></span>
-                    <span className="text-xs text-purple-600 dark:text-purple-400 font-bold truncate">Completed</span>
+                    <span className="text-xs text-purple-700 dark:text-purple-400 font-bold truncate">Completed</span>
                   </div>
-                  <span className="text-xs font-black text-purple-700 dark:text-purple-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{completedTasks}</span>
+                  <span className="text-sm font-black text-purple-800 dark:text-purple-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{completedTasks}</span>
                 </div>
 
-                <div className="px-2 py-2.5 flex items-center justify-between h-full">
+                <div className="px-2 py-2 flex items-center justify-between transition-all h-full">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0"></span>
-                    <span className="text-xs text-red-600 dark:text-red-400 font-bold truncate">Overdue</span>
+                    <span className="text-xs text-rose-700 dark:text-rose-400 font-bold truncate">Overdue</span>
                   </div>
-                  <span className="text-xs font-black text-red-700 dark:text-red-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{upcomingTasks}</span>
+                  <span className="text-sm font-black text-rose-800 dark:text-rose-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{upcomingTasks}</span>
                 </div>
               </div>
             </Card>
-          </div>
-        </div>
-      </div>
-
-      {/* 6. LEAVE SUMMARY */}
-      <div>
-        <SectionHeader title="Leave Summary" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-          {/* Total Leaves */}
-          <div
-            onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/20 dark:hover:bg-blue-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="bg-blue-50 dark:bg-blue-950/60 p-1.5 rounded-lg text-blue-600 dark:text-blue-400 transition-colors duration-300 border border-blue-100 dark:border-blue-900/40 shrink-0">
-                <Calendar size={16} />
-              </div>
-              <p className="text-xs text-blue-600 dark:text-blue-400 font-extrabold uppercase tracking-wider truncate">TOTAL LEAVES</p>
-            </div>
-            <span className="text-xl font-black text-gray-900 dark:text-white ml-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAllocated}</span>
-          </div>
-
-          {/* Used Leaves */}
-          <div
-            onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-amber-500 dark:hover:border-amber-400 hover:bg-amber-50/20 dark:hover:bg-amber-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="bg-amber-50 dark:bg-amber-950/60 p-1.5 rounded-lg text-amber-600 dark:text-amber-400 transition-colors duration-300 border border-amber-100 dark:border-amber-900/40 shrink-0">
-                <CalendarCheck size={16} />
-              </div>
-              <p className="text-xs text-amber-600 dark:text-amber-400 font-extrabold uppercase tracking-wider truncate">USED LEAVES</p>
-            </div>
-            <span className="text-xl font-black text-gray-900 dark:text-white ml-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalUsedLeaves}</span>
-          </div>
-
-          {/* Pending Leaves */}
-          <div
-            onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50/20 dark:hover:bg-purple-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="bg-purple-50 dark:bg-purple-950/60 p-1.5 rounded-lg text-purple-600 dark:text-purple-400 transition-colors duration-300 border border-purple-100 dark:border-purple-900/40 shrink-0">
-                <CalendarX size={16} />
-              </div>
-              <p className="text-xs text-purple-600 dark:text-purple-400 font-extrabold uppercase tracking-wider truncate">PENDING LEAVES</p>
-            </div>
-            <span className="text-xl font-black text-gray-900 dark:text-white ml-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingLeaves}</span>
-          </div>
-
-          {/* Approved Leaves */}
-          <div
-            onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="bg-emerald-50 dark:bg-emerald-950/60 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 transition-colors duration-300 border border-emerald-100 dark:border-emerald-900/40 shrink-0">
-                <CheckCircle size={16} />
-              </div>
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-extrabold uppercase tracking-wider truncate">APPROVED LEAVES</p>
-            </div>
-            <span className="text-xl font-black text-gray-900 dark:text-white ml-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeavesDays}</span>
           </div>
         </div>
       </div>
@@ -1005,6 +935,68 @@ const EmployeeDashboard = () => {
         </div>
       </div>
 
+      {/* 6. LEAVE SUMMARY */}
+      <div>
+        <SectionHeader title="Leave Summary" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+          {/* Total Leaves */}
+          <div
+            onClick={() => navigate('/employee/leave')}
+            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/20 dark:hover:bg-blue-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="bg-blue-50 dark:bg-blue-950/60 p-1.5 rounded-lg text-blue-600 dark:text-blue-400 transition-colors duration-300 border border-blue-100 dark:border-blue-900/40 shrink-0">
+                <Calendar size={16} />
+              </div>
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-extrabold uppercase tracking-wider truncate">TOTAL LEAVES</p>
+            </div>
+            <span className="text-xl font-black text-gray-900 dark:text-white ml-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAllocated}</span>
+          </div>
+
+          {/* Used Leaves */}
+          <div
+            onClick={() => navigate('/employee/leave')}
+            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-amber-500 dark:hover:border-amber-400 hover:bg-amber-50/20 dark:hover:bg-amber-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="bg-amber-50 dark:bg-amber-950/60 p-1.5 rounded-lg text-amber-600 dark:text-amber-400 transition-colors duration-300 border border-amber-100 dark:border-amber-900/40 shrink-0">
+                <CalendarCheck size={16} />
+              </div>
+              <p className="text-xs text-amber-600 dark:text-amber-400 font-extrabold uppercase tracking-wider truncate">USED LEAVES</p>
+            </div>
+            <span className="text-xl font-black text-gray-900 dark:text-white ml-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalUsedLeaves}</span>
+          </div>
+
+          {/* Pending Leaves */}
+          <div
+            onClick={() => navigate('/employee/leave')}
+            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50/20 dark:hover:bg-purple-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="bg-purple-50 dark:bg-purple-950/60 p-1.5 rounded-lg text-purple-600 dark:text-purple-400 transition-colors duration-300 border border-purple-100 dark:border-purple-900/40 shrink-0">
+                <CalendarX size={16} />
+              </div>
+              <p className="text-xs text-purple-600 dark:text-purple-400 font-extrabold uppercase tracking-wider truncate">PENDING LEAVES</p>
+            </div>
+            <span className="text-xl font-black text-gray-900 dark:text-white ml-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingLeaves}</span>
+          </div>
+
+          {/* Approved Leaves */}
+          <div
+            onClick={() => navigate('/employee/leave')}
+            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="bg-emerald-50 dark:bg-emerald-950/60 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 transition-colors duration-300 border border-emerald-100 dark:border-emerald-900/40 shrink-0">
+                <CheckCircle size={16} />
+              </div>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-extrabold uppercase tracking-wider truncate">APPROVED LEAVES</p>
+            </div>
+            <span className="text-xl font-black text-gray-900 dark:text-white ml-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeavesDays}</span>
+          </div>
+        </div>
+      </div>
+
       {/* 12. BIRTHDAYS & ANNIVERSARIES */}
       <div className="grid grid-cols-1 gap-6">
         <div>
@@ -1059,7 +1051,7 @@ const EmployeeDashboard = () => {
 
           <Card className="p-5 overflow-hidden">
             {events.filter(e => eventFilter === 'all' || e.type === eventFilter).length > 0 ? (
-              <div className="flex overflow-x-auto gap-4 pb-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-neutral-800 snap-x">
+              <div className="flex overflow-x-auto gap-2.5 pb-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-neutral-800 snap-x">
                 {events
                   .filter(e => eventFilter === 'all' || e.type === eventFilter)
                   .map((ann, i) => {
@@ -1072,7 +1064,7 @@ const EmployeeDashboard = () => {
                     return (
                       <div
                         key={ann.id || i}
-                        className="relative overflow-hidden rounded-2xl p-4 transition-all duration-300 flex flex-col justify-between border shrink-0 w-[270px] sm:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] snap-start bg-white dark:bg-[#14120e] border-[#eceae3] dark:border-[#38352e] hover:border-[#00a76b] dark:hover:border-emerald-500 hover:shadow-md"
+                        className="relative overflow-hidden rounded-2xl p-3.5 transition-all duration-300 flex flex-col justify-between border shrink-0 w-[260px] sm:w-[calc(50%-5px)] lg:w-[calc(25%-7.5px)] snap-start bg-white dark:bg-[#14120e] border-[#eceae3] dark:border-[#38352e] hover:border-[#00a76b] dark:hover:border-emerald-500 hover:shadow-md"
                       >
                         {/* Top Row: Avatar + Info */}
                         <div className="flex items-start gap-3">
@@ -1186,15 +1178,8 @@ const EmployeeDashboard = () => {
             <div className="mt-5 pt-3.5 border-t border-[#eceae3] dark:border-[#38352e] flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
               <span className="flex items-center gap-1.5 font-medium">
                 <span>✨</span>
-                <span className="hidden sm:inline">Connect with colleagues and celebrate milestones together!</span>
+                <span>Connect with colleagues and celebrate milestones together!</span>
               </span>
-              <button
-                onClick={() => navigate('/employee/profile')}
-                className="font-bold text-[#00a76b] hover:text-[#008f5b] flex items-center gap-1.5 transition-colors group cursor-pointer"
-              >
-                <span>View Profile & Team</span>
-                <ArrowRight size={13} className="transition-transform group-hover:translate-x-1" />
-              </button>
             </div>
           </Card>
         </div>

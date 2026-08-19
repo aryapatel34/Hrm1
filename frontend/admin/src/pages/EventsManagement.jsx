@@ -292,126 +292,210 @@ const EventsManagement = () => {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-10">
-              <h2 className="text-xl font-bold">{isEditing ? 'Update Event' : 'Create New Event'}</h2>
-              <button onClick={handleCloseModal} className="text-gray-500 hover:text-gray-800"><X size={20} /></button>
+        <div className="fixed inset-0 top-0 left-0 w-screen h-screen z-[999999] overflow-hidden flex justify-end">
+          {/* Backdrop with Blur */}
+          <div
+            onClick={handleCloseModal}
+            className="fixed inset-0 top-0 left-0 w-screen h-screen bg-black/50 backdrop-blur-md transition-opacity z-[999999]"
+          />
+
+          {/* Right Slide-over Drawer (100vh height, right-aligned) */}
+          <div className="fixed top-0 right-0 bottom-0 h-screen z-[1000000] w-full max-w-lg bg-white dark:bg-[#161311] shadow-2xl flex flex-col border-l border-gray-200 dark:border-[#28251e]">
+            
+            {/* Drawer Header */}
+            <div className="p-6 border-b border-gray-100 dark:border-[#28251e] flex justify-between items-center bg-white dark:bg-[#161311] shrink-0">
+              <h2 className="text-xl font-extrabold text-[#0f172a] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                {isEditing ? 'Update Event' : 'Create New Event'}
+              </h2>
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1f1b17] transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Event Title *</label>
-                <input required type="text" name="title" value={formData.title} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter event title" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
-                <textarea name="description" value={formData.description} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none h-24" placeholder="Enter description"></textarea>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar flex flex-col justify-between">
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Event Type *</label>
-                  <select name="eventType" value={formData.eventType} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="Meeting">Meeting</option>
-                    <option value="Review">Review</option>
-                    <option value="Deadline">Deadline</option>
-                    <option value="Training">Training</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Date *</label>
-                  <input required type="date" name="date" value={formData.date} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Start Time *</label>
-                  <input required type="time" name="startTime" value={formData.startTime} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">End Time *</label>
-                  <input required type="time" name="endTime" value={formData.endTime} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Location / Meeting Link</label>
-                <input type="text" name="location" value={formData.location} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Conference Room A or Zoom link" />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Assign Employees *</label>
-                
-                {/* Selected Chips */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {formData.assignedEmployees.map(empId => {
-                    const emp = employees.find(e => e._id === empId);
-                    if (!emp) return null;
-                    return (
-                      <div key={emp._id} className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-xs font-semibold border border-blue-100 shadow-sm transition-colors hover:bg-blue-100">
-                        <img src={getImageUrl(emp.profile?.avatar) || `https://ui-avatars.com/api/?name=${emp.name}&background=random`} alt={emp.name} className="w-5 h-5 rounded-full" />
-                        <span>{emp.name}</span>
-                        <button type="button" onClick={() => handleEmployeeToggle(emp._id)} className="text-blue-500 hover:text-blue-800 ml-1 focus:outline-none">
-                          <X size={14} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                  {formData.assignedEmployees.length === 0 && (
-                    <span className="text-xs text-gray-400 italic">No employees selected. Search below to add.</span>
-                  )}
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Event Title *</label>
+                  <input
+                    required
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-gray-50/80 dark:bg-[#1f1b17] border border-gray-200 dark:border-[#28251e] rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#00a76b]"
+                    placeholder="Enter event title"
+                  />
                 </div>
 
-                {/* Search Input */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-gray-50/80 dark:bg-[#1f1b17] border border-gray-200 dark:border-[#28251e] rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#00a76b] h-24 custom-scrollbar"
+                    placeholder="Enter description"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Event Type *</label>
+                    <select
+                      name="eventType"
+                      value={formData.eventType}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 bg-gray-50/80 dark:bg-[#1f1b17] border border-gray-200 dark:border-[#28251e] rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#00a76b]"
+                    >
+                      <option value="Meeting">Meeting</option>
+                      <option value="Review">Review</option>
+                      <option value="Deadline">Deadline</option>
+                      <option value="Training">Training</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Date *</label>
+                    <input
+                      required
+                      type="date"
+                      name="date"
+                      value={formData.date}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 bg-gray-50/80 dark:bg-[#1f1b17] border border-gray-200 dark:border-[#28251e] rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#00a76b]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Start Time *</label>
+                    <input
+                      required
+                      type="time"
+                      name="startTime"
+                      value={formData.startTime}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 bg-gray-50/80 dark:bg-[#1f1b17] border border-gray-200 dark:border-[#28251e] rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#00a76b]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">End Time *</label>
+                    <input
+                      required
+                      type="time"
+                      name="endTime"
+                      value={formData.endTime}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 bg-gray-50/80 dark:bg-[#1f1b17] border border-gray-200 dark:border-[#28251e] rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#00a76b]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Location / Meeting Link</label>
                   <input
                     type="text"
-                    placeholder="Search and select by name, ID, or email..."
-                    className="w-full pl-9 pr-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 text-sm shadow-sm"
-                    value={employeeSearch}
-                    onChange={(e) => setEmployeeSearch(e.target.value)}
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-gray-50/80 dark:bg-[#1f1b17] border border-gray-200 dark:border-[#28251e] rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#00a76b]"
+                    placeholder="Conference Room A or Zoom link"
                   />
-                  
-                  {/* Dropdown Results */}
-                  {employeeSearch && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                      {(() => {
-                        const term = employeeSearch.toLowerCase();
-                        const unselectedEmps = employees.filter(emp => !formData.assignedEmployees.includes(emp._id));
-                        const filteredEmps = unselectedEmps.filter(emp => 
-                          emp.name?.toLowerCase().includes(term) || 
-                          emp.employeeId?.toLowerCase().includes(term) || 
-                          emp.email?.toLowerCase().includes(term) ||
-                          emp.role?.toLowerCase().includes(term)
-                        );
-                        
-                        if (filteredEmps.length === 0) {
-                          return <p className="text-sm text-gray-500 text-center py-4">No matching employees found.</p>;
-                        }
-                        
-                        return filteredEmps.map(emp => (
-                          <div 
-                            key={emp._id} 
-                            onClick={() => {
-                              handleEmployeeToggle(emp._id);
-                              setEmployeeSearch('');
-                            }}
-                            className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors"
-                          >
-                            <img src={getImageUrl(emp.profile?.avatar) || `https://ui-avatars.com/api/?name=${emp.name}&background=random`} alt={emp.name} className="w-8 h-8 rounded-full border border-gray-100" />
-                            <div className="flex flex-col">
-                              <span className="text-sm font-bold text-gray-800">{emp.name}</span>
-                              <span className="text-[11px] font-semibold text-gray-500">{emp.email} • {emp.employeeId || emp.role}</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Assign Employees *</label>
+
+                  {/* Selected Chips */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {formData.assignedEmployees.map(empId => {
+                      const emp = employees.find(e => e._id === empId);
+                      if (!emp) return null;
+                      return (
+                        <div key={emp._id} className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-full text-xs font-semibold border border-blue-200 dark:border-blue-800/40 shadow-xs">
+                          <img src={getImageUrl(emp.profile?.avatar) || `https://ui-avatars.com/api/?name=${emp.name}&background=random`} alt={emp.name} className="w-5 h-5 rounded-full" />
+                          <span>{emp.name}</span>
+                          <button type="button" onClick={() => handleEmployeeToggle(emp._id)} className="text-blue-500 hover:text-blue-800 dark:hover:text-blue-200 ml-1 focus:outline-none">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {formData.assignedEmployees.length === 0 && (
+                      <span className="text-xs text-gray-400 italic">No employees selected. Search below to add.</span>
+                    )}
+                  </div>
+
+                  {/* Search Input */}
+                  <div className="relative">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Search and select by name, ID, or email..."
+                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50/80 dark:bg-[#1f1b17] border border-gray-200 dark:border-[#28251e] rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#00a76b]"
+                      value={employeeSearch}
+                      onChange={(e) => setEmployeeSearch(e.target.value)}
+                    />
+
+                    {/* Dropdown Results */}
+                    {employeeSearch && (
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-[#161311] border border-gray-200 dark:border-[#28251e] rounded-xl shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
+                        {(() => {
+                          const term = employeeSearch.toLowerCase();
+                          const unselectedEmps = employees.filter(emp => !formData.assignedEmployees.includes(emp._id));
+                          const filteredEmps = unselectedEmps.filter(emp =>
+                            emp.name?.toLowerCase().includes(term) ||
+                            emp.employeeId?.toLowerCase().includes(term) ||
+                            emp.email?.toLowerCase().includes(term) ||
+                            emp.role?.toLowerCase().includes(term)
+                          );
+
+                          if (filteredEmps.length === 0) {
+                            return <p className="text-xs text-gray-400 text-center py-4">No matching employees found.</p>;
+                          }
+
+                          return filteredEmps.map(emp => (
+                            <div
+                              key={emp._id}
+                              onClick={() => {
+                                handleEmployeeToggle(emp._id);
+                                setEmployeeSearch('');
+                              }}
+                              className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-[#1f1b17] cursor-pointer border-b border-gray-100 dark:border-[#28251e] last:border-0 transition-colors"
+                            >
+                              <img src={getImageUrl(emp.profile?.avatar) || `https://ui-avatars.com/api/?name=${emp.name}&background=random`} alt={emp.name} className="w-8 h-8 rounded-full border border-gray-200 dark:border-[#28251e]" />
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{emp.name}</span>
+                                <span className="text-[10px] font-semibold text-gray-400">{emp.email} • {emp.employeeId || emp.role}</span>
+                              </div>
                             </div>
-                          </div>
-                        ));
-                      })()}
-                    </div>
-                  )}
+                          ));
+                        })()}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <button type="button" onClick={handleCloseModal} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+
+              {/* Drawer Footer Buttons */}
+              <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-gray-100 dark:border-[#28251e] bg-white dark:bg-[#161311]">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="px-5 py-2.5 text-xs font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-[#25201b] rounded-xl hover:bg-gray-200 dark:hover:bg-[#2e2822] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                >
                   {isEditing ? 'Update Event' : 'Create Event'}
                 </button>
               </div>
