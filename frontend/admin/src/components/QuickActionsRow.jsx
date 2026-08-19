@@ -199,7 +199,7 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
             className="flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
             style={{ 
               backgroundColor: checkInHovered ? (isDark ? 'rgba(239, 68, 68, 0.18)' : '#fef2f2') : (isDark ? '#151c28' : '#ffffff'),
-              borderWidth: checkInHovered ? '2px' : '1px',
+              borderWidth: '1px',
               borderStyle: 'solid',
               borderColor: checkInHovered ? '#ef4444' : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'), 
               color: '#ef4444',
@@ -221,7 +221,7 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
             className="flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
             style={{ 
               backgroundColor: checkInHovered ? (isDark ? 'rgba(16, 185, 129, 0.18)' : '#f0fdf4') : (isDark ? '#151c28' : '#ffffff'),
-              borderWidth: checkInHovered ? '2px' : '1px',
+              borderWidth: '1px',
               borderStyle: 'solid',
               borderColor: checkInHovered ? (isDark ? '#10b981' : '#00a76b') : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'), 
               color: '#00a76b',
@@ -248,7 +248,7 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
               className="flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer"
               style={{ 
                 backgroundColor: isHovered ? (isDark ? act.darkBgHover : act.bgHover) : (isDark ? '#151c28' : '#ffffff'),
-                borderWidth: isHovered ? '2px' : '1px',
+                borderWidth: '1px',
                 borderStyle: 'solid',
                 borderColor: isHovered ? (isDark ? act.darkBorder : act.border) : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'), 
                 color: act.color,

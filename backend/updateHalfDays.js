@@ -19,7 +19,7 @@ async function updateDatabase() {
     for (const att of fullDayRecords) {
       const cTime = att.checkInTime ? new Date(att.checkInTime) : null;
       const mins = cTime ? cTime.getHours() * 60 + cTime.getMinutes() : 0;
-      att.status = mins >= 11 * 60 ? 'Late' : 'Present';
+      att.status = mins >= (10 * 60 + 30) ? 'Late' : 'Present';
       await att.save();
       fullDayCount++;
     }

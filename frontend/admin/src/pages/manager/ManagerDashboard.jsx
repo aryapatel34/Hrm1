@@ -36,6 +36,59 @@ const Card = ({ children, className = '', style = {}, ...props }) => (
   </div>
 );
 
+const getEmpId = (emp) => {
+  if (!emp) return '';
+  if (typeof emp === 'string') return emp;
+  return (emp._id || emp.employeeId || emp.id || emp.user || emp.userId || '').toString();
+};
+
+const isSameEmp = (empA, empB) => {
+  if (!empA || !empB) return false;
+  const idA = getEmpId(empA);
+  const idB = getEmpId(empB);
+  if (idA && idB && idA === idB) return true;
+
+  const userA = (empA?.user || empA?.userId || '').toString();
+  const userB = (empB?.user || empB?.userId || '').toString();
+  if (userA && idB && userA === idB) return true;
+  if (idA && userB && idA === userB) return true;
+  if (userA && userB && userA === userB) return true;
+
+  const codeA = (empA?.employeeId || '').toString().toLowerCase().trim();
+  const codeB = (empB?.employeeId || '').toString().toLowerCase().trim();
+  if (codeA && codeB && codeA === codeB) return true;
+
+  const nameA = (empA?.fullName || empA?.name || (empA?.firstName ? `${empA.firstName} ${empA.lastName || ''}` : '')).toLowerCase().replace(/\s+/g, ' ').trim();
+  const nameB = (empB?.fullName || empB?.name || (empB?.firstName ? `${empB.firstName} ${empB.lastName || ''}` : '')).toLowerCase().replace(/\s+/g, ' ').trim();
+  if (nameA && nameB && nameA === nameB) return true;
+
+  return false;
+};
+
+const isTodayDate = (dateVal) => {
+  if (!dateVal) return false;
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return false;
+  const today = new Date();
+  return d.getDate() === today.getDate() &&
+         d.getMonth() === today.getMonth() &&
+         d.getFullYear() === today.getFullYear();
+};
+
+const isDateInLeaveRange = (targetDateStr, startDate, endDate) => {
+  if (!startDate) return false;
+  const target = new Date(targetDateStr);
+  target.setHours(0, 0, 0, 0);
+
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+
+  const end = endDate ? new Date(endDate) : new Date(startDate);
+  end.setHours(23, 59, 59, 999);
+
+  return target >= start && target <= end;
+};
+
 const SectionHeader = ({ title, action }) => (
   <div className="flex justify-between items-center mb-5">
     <h2 className="font-bold text-[#1e293b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif', fontSize: '16px' }}>{title}</h2>
@@ -134,8 +187,11 @@ const ManagerDashboard = () => {
   const [projects, setProjects] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [events, setEvents] = useState([]);
+  const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredStatCard, setHoveredStatCard] = useState(null);
+  const [hoveredWorkload, setHoveredWorkload] = useState(null);
+  const [hoveredTaskDonut, setHoveredTaskDonut] = useState(null);
 
   // ─ Filters ─
   const [attFilter, setAttFilter] = useState('weekly');
@@ -147,20 +203,49 @@ const ManagerDashboard = () => {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [profRes, empRes, taskRes, attRes, projRes, notifRes, eventsRes] = await Promise.allSettled([
+      const [profRes, empRes, taskRes, attRes, projRes, notifRes, eventsRes, todayAttRes, leavesRes, managerLeavesRes] = await Promise.allSettled([
         api('/api/auth/me'),
         api('/api/employees'),
         api('/api/tasks'),
         api('/api/attendance'),
         api('/api/projects'),
         api('/api/notifications'),
-        api('/api/events')
+        api('/api/events'),
+        api('/api/attendance/today'),
+        api('/api/leaves'),
+        api('/api/leaves/manager')
       ]);
 
       if (profRes.status === 'fulfilled') setProfile(profRes.value.data);
       if (empRes.status === 'fulfilled') setTeamMembers(Array.isArray(empRes.value.data) ? empRes.value.data : []);
       if (taskRes.status === 'fulfilled') setTasks(Array.isArray(taskRes.value.data) ? taskRes.value.data : (taskRes.value.data?.data || []));
-      if (attRes.status === 'fulfilled') setAttendance(Array.isArray(attRes.value.data) ? attRes.value.data : []);
+
+      let allAtt = [];
+      if (attRes.status === 'fulfilled') {
+        const d = attRes.value.data;
+        const list = Array.isArray(d) ? d : (d?.data || d?.attendance || d?.records || d?.logs || []);
+        allAtt = [...allAtt, ...list];
+      }
+      if (todayAttRes && todayAttRes.status === 'fulfilled') {
+        const td = todayAttRes.value.data;
+        const tList = Array.isArray(td) ? td : (td?.data || td?.attendance || td?.records || td?.logs || []);
+        allAtt = [...allAtt, ...tList];
+      }
+      setAttendance(allAtt);
+
+      let allLeaves = [];
+      if (leavesRes && leavesRes.status === 'fulfilled') {
+        const ld = leavesRes.value.data;
+        const lList = Array.isArray(ld) ? ld : (ld?.data || ld?.leaves || ld?.records || []);
+        allLeaves = [...allLeaves, ...lList];
+      }
+      if (managerLeavesRes && managerLeavesRes.status === 'fulfilled') {
+        const mld = managerLeavesRes.value.data;
+        const mlList = Array.isArray(mld) ? mld : (mld?.data || mld?.leaves || mld?.records || []);
+        allLeaves = [...allLeaves, ...mlList];
+      }
+      setLeaves(allLeaves);
+
       if (projRes.status === 'fulfilled') setProjects(Array.isArray(projRes.value.data) ? projRes.value.data : []);
       if (notifRes.status === 'fulfilled') setNotifications(Array.isArray(notifRes.value.data) ? notifRes.value.data : []);
       if (eventsRes && eventsRes.status === 'fulfilled') setEvents(Array.isArray(eventsRes.value.data?.data) ? eventsRes.value.data.data : []);
@@ -205,10 +290,6 @@ const ManagerDashboard = () => {
   // ─── COMPUTED DATA ────────────────────────────────────────────────────
   const managerName = profile?.name?.split(' ')[0] || profile?.profile?.firstName || 'Manager';
   const totalTeam = teamMembers.length;
-
-  const todayStr = new Date().toLocaleDateString('en-CA');
-  const presentToday = attendance.filter(a => a.date?.startsWith(todayStr) || new Date(a.date).toLocaleDateString('en-CA') === todayStr).length;
-  const presentPercent = totalTeam ? Math.round((presentToday / totalTeam) * 100) : 0;
 
   const pendingTasksCount = tasks.filter(t => !['completed', 'done'].includes((t.status || '').toLowerCase())).length;
   const overdueTasksCount = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && !['completed', 'done'].includes((t.status || '').toLowerCase())).length;
@@ -335,23 +416,33 @@ const ManagerDashboard = () => {
     { name: 'DevOps Team', value: 50, color: '#8b5cf6' }
   ];
 
-  const teamAvailability = teamMembers.slice(0, 8).map(member => {
-    const memberName = member.fullName || member.name || 'Unknown';
-    const memberAtt = attendance.find(a => a.employeeId === member._id && (a.date?.startsWith(todayStr) || new Date(a.date).toLocaleDateString('en-CA') === todayStr));
+  const todayDateISO = new Date().toISOString().split('T')[0];
+  const allMembersAvailability = teamMembers.map(member => {
+    const memberName = member.fullName || member.name || (member.firstName ? `${member.firstName} ${member.lastName || ''}`.trim() : 'Unknown');
+    const memberAtt = attendance.find(a =>
+      isSameEmp(a.employeeId || a.employee || a.userId || a.user || a, member) &&
+      isTodayDate(a.date || a.createdAt || a.checkIn || a.checkInTime || a.startTime) &&
+      (a.status || '').toLowerCase() !== 'absent'
+    );
+    const memberLeave = leaves.find(l => isSameEmp(l.employeeId || l.employee || l.userId || l.user || l, member) && (l.status === 'approved' || l.status === 'Approved' || l.status === 'pending' || l.status === 'Pending') && isDateInLeaveRange(todayDateISO, l.startDate, l.endDate));
 
     let status = 'Not Logged In';
     let color = '#94a3b8';
 
-    if (memberAtt) {
-      if (memberAtt.status === 'Present') {
-        status = 'Working';
+    const isOnLeaveToday = Boolean(memberLeave) || (memberAtt && (memberAtt.status || '').toLowerCase().includes('leave'));
+
+    if (isOnLeaveToday) {
+      status = 'On Leave';
+      color = '#ef4444';
+    } else if (memberAtt) {
+      const st = (memberAtt.status || '').toLowerCase();
+      const hasRealClockIn = (memberAtt.clockIn && memberAtt.clockIn !== '--') ||
+                             (memberAtt.checkInTime && memberAtt.checkInTime !== '--') ||
+                             (memberAtt.checkIn && memberAtt.checkIn !== '--') ||
+                             st.includes('present') || st.includes('working') || st.includes('late') || st.includes('half');
+      if (hasRealClockIn) {
+        status = 'Logged In';
         color = '#22c55e';
-      } else if (memberAtt.status === 'Absent' || memberAtt.status === 'On Leave') {
-        status = 'On Leave';
-        color = '#ef4444';
-      } else {
-        status = memberAtt.status;
-        color = '#f59e0b';
       }
     }
 
@@ -360,9 +451,13 @@ const ManagerDashboard = () => {
       role: member.designation || member.role || 'Employee',
       status: status,
       color: color,
-      hasDot: status === 'Working'
+      hasDot: status === 'Logged In'
     };
   });
+
+  const teamAvailability = allMembersAvailability.slice(0, 8);
+  const presentToday = allMembersAvailability.filter(m => m.status === 'Logged In').length;
+  const presentPercent = totalTeam ? Math.round((presentToday / totalTeam) * 100) : 0;
 
   if (loading) {
     return (
@@ -404,7 +499,8 @@ const ManagerDashboard = () => {
             sub: '↑ 2 this month',
             subColor: 'text-green-600 dark:text-green-400',
             borderColor: '#22c55e',
-            glowColor: 'rgba(34, 197, 94, 0.22)'
+            glowColor: 'rgba(34, 197, 94, 0.22)',
+            hoverBorder: 'hover:!border-[#22c55e] dark:hover:!border-[#22c55e]'
           },
           {
             icon: UserCheck,
@@ -415,7 +511,8 @@ const ManagerDashboard = () => {
             sub: `${presentPercent}% of team`,
             subColor: 'text-gray-500 dark:text-gray-400',
             borderColor: '#3b82f6',
-            glowColor: 'rgba(59, 130, 246, 0.22)'
+            glowColor: 'rgba(59, 130, 246, 0.22)',
+            hoverBorder: 'hover:!border-[#3b82f6] dark:hover:!border-[#3b82f6]'
           },
           {
             icon: ClipboardList,
@@ -426,7 +523,8 @@ const ManagerDashboard = () => {
             sub: 'Needs attention',
             subColor: 'text-amber-600 dark:text-amber-400',
             borderColor: '#8b5cf6',
-            glowColor: 'rgba(139, 92, 246, 0.22)'
+            glowColor: 'rgba(139, 92, 246, 0.22)',
+            hoverBorder: 'hover:!border-[#8b5cf6] dark:hover:!border-[#8b5cf6]'
           },
           {
             icon: TrendingUp,
@@ -437,7 +535,8 @@ const ManagerDashboard = () => {
             sub: '↑ 8% vs last week',
             subColor: 'text-green-600 dark:text-green-400',
             borderColor: '#f59e0b',
-            glowColor: 'rgba(245, 158, 11, 0.22)'
+            glowColor: 'rgba(245, 158, 11, 0.22)',
+            hoverBorder: 'hover:!border-[#f59e0b] dark:hover:!border-[#f59e0b]'
           },
           {
             icon: AlertCircle,
@@ -448,7 +547,8 @@ const ManagerDashboard = () => {
             sub: 'Requires action',
             subColor: 'text-red-500 dark:text-red-400',
             borderColor: '#ef4444',
-            glowColor: 'rgba(239, 68, 68, 0.22)'
+            glowColor: 'rgba(239, 68, 68, 0.22)',
+            hoverBorder: 'hover:!border-[#ef4444] dark:hover:!border-[#ef4444]'
           },
           {
             icon: Briefcase,
@@ -459,7 +559,8 @@ const ManagerDashboard = () => {
             sub: 'Running smoothly',
             subColor: 'text-teal-600 dark:text-teal-400',
             borderColor: '#14b8a6',
-            glowColor: 'rgba(20, 184, 166, 0.22)'
+            glowColor: 'rgba(20, 184, 166, 0.22)',
+            hoverBorder: 'hover:!border-[#14b8a6] dark:hover:!border-[#14b8a6]'
           },
         ].map((stat, i) => {
           const isHovered = hoveredStatCard === i;
@@ -470,19 +571,19 @@ const ManagerDashboard = () => {
               onMouseLeave={() => setHoveredStatCard(null)}
               style={isHovered ? {
                 borderColor: stat.borderColor,
-                boxShadow: `0 8px 20px -2px ${stat.glowColor}`
+                boxShadow: `0 6px 16px -2px ${stat.glowColor}`
               } : undefined}
-              className="flex flex-col h-full justify-between hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-xs"
+              className={`!p-2.5 flex flex-col justify-start gap-1 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer shadow-xs ${stat.hoverBorder}`}
             >
-              <div className="flex flex-col items-start gap-2.5 mb-2">
-                <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center ${stat.bg} ${stat.iconColor}`}>
-                  <stat.icon size={18} strokeWidth={2.5} />
+              <div className="flex items-center gap-2.5">
+                <div className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center ${stat.bg} ${stat.iconColor}`}>
+                  <stat.icon size={14} strokeWidth={2.5} />
                 </div>
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide leading-tight w-full break-words">{stat.label}</p>
+                <p className="text-[10px] sm:text-[10.5px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight leading-tight flex-1 min-w-0 truncate">{stat.label}</p>
               </div>
-              <div className="mt-auto">
-                <h3 className="text-2xl sm:text-3xl font-black text-[#0f172a] dark:text-white tracking-tight">{stat.value}</h3>
-                <p className={`text-[11px] font-bold mt-1 ${stat.subColor}`}>{stat.sub}</p>
+              <div className="flex items-baseline gap-2.5 overflow-hidden">
+                <h3 className="text-lg sm:text-xl font-black text-[#0f172a] dark:text-white tracking-tight leading-none shrink-0">{stat.value}</h3>
+                <span className={`text-[9.5px] sm:text-[10px] font-bold ${stat.subColor} whitespace-nowrap truncate`}>{stat.sub}</span>
               </div>
             </Card>
           );
@@ -538,15 +639,29 @@ const ManagerDashboard = () => {
                     dataKey="value"
                     stroke="none"
                     cornerRadius={4}
+                    onMouseEnter={(_, index) => setHoveredTaskDonut(index)}
+                    onMouseLeave={() => setHoveredTaskDonut(null)}
                   >
                     {donutData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip position={{ y: 0 }} contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }} itemStyle={{ color: '#e5e7eb' }} labelStyle={{ color: '#ffffff', fontWeight: 'bold' }} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-3xl font-extrabold text-[#0f172a] dark:text-white">{totalTasksSum}</span>
-                <span className="text-xs font-semibold text-gray-500 dark:text-[#a3a094]">Total Tasks</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1">
+                {hoveredTaskDonut !== null ? (
+                  <>
+                    <span className="text-2xl font-extrabold leading-none tracking-tight" style={{ color: donutData[hoveredTaskDonut].color }}>
+                      {donutData[hoveredTaskDonut].value}
+                    </span>
+                    <span className="text-[10px] font-bold mt-0.5 truncate max-w-[85px]" style={{ color: donutData[hoveredTaskDonut].color }}>
+                      {donutData[hoveredTaskDonut].name}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-3xl font-extrabold text-[#0f172a] dark:text-white leading-none">{totalTasksSum}</span>
+                    <span className="text-xs font-semibold text-gray-500 dark:text-[#a3a094]">Total Tasks</span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -565,81 +680,7 @@ const ManagerDashboard = () => {
         </Card>
       </div>
 
-      {/* 4. THIRD ROW (Performance Overview & Goal Completion) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="h-[260px] flex flex-col">
-          <SectionHeader
-            title="Team Performance Overview"
-            action={<Dropdown value={perfFilter} onChange={setPerfFilter} options={[{ value: 'monthly', label: 'This Month' }]} />}
-          />
-          <div className="flex-1 -mx-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={teamPerfData} margin={{ top: 20, right: 0, left: -20, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 600 }} tickFormatter={v => `${v}%`} domain={[0, 100]} />
-                <Tooltip
-                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                  contentStyle={{ borderRadius: '12px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}
-                  itemStyle={{ color: '#e5e7eb' }}
-                  labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
-                  formatter={(val) => [`${val}%`, 'Performance']}
-                />
-                <Bar dataKey="performance" radius={[6, 6, 6, 6]} barSize={28}>
-                  {teamPerfData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex justify-between items-center px-2 pt-2 border-t border-gray-100 dark:border-[#28251e]">
-            <span className="text-sm font-bold text-[#0f172a] dark:text-white">Team Average</span>
-            <span className="text-sm font-extrabold text-[#10b981]">{teamAvgPerf}%</span>
-          </div>
-        </Card>
 
-        <Card className="h-[260px] flex flex-col">
-          <SectionHeader
-            title="Goal Completion"
-            action={<Dropdown value={goalFilter} onChange={setGoalFilter} options={[{ value: 'quarterly', label: 'This Quarter' }]} />}
-          />
-          <div className="flex-1 flex flex-col sm:flex-row items-center justify-between px-2 sm:px-4">
-
-            {/* Circular Progress (Overall) */}
-            <div className="w-[130px] h-[130px] relative mb-3 sm:mb-0 shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={[{ value: 68 }, { value: 32 }]} innerRadius={48} outerRadius={60} dataKey="value" stroke="none" startAngle={90} endAngle={-270}>
-                    <Cell fill="#00a76b" />
-                    <Cell fill="#28251e" />
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-extrabold text-[#0f172a] dark:text-white leading-none">68%</span>
-                <span className="text-[9px] font-bold text-gray-500 dark:text-[#a3a094] uppercase tracking-widest mt-1 text-center leading-tight">Overall<br />Progress</span>
-              </div>
-            </div>
-
-            {/* Horizontal Bars */}
-            <div className="flex-1 w-full sm:pl-10 flex flex-col gap-6 justify-center">
-              {MOCK_GOALS.map((goal, i) => (
-                <div key={i}>
-                  <div className="flex justify-between text-xs font-bold text-[#0f172a] dark:text-white mb-2">
-                    <span>{goal.name}</span>
-                    <span>{goal.progress}%</span>
-                  </div>
-                  <div className="h-2 w-full bg-gray-100 dark:bg-[#28251e] rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${goal.progress}%`, backgroundColor: goal.color }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-          </div>
-        </Card>
-      </div>
 
       {/* 5. KANBAN BOARD */}
       <div>
@@ -690,8 +731,8 @@ const ManagerDashboard = () => {
         </div>
       </div>
 
-      {/* 6. FOURTH ROW (Calendar, Availability, Active Projects) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      {/* 6. FOURTH ROW (Calendar, Availability) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Calendar */}
         <Card className="h-[350px] flex flex-col">
           <SectionHeader title="Team Calendar" />
@@ -769,206 +810,12 @@ const ManagerDashboard = () => {
             ))}
           </div>
         </Card>
-
-        {/* Active Projects */}
-        <Card className="h-[350px] flex flex-col">
-          <SectionHeader
-            title="Active Projects"
-            action={
-              <span
-                onClick={() => navigate('/manager/projects')}
-                className="text-xs font-semibold text-[#00a76b] cursor-pointer hover:underline"
-              >
-                View All
-              </span>
-            }
-          />
-          <div className="flex-1 overflow-y-auto pr-2 space-y-5 custom-scrollbar">
-            {MOCK_PROJECTS.map((proj, i) => (
-              <div key={i} className="group">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h4 className="text-sm font-bold text-[#0f172a] dark:text-white group-hover:text-[#00a76b] transition-colors">{proj.name}</h4>
-                    <p className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094] mt-0.5">Due: {proj.due}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-bold text-[#0f172a] dark:text-white mb-1">{proj.progress}%</p>
-                    <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: proj.color }}>{proj.status}</span>
-                  </div>
-                </div>
-                <div className="h-1.5 w-full bg-gray-100 dark:bg-[#28251e] rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${proj.progress}%`, backgroundColor: proj.color }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
       </div>
 
-      {/* 7. FIFTH ROW (Workload, Productivity Trend, Top Performers) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {/* Workload */}
-        <Card className="h-80 flex flex-col">
-          <SectionHeader title="Workload Distribution" />
-          <div className="flex-1 flex items-center justify-between px-2">
-            <div className="relative w-[160px] h-[160px] shrink-0 flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={workloadData} innerRadius={48} outerRadius={75} paddingAngle={3} dataKey="value" stroke="none" cornerRadius={3}>
-                    {workloadData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                  </Pie>
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload;
-                        return (
-                          <div style={{ backgroundColor: data.color, color: '#fff', padding: '8px 12px', borderRadius: '8px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
-                            <p className="text-sm font-bold m-0 leading-none">{data.name}</p>
-                            <p className="text-xs font-semibold m-0 mt-1 leading-none">{data.value}% Workload</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                <span className="text-2xl font-black text-gray-900 dark:text-white leading-none tracking-tight">
-                  {Math.round(workloadData.reduce((acc, curr) => acc + curr.value, 0) / (workloadData.length || 1))}%
-                </span>
-                <span className="text-[10px] font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">
-                  Avg Workload
-                </span>
-              </div>
-            </div>
-            <div className="flex-1 pl-4 flex flex-col gap-3 justify-center">
-              {workloadData.map((d, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
-                    <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200">{d.name}</span>
-                  </div>
-                  <span className="text-[11px] font-extrabold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800/80 px-2 py-0.5 rounded-md">{d.value}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Card>
 
-        {/* Productivity Trend */}
-        <Card className="h-80 flex flex-col">
-          <SectionHeader
-            title="Team Productivity Trend"
-            action={<Dropdown value={'weekly'} onChange={() => { }} options={[{ value: 'weekly', label: 'This Week' }]} />}
-          />
-          <div className="flex items-center justify-center gap-6 mb-4">
-            <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#22c55e]" /><span className="text-[10px] font-bold text-gray-500 dark:text-[#a3a094]">Hours Worked</span></div>
-            <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#3b82f6]" /><span className="text-[10px] font-bold text-gray-500 dark:text-[#a3a094]">Tasks Completed</span></div>
-          </div>
-          <div className="flex-1 -mx-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={MOCK_WEEKLY_TREND} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#28251e" />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 600 }} />
-                <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', boxShadow: '0 4px 15px rgba(0,0,0,0.4)' }} />
-                <Line type="monotone" dataKey="worked" stroke="#22c55e" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#22c55e' }} activeDot={{ r: 6 }} />
-                <Line type="monotone" dataKey="tasks" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#3b82f6' }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
 
-        {/* Top Performers */}
-        <Card className="h-80 flex flex-col">
-          <SectionHeader
-            title="Top Performers"
-            action={<Dropdown value={'monthly'} onChange={() => { }} options={[{ value: 'monthly', label: 'This Month' }]} />}
-          />
-          <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-            {teamPerfData.sort((a, b) => b.performance - a.performance).slice(0, 3).map((member, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1f1b17] transition-colors">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-gray-400 dark:text-gray-500 w-3">{i + 1}</span>
-                  <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-[#28251e] flex items-center justify-center text-sm font-bold text-gray-600 dark:text-gray-300">
-                    {member.name.charAt(0)}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-[#0f172a] dark:text-white">{member.name}</h4>
-                    <p className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094]">{i === 0 ? 'UI/UX Designer' : i === 1 ? 'Backend Developer' : 'QA Engineer'}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-extrabold text-[#0f172a] dark:text-white">{member.performance}%</span>
-                  <Star size={16} fill="#f59e0b" stroke="none" />
-                </div>
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={() => navigate('/manager/performance')}
-            className="mt-2 w-full py-2 text-xs font-bold text-[#00a76b] hover:bg-green-50 dark:hover:bg-[#16291e] rounded-xl transition-colors cursor-pointer"
-          >
-            View All
-          </button>
-        </Card>
-      </div>
-
-      {/* 8. BOTTOM ROW (Alerts, Schedule, Quick Actions) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {/* Alerts & Notifications */}
-        <Card className="h-72 flex flex-col">
-          <SectionHeader
-            title="Alerts & Notifications"
-            action={
-              <span
-                onClick={() => navigate('/manager/notifications')}
-                className="text-xs font-semibold text-[#00a76b] cursor-pointer hover:underline"
-              >
-                View All
-              </span>
-            }
-          />
-          <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
-            <div className="flex gap-4 items-start">
-              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center shrink-0">
-                <Bell size={16} className="text-red-500 dark:text-red-400" />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between items-start">
-                  <h4 className="text-xs font-bold text-[#0f172a] dark:text-white">Overdue Task</h4>
-                  <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500">2h ago</span>
-                </div>
-                <p className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094] mt-1 line-clamp-2">5 tasks are overdue. Please review and update.</p>
-              </div>
-            </div>
-            <div className="flex gap-4 items-start">
-              <div className="w-10 h-10 rounded-full bg-orange-50 dark:bg-amber-950/40 flex items-center justify-center shrink-0">
-                <CalendarIcon size={16} className="text-orange-500 dark:text-amber-400" />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between items-start">
-                  <h4 className="text-xs font-bold text-[#0f172a] dark:text-white">Leave Request</h4>
-                  <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500">4h ago</span>
-                </div>
-                <p className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094] mt-1 line-clamp-2">Karan Mehta has requested sick leave for 29 Jul.</p>
-              </div>
-            </div>
-            <div className="flex gap-4 items-start">
-              <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
-                <ClipboardList size={16} className="text-blue-500 dark:text-blue-400" />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between items-start">
-                  <h4 className="text-xs font-bold text-[#0f172a] dark:text-white">Project Deadline</h4>
-                  <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500">1d ago</span>
-                </div>
-                <p className="text-[10px] font-semibold text-gray-500 dark:text-[#a3a094] mt-1 line-clamp-2">HRMS Redesign deadline is approaching in 7 days.</p>
-              </div>
-            </div>
-          </div>
-        </Card>
+      {/* 8. BOTTOM ROW (Schedule, Quick Actions) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Upcoming Schedule */}
         <Card className="h-72 flex flex-col">

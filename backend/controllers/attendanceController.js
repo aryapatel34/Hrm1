@@ -21,7 +21,7 @@ exports.checkIn = async (req, res) => {
     let status = 'Present';
     if (timeInMinutes >= 14 * 60 + 30) { // 2:30 PM
       status = 'Half Day';
-    } else if (timeInMinutes >= 11 * 60) { // 11:00 AM
+    } else if (timeInMinutes >= 10 * 60 + 30) { // 10:30 AM
       status = 'Late';
     }
 
@@ -337,6 +337,40 @@ const buildEmployeeAttendanceHistory = async (userId) => {
 };
 
 // @desc    Get Attendance based on Role Hierarchy
+const getManagerSubordinateUserIds = async (managerUserId) => {
+  const User = require('../models/User');
+  const Employee = require('../models/Employee');
+
+  const directUsers = await User.find({
+    role: { $nin: ['admin', 'hr', 'superadmin'] },
+    $or: [
+      { reportingManager: managerUserId },
+      { managerId: managerUserId }
+    ]
+  }).select('_id').lean();
+  const directIds = directUsers.map(u => u._id.toString());
+
+  const empDocs = await Employee.find({
+    $or: [
+      { managerId: managerUserId },
+      { reportingManager: managerUserId }
+    ]
+  }).select('userId').lean();
+  const empIds = empDocs.filter(e => e.userId).map(e => e.userId.toString());
+
+  const combined = Array.from(new Set([...directIds, ...empIds]));
+  if (combined.length > 0) return combined;
+
+  // Fallback: If no explicit manager assignment exists in DB yet, query employees assigned to null/unassigned
+  const unassigned = await User.find({
+    role: { $in: ['employee', 'staff'] },
+    reportingManager: { $in: [managerUserId, null, undefined] }
+  }).select('_id').lean();
+
+  return unassigned.map(u => u._id.toString());
+};
+
+// @desc    Get Attendance based on Role Hierarchy
 // @route   GET /api/attendance
 exports.getAttendance = async (req, res) => {
   try {
@@ -359,16 +393,7 @@ exports.getAttendance = async (req, res) => {
       const hrUserIds = nonAdminUsers.map(u => u._id.toString());
       query = { user: { $in: hrUserIds } };
     } else if (role === 'manager') {
-      const User = require('../models/User');
-      const allTeamAndEmployees = await User.find({
-        role: { $nin: ['admin', 'hr', 'superadmin'] },
-        $or: [
-          { role: { $in: ['employee', 'staff'] } },
-          { reportingManager: userId },
-          { managerId: userId }
-        ]
-      }).select('_id');
-      const empIds = allTeamAndEmployees.map(u => u._id.toString());
+      const empIds = await getManagerSubordinateUserIds(userId);
       query = { user: { $in: empIds } };
     }
 
@@ -379,16 +404,7 @@ exports.getAttendance = async (req, res) => {
     const Leave = require('../models/Leave');
     let leaveQuery = { status: 'approved' };
     if (role === 'manager') {
-      const User = require('../models/User');
-      const allTeamAndEmployees = await User.find({
-        role: { $nin: ['admin', 'hr', 'superadmin'] },
-        $or: [
-          { role: { $in: ['employee', 'staff'] } },
-          { reportingManager: userId },
-          { managerId: userId }
-        ]
-      }).select('_id');
-      const empIds = allTeamAndEmployees.map(u => u._id.toString());
+      const empIds = await getManagerSubordinateUserIds(userId);
       leaveQuery.user = { $in: empIds };
     } else if (role === 'hr') {
       const User = require('../models/User');
@@ -443,6 +459,57 @@ exports.getAttendance = async (req, res) => {
       }
     });
 
+    // Generate Absent records for users who did not check in or take leave on past working days
+    const User = require('../models/User');
+    let targetUsers = [];
+    if (role === 'admin' || role === 'hr') {
+      targetUsers = await User.find({ role: { $nin: ['admin', 'superadmin'] } }).select('_id name email role joinDate createdAt').lean();
+    } else if (role === 'manager') {
+      const empIds = await getManagerSubordinateUserIds(userId);
+      targetUsers = await User.find({ _id: { $in: empIds } }).select('_id name email role joinDate createdAt').lean();
+    }
+
+    const todayObj = new Date();
+    const absentLookbackDays = 60;
+    const absentRecords = [];
+
+    targetUsers.forEach(u => {
+      const uId = u._id.toString();
+      let uJoinDate = u.joinDate || u.createdAt ? new Date(u.joinDate || u.createdAt) : null;
+
+      for (let i = 0; i <= absentLookbackDays; i++) {
+        const d = new Date(todayObj);
+        d.setDate(todayObj.getDate() - i);
+        const dStr = formatLocalDate(d);
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+        if (isWeekend) continue;
+        if (uJoinDate && d < new Date(new Date(uJoinDate).setHours(0, 0, 0, 0))) continue;
+
+        const hasAtt = records.some(r => {
+          const rId = r.user?._id ? r.user._id.toString() : (typeof r.user === 'string' ? r.user : '');
+          return rId === uId && r.date === dStr;
+        });
+
+        const hasLeave = leaveRecords.some(r => {
+          const rId = r.user?._id ? r.user._id.toString() : (typeof r.user === 'string' ? r.user : '');
+          return rId === uId && r.date === dStr;
+        });
+
+        if (!hasAtt && !hasLeave) {
+          absentRecords.push({
+            _id: `absent_${uId}_${dStr}`,
+            user: { _id: u._id, name: u.name, email: u.email, role: u.role },
+            date: dStr,
+            status: 'Absent',
+            clockIn: '--',
+            clockOut: '--',
+            totalHours: '--'
+          });
+        }
+      }
+    });
+
     const uniqueCombinedMap = new Map();
     for (const rec of records) {
       const uId = rec.user?._id ? rec.user._id.toString() : (rec.user ? rec.user.toString() : '');
@@ -452,6 +519,13 @@ exports.getAttendance = async (req, res) => {
       }
     }
     for (const rec of leaveRecords) {
+      const uId = rec.user?._id ? rec.user._id.toString() : (rec.user ? rec.user.toString() : '');
+      const key = `${uId}_${rec.date}`;
+      if (uId && !uniqueCombinedMap.has(key)) {
+        uniqueCombinedMap.set(key, rec);
+      }
+    }
+    for (const rec of absentRecords) {
       const uId = rec.user?._id ? rec.user._id.toString() : (rec.user ? rec.user.toString() : '');
       const key = `${uId}_${rec.date}`;
       if (uId && !uniqueCombinedMap.has(key)) {
@@ -511,16 +585,7 @@ exports.getWeeklySummary = async (req, res) => {
     if (isEmployee) {
       eligibleUserIds = [req.user.id.toString()];
     } else if (req.user.role === 'manager') {
-      const myTeam = await Employee.find({ managerId: req.user.id }).select('userId');
-      let teamUserIds = myTeam.map(emp => emp.userId ? emp.userId.toString() : null).filter(Boolean);
-      const userTeam = await User.find({ $or: [{ reportingManager: req.user.id }, { managerId: req.user.id }] }).select('_id');
-      userTeam.forEach(u => teamUserIds.push(u._id.toString()));
-      eligibleUserIds = [...new Set(teamUserIds)];
-
-      if (eligibleUserIds.length === 0) {
-        const allEmployees = await User.find({ role: { $in: ['employee', 'staff'] } }).select('_id');
-        eligibleUserIds = allEmployees.map(u => u._id.toString());
-      }
+      eligibleUserIds = await getManagerSubordinateUserIds(req.user.id);
       if (!eligibleUserIds.includes(req.user.id.toString())) {
         eligibleUserIds.push(req.user.id.toString());
       }
@@ -721,7 +786,7 @@ exports.clockIn = async (req, res) => {
     let status = 'Present';
     if (timeInMinutes >= 14 * 60 + 30) { // 2:30 PM
       status = 'Half Day';
-    } else if (timeInMinutes >= 11 * 60) { // 11:00 AM
+    } else if (timeInMinutes >= 10 * 60 + 30) { // 10:30 AM
       status = 'Late';
     }
 
@@ -799,7 +864,7 @@ exports.clockOut = async (req, res) => {
         const timeInMinutes = cTime.getHours() * 60 + cTime.getMinutes();
         if (timeInMinutes >= 14 * 60 + 30) {
           attendance.status = 'Half Day';
-        } else if (timeInMinutes >= 11 * 60) {
+        } else if (timeInMinutes >= 10 * 60 + 30) {
           attendance.status = 'Late';
         } else {
           attendance.status = 'Present';
@@ -841,7 +906,7 @@ exports.clockOut = async (req, res) => {
             const timeInMinutes = cTime.getHours() * 60 + cTime.getMinutes();
             if (timeInMinutes >= 14 * 60 + 30) {
               attendance.status = 'Half Day';
-            } else if (timeInMinutes >= 11 * 60) {
+            } else if (timeInMinutes >= 10 * 60 + 30) {
               attendance.status = 'Late';
             } else {
               attendance.status = 'Present';
@@ -1101,16 +1166,7 @@ exports.getTeamStats = async (req, res) => {
       const users = await User.find({ role: { $ne: 'admin' } }).select('_id');
       eligibleUserIds = users.map(u => u._id.toString());
     } else if (role === 'manager') {
-      const myTeam = await Employee.find({ managerId: userId }).select('userId');
-      let teamUserIds = myTeam.map(emp => emp.userId ? emp.userId.toString() : null).filter(Boolean);
-      const userTeam = await User.find({ $or: [{ reportingManager: userId }, { managerId: userId }] }).select('_id');
-      userTeam.forEach(u => teamUserIds.push(u._id.toString()));
-      eligibleUserIds = [...new Set(teamUserIds)];
-
-      if (eligibleUserIds.length === 0) {
-        const allEmployees = await User.find({ role: { $in: ['employee', 'staff'] } }).select('_id');
-        eligibleUserIds = allEmployees.map(u => u._id.toString());
-      }
+      eligibleUserIds = await getManagerSubordinateUserIds(userId);
     } else {
       return res.status(403).json({ message: 'Not authorized for team stats' });
     }

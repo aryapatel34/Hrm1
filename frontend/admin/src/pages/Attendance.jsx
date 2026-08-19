@@ -961,7 +961,13 @@ const Attendance = () => {
       );
     }
     if (statusFilter !== 'All') {
-      filtered = filtered.filter(r => r.status === statusFilter);
+      filtered = filtered.filter(r => {
+        const rStatus = (r.status || '').toLowerCase().trim();
+        const fStatus = statusFilter.toLowerCase().trim();
+        if (fStatus === 'present') return rStatus === 'present' || rStatus === 'working' || rStatus === 'logged in';
+        if (fStatus === 'leave' || fStatus === 'on leave') return rStatus === 'leave' || rStatus === 'on leave';
+        return rStatus === fStatus;
+      });
     }
     if (dateFilter) {
       filtered = filtered.filter(r => r.date === dateFilter);
@@ -1187,11 +1193,14 @@ const Attendance = () => {
             {['week', 'month', 'year'].map((p) => {
               const isEmployee = viewContext === 'employee';
               const currentPeriod = isEmployee ? statsPeriod : teamStatsPeriod;
-              const setPeriod = isEmployee ? setStatsPeriod : setTeamStatsPeriod;
               return (
                 <button
                   key={p}
-                  onClick={() => setPeriod(p)}
+                  onClick={() => {
+                    setStatsPeriod(p);
+                    setTeamStatsPeriod(p);
+                    setChartPeriod(p);
+                  }}
                   className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${currentPeriod === p
                     ? 'bg-emerald-600 text-white shadow-sm'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -1206,7 +1215,7 @@ const Attendance = () => {
       </div>
 
       {/* ── SUMMARY CARDS ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         {(() => {
           const empPresent = activeStats?.present || 0;
           const empLate = activeStats?.late || 0;
@@ -1217,19 +1226,17 @@ const Attendance = () => {
           const empRate = empTotal > 0 ? Math.round(((empPresent + empLate + empHalfDay) / empTotal) * 100) : 0;
 
           const cards = viewContext === 'employee' ? [
-            { label: `Total (${statsPeriod})`, value: empTotal, icon: Users, color: 'text-slate-700 dark:text-white', bgIcon: 'bg-slate-100 dark:bg-slate-800/40', hoverBorder: 'hover:border-indigo-500' },
             { label: 'Present', value: empPresent, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30', trend: `${empRate}%`, hoverBorder: 'hover:border-emerald-500' },
             { label: 'Late', value: empLate, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/30', hoverBorder: 'hover:border-amber-500' },
             { label: 'Absent', value: empAbsent, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-red-50 dark:bg-red-950/30', hoverBorder: 'hover:border-rose-500' },
             { label: 'Half Day', value: empHalfDay, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30', hoverBorder: 'hover:border-sky-500' },
             { label: 'On Leave', value: empLeave, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30', hoverBorder: 'hover:border-purple-500' },
           ] : [
-            { label: `Total (${teamStatsPeriod})`, value: teamStats?.total || 0, icon: Users, color: 'text-slate-700 dark:text-white', bgIcon: 'bg-slate-100 dark:bg-slate-800/40', isLoading: teamStatsLoading, hoverBorder: 'hover:border-indigo-500' },
-            { label: 'Present', value: teamStats?.present || 0, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30', trend: teamStats?.pct ? `${teamStats.pct}%` : '0%', isLoading: teamStatsLoading, hoverBorder: 'hover:border-emerald-500' },
-            { label: 'Late', value: teamStats?.late || 0, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/30', isLoading: teamStatsLoading, hoverBorder: 'hover:border-amber-500' },
-            { label: 'Absent', value: teamStats?.absent || 0, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-red-50 dark:bg-red-950/30', isLoading: teamStatsLoading, hoverBorder: 'hover:border-rose-500' },
-            { label: 'Half Day', value: teamStats?.halfDay || 0, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30', isLoading: teamStatsLoading, hoverBorder: 'hover:border-sky-500' },
-            { label: 'On Leave', value: teamStats?.leave || 0, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30', isLoading: teamStatsLoading, hoverBorder: 'hover:border-purple-500' },
+            { label: 'Present', value: teamStats?.present || 0, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30', trend: teamStats?.pct ? `${teamStats.pct}%` : '0%', hoverBorder: 'hover:border-emerald-500' },
+            { label: 'Late', value: teamStats?.late || 0, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/30', hoverBorder: 'hover:border-amber-500' },
+            { label: 'Absent', value: teamStats?.absent || 0, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-red-50 dark:bg-red-950/30', hoverBorder: 'hover:border-rose-500' },
+            { label: 'Half Day', value: teamStats?.halfDay || 0, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30', hoverBorder: 'hover:border-sky-500' },
+            { label: 'On Leave', value: teamStats?.leave || 0, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30', hoverBorder: 'hover:border-purple-500' },
           ];
 
           return cards.map((card, i) => (
@@ -1250,11 +1257,7 @@ const Attendance = () => {
                 </div>
               </div>
               <div className="shrink-0 pl-1.5 text-right">
-                {card.isLoading ? (
-                  <div className="h-5 w-10 bg-slate-200 dark:bg-[#133029] rounded animate-pulse"></div>
-                ) : (
-                  <h3 className={`text-[18px] font-black ${card.color} leading-none`}>{card.value}</h3>
-                )}
+                <h3 className={`text-[18px] font-black ${card.color} leading-none`}>{card.value}</h3>
               </div>
             </Card>
           ));

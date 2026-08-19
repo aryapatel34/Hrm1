@@ -11,7 +11,6 @@ const ScrollToTop = () => {
 import EmployeeLayout from './layouts/EmployeeLayout';
 import Dashboard from './pages/Dashboard';
 import Attendance from './pages/Attendance';
-import TimeTracker from './pages/TimeTracker';
 import Holidays from './pages/Holidays';
 import useAuthStore from '@shared/store/authStore';
 import EmployeeDocuments from './pages/EmployeeDocuments';
@@ -64,7 +63,7 @@ function App() {
         <Route path="/employee" element={<EmployeeLayout />}>
           <Route index element={<Navigate to="/employee/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="time-tracker" element={<TimeTracker />} />
+          <Route path="time-tracker" element={<PlaceholderPage title="Time Tracker" />} />
           <Route path="chat" element={<Chat />} />
           <Route path="task-management/create" element={<PlaceholderPage title="Create Task" />} />
           <Route path="task-management" element={<PlaceholderPage title="Task Management" />} />

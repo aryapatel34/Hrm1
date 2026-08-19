@@ -406,10 +406,9 @@ const AdminDashboard = () => {
               onMouseLeave={() => setHoveredStatCard(null)}
               style={{
                 borderColor: isHovered ? stat.borderColor : undefined,
-                borderWidth: isHovered ? '2px' : undefined,
                 boxShadow: isHovered ? `0 0 16px ${stat.glowColor}` : undefined
               }}
-              className="py-3.5 px-4 flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm"
+              className="py-3.5 px-4 flex flex-col cursor-pointer shadow-sm"
             >
               <div className="flex items-center gap-2.5 mb-2.5">
                 <div className={`inline-flex p-2 rounded-xl shrink-0 ${stat.bg}`}>

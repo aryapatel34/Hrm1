@@ -13,7 +13,7 @@ import {
   PartyPopper, Sparkles, Heart, Smile, TrendingUp, ChevronDown,
   AlertTriangle, Monitor, X, ExternalLink, RefreshCw, Activity
 } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { startDesktopTracker, stopDesktopTracker } from '@shared/services/desktopTrackerService';
 import DesktopAppRequiredModal from '@shared/components/DesktopAppRequiredModal';
 
@@ -60,6 +60,51 @@ const SectionHeader = ({ title, action }) => (
   </div>
 );
 
+const DEMO_EVENTS = [
+  {
+    id: 'demo-1',
+    name: 'Sarah Jenkins',
+    role: 'Senior UI/UX Designer',
+    department: 'Design Team',
+    type: 'birthday',
+    daysLeft: 0,
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+    date: 'Today'
+  },
+  {
+    id: 'demo-2',
+    name: 'David Chen',
+    role: 'Full Stack Engineer',
+    department: 'Engineering',
+    type: 'anniversary',
+    years: 3,
+    daysLeft: 2,
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+    date: 'In 2 days'
+  },
+  {
+    id: 'demo-3',
+    name: 'Emily Watson',
+    role: 'HR Manager',
+    department: 'Human Resources',
+    type: 'birthday',
+    daysLeft: 5,
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
+    date: 'In 5 days'
+  },
+  {
+    id: 'demo-4',
+    name: 'Alex Rivera',
+    role: 'Product Manager',
+    department: 'Product',
+    type: 'anniversary',
+    years: 1,
+    daysLeft: 9,
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+    date: 'In 9 days'
+  }
+];
+
 // ─── DASHBOARD ───────────────────────────────────────────────
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -80,10 +125,10 @@ const Dashboard = () => {
   const [dashData, setDashData] = useState(null);
   const [payroll, setPayroll] = useState([]);
   const [leaves, setLeaves] = useState([]);
-  const [leaveQuotas, setLeaveQuotas] = useState({ sick: 10, earned: 20, casual: 12, emergency: 5 });
+  const [leaveQuotas, setLeaveQuotas] = useState({ sick: 10, earned: 20, casual: 12, compOff: 3, optionalHoliday: 1 });
   const [tasks, setTasks] = useState([]);
   const [notifications, setNotifications] = useState([]);
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState(DEMO_EVENTS);
   const [assignedEvents, setAssignedEvents] = useState([]);
   const [dbHolidays, setDbHolidays] = useState([]);
   const [eventFilter, setEventFilter] = useState('all');
@@ -147,7 +192,10 @@ const Dashboard = () => {
 
       if (eventsRes.status === 'fulfilled') {
         const rawEvents = Array.isArray(eventsRes.value.data) ? eventsRes.value.data : [];
-        setEvents(rawEvents.filter(e => e.daysLeft >= 0));
+        const filtered = rawEvents.filter(e => e.daysLeft >= 0);
+        setEvents(filtered.length > 0 ? filtered : DEMO_EVENTS);
+      } else {
+        setEvents(DEMO_EVENTS);
       }
       if (assignedEventsRes && assignedEventsRes.status === 'fulfilled') {
         setAssignedEvents(Array.isArray(assignedEventsRes.value.data?.data) ? assignedEventsRes.value.data.data : []);
@@ -365,17 +413,48 @@ const Dashboard = () => {
   const totalWeeklySeconds = pastDaysWeeklySeconds + (timer || 0);
   const weeklyHours = fmtHrs(totalWeeklySeconds);
 
-  const approvedLeavesArray = leaves.filter(l => l.status === 'approved');
-  const usedEarned = approvedLeavesArray.filter(l => l.leaveType === 'earned').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
-  const usedSick = approvedLeavesArray.filter(l => l.leaveType === 'sick').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
-  const usedCasual = approvedLeavesArray.filter(l => l.leaveType === 'casual').reduce((acc, curr) => acc + (curr.totalDays || 0), 0);
+  const getCatKey = (typeStr) => {
+    if (!typeStr) return '';
+    const str = String(typeStr).toLowerCase().trim();
+    if (str.includes('casual') || str.includes('cl') || str === 'cl') return 'casual';
+    if (str.includes('sick') || str.includes('sl') || str === 'sl') return 'sick';
+    if (str.includes('earned') || str.includes('el') || str.includes('annual') || str === 'el') return 'earned';
+    if (str.includes('comp') || str === 'co') return 'compoff';
+    if (str.includes('optional') || str.includes('oh')) return 'optional';
+    return str;
+  };
 
-  const totalAllocated = (leaveQuotas.sick || 10) + (leaveQuotas.earned || 20) + (leaveQuotas.casual || 12) + (leaveQuotas.emergency || 5);
-  const totalUsedLeaves = usedEarned + usedSick + usedCasual;
-  const totalLeaveBalance = totalAllocated - totalUsedLeaves;
+  const calculateDays = (start, end) => {
+    if (!start || !end) return 0;
+    const s = new Date(start);
+    const e = new Date(end);
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
+    const utc1 = Date.UTC(s.getFullYear(), s.getMonth(), s.getDate());
+    const utc2 = Date.UTC(e.getFullYear(), e.getMonth(), e.getDate());
+    return Math.max(1, Math.floor((utc2 - utc1) / (1000 * 3600 * 24)) + 1);
+  };
 
-  const approvedLeaves = approvedLeavesArray.length;
-  const pendingLeaves = leaves.filter(l => l.status === 'pending').length;
+  const getLeaveDays = (l) => {
+    if (!l) return 0;
+    if (l.startDate && l.endDate) {
+      return calculateDays(l.startDate, l.endDate);
+    }
+    return l.totalDays || 1;
+  };
+
+  const approvedLeavesArray = leaves.filter(l => l.status?.toLowerCase() === 'approved');
+  const usedEarned = approvedLeavesArray.filter(l => getCatKey(l.leaveType) === 'earned').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
+  const usedSick = approvedLeavesArray.filter(l => getCatKey(l.leaveType) === 'sick').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
+  const usedCasual = approvedLeavesArray.filter(l => getCatKey(l.leaveType) === 'casual').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
+  const usedCompOff = approvedLeavesArray.filter(l => getCatKey(l.leaveType) === 'compoff').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
+  const usedOptional = approvedLeavesArray.filter(l => getCatKey(l.leaveType) === 'optional').reduce((acc, curr) => acc + getLeaveDays(curr), 0);
+
+  const totalAllocated = Math.round((leaveQuotas.earned || 20) + (leaveQuotas.sick || 10) + (leaveQuotas.casual || 12) + (leaveQuotas.compOff || 3) + (leaveQuotas.optionalHoliday || 1));
+  const totalUsedLeaves = Math.round(usedEarned + usedSick + usedCasual + usedOptional + usedCompOff);
+  const totalLeaveBalance = Math.round(Math.max(0, totalAllocated - totalUsedLeaves));
+
+  const approvedLeavesDays = Math.round(approvedLeavesArray.reduce((acc, curr) => acc + getLeaveDays(curr), 0));
+  const pendingLeaves = leaves.filter(l => l.status?.toLowerCase() === 'pending' || l.status?.toLowerCase() === 'cancellation_pending').length;
   const leavesTakenThisMonth = leaves.filter(l => l.status === 'approved' && new Date(l.startDate).getMonth() === new Date().getMonth()).length;
 
   const completedTasks = tasks.filter(t => (t.status || '').toLowerCase() === 'completed').length;
@@ -468,89 +547,76 @@ const Dashboard = () => {
 
       {/* 2. TODAY'S SUMMARY (5 tinted cards) */}
       <SectionHeader title="Today's Summary" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
         {/* Present Card */}
-        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#16a34a] cursor-pointer relative group overflow-hidden" onClick={() => navigate('/employee/attendance')}>
-          <div className="pb-2">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#dcfce7] dark:bg-[#16a34a]/20 flex items-center justify-center text-[#16a34a] dark:text-[#16a34a]">
-                <CheckCircle size={16} stroke="#16a34a" className="text-[#16a34a] dark:text-[#16a34a]" />
-              </div>
-              <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Today's Attendance</span>
+        <Card className="!p-4 hover:-translate-y-1 hover:!border-[#16a34a] dark:hover:!border-[#16a34a] cursor-pointer transition-all duration-300 h-full flex flex-col justify-between" onClick={() => navigate('/employee/attendance')}>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-[#dcfce7] dark:bg-[#16a34a]/20 flex items-center justify-center text-[#16a34a] dark:text-[#16a34a] shrink-0">
+              <CheckCircle size={16} stroke="#16a34a" className="text-[#16a34a] dark:text-[#16a34a]" />
             </div>
-            <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{isCheckedIn ? 'Present' : 'Not Checked-In'}</p>
-            <p className="text-xs text-[#939084] mt-1">{isCheckedIn ? (checkInTime ? `Checked in at ${checkInTime}` : 'Checked in successfully') : 'Please check in'}</p>
+            <span className="text-xs font-bold text-[#36342e] dark:text-[#e5e2da]">Today's Attendance</span>
           </div>
-          <div className="absolute inset-x-0 bottom-0 bg-[#00a76b] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
-            View Attendance <ArrowRight size={12} />
+          <div className="mt-2.5 flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-sm font-bold text-[#201515] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              {isCheckedIn ? 'Present' : 'Not Checked-In'}
+            </span>
+            {isCheckedIn && checkInTime && (
+              <span className="text-xs font-semibold text-[#16a34a] dark:text-[#4ade80]">
+                ({checkInTime})
+              </span>
+            )}
           </div>
         </Card>
 
         {/* Working Hours */}
-        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#0284c7] cursor-pointer relative group overflow-hidden" onClick={() => navigate('/employee/attendance')}>
-          <div className="pb-2">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#e0f2fe] dark:bg-[#0284c7]/20 flex items-center justify-center text-[#0284c7] dark:text-[#0284c7]">
-                <Clock size={16} stroke="#0284c7" className="text-[#0284c7] dark:text-[#0284c7]" />
-              </div>
-              <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Working Hours</span>
+        <Card className="!p-4 hover:-translate-y-1 hover:!border-[#0284c7] dark:hover:!border-[#0284c7] cursor-pointer transition-all duration-300 h-full flex flex-col justify-between" onClick={() => navigate('/employee/attendance')}>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-[#e0f2fe] dark:bg-[#0284c7]/20 flex items-center justify-center text-[#0284c7] dark:text-[#0284c7] shrink-0">
+              <Clock size={16} stroke="#0284c7" className="text-[#0284c7] dark:text-[#0284c7]" />
             </div>
-            <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{todayHours}</p>
-            <p className="text-xs text-[#939084] mt-1">Today's working hours</p>
+            <span className="text-xs font-bold text-[#36342e] dark:text-[#e5e2da]">Working Hours</span>
           </div>
-          <div className="absolute inset-x-0 bottom-0 bg-[#3b82f6] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
-            View Attendance <ArrowRight size={12} />
+          <div className="mt-2.5">
+            <span className="text-sm font-bold text-[#201515] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{todayHours}</span>
           </div>
         </Card>
 
         {/* Total Weekly Hours */}
-        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#6366f1] cursor-pointer relative group overflow-hidden" onClick={() => navigate('/employee/attendance')}>
-          <div className="pb-2">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#ede9fe] dark:bg-[#6366f1]/20 flex items-center justify-center text-[#6366f1] dark:text-[#6366f1]">
-                <TrendingUp size={16} stroke="#6366f1" className="text-[#6366f1] dark:text-[#6366f1]" />
-              </div>
-              <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Total Weekly Hours</span>
+        <Card className="!p-4 hover:-translate-y-1 hover:!border-[#6366f1] dark:hover:!border-[#6366f1] cursor-pointer transition-all duration-300 h-full flex flex-col justify-between" onClick={() => navigate('/employee/attendance')}>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-[#ede9fe] dark:bg-[#6366f1]/20 flex items-center justify-center text-[#6366f1] dark:text-[#6366f1] shrink-0">
+              <TrendingUp size={16} stroke="#6366f1" className="text-[#6366f1] dark:text-[#6366f1]" />
             </div>
-            <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{weeklyHours}</p>
-            <p className="text-xs text-[#939084] mt-1">This week's working hours</p>
+            <span className="text-xs font-bold text-[#36342e] dark:text-[#e5e2da]">Total Weekly Hours</span>
           </div>
-          <div className="absolute inset-x-0 bottom-0 bg-[#6366f1] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
-            View Attendance <ArrowRight size={12} />
+          <div className="mt-2.5">
+            <span className="text-sm font-bold text-[#201515] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{weeklyHours}</span>
           </div>
         </Card>
 
         {/* Pending Tasks */}
-        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#9333ea] cursor-pointer relative group overflow-hidden" onClick={() => navigate('/employee/task-management')}>
-          <div className="pb-2">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#f3e8ff] dark:bg-[#9333ea]/20 flex items-center justify-center text-[#9333ea] dark:text-[#9333ea]">
-                <Briefcase size={16} stroke="#9333ea" className="text-[#9333ea] dark:text-[#9333ea]" />
-              </div>
-              <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Pending Tasks</span>
+        <Card className="!p-4 hover:-translate-y-1 hover:!border-[#9333ea] dark:hover:!border-[#9333ea] cursor-pointer transition-all duration-300 h-full flex flex-col justify-between" onClick={() => navigate('/employee/task-management')}>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-[#f3e8ff] dark:bg-[#9333ea]/20 flex items-center justify-center text-[#9333ea] dark:text-[#9333ea] shrink-0">
+              <Briefcase size={16} stroke="#9333ea" className="text-[#9333ea] dark:text-[#9333ea]" />
             </div>
-            <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingTasks}</p>
-            <p className="text-xs text-[#939084] mt-1">Today's pending tasks</p>
+            <span className="text-xs font-bold text-[#36342e] dark:text-[#e5e2da]">Pending Tasks</span>
           </div>
-          <div className="absolute inset-x-0 bottom-0 bg-[#a855f7] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
-            View My Tasks <ArrowRight size={12} />
+          <div className="mt-2.5">
+            <span className="text-sm font-bold text-[#201515] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingTasks}</span>
           </div>
         </Card>
 
         {/* Leave Balance */}
-        <Card className="hover:-translate-y-1 hover:rounded-t-[10px] hover:border-[#ea580c] cursor-pointer relative group overflow-hidden" onClick={() => navigate('/employee/leave')}>
-          <div className="pb-2">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#ffedd5] dark:bg-[#ea580c]/20 flex items-center justify-center text-[#ea580c] dark:text-[#ea580c]">
-                <CalendarCheck size={16} stroke="#ea580c" className="text-[#ea580c] dark:text-[#ea580c]" />
-              </div>
-              <span className="text-xs font-semibold text-[#36342e] dark:text-[#e5e2da]">Leave Balance</span>
+        <Card className="!p-4 hover:-translate-y-1 hover:!border-[#ea580c] dark:hover:!border-[#ea580c] cursor-pointer transition-all duration-300 h-full flex flex-col justify-between" onClick={() => navigate('/employee/leave')}>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-[#ffedd5] dark:bg-[#ea580c]/20 flex items-center justify-center text-[#ea580c] dark:text-[#ea580c] shrink-0">
+              <CalendarCheck size={16} stroke="#ea580c" className="text-[#ea580c] dark:text-[#ea580c]" />
             </div>
-            <p className="text-[18px] font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalLeaveBalance}</p>
-            <p className="text-xs text-[#939084] mt-1">Available leave days</p>
+            <span className="text-xs font-bold text-[#36342e] dark:text-[#e5e2da]">Leave Balance</span>
           </div>
-          <div className="absolute inset-x-0 bottom-0 bg-[#f97316] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 pointer-events-none flex items-center justify-center gap-1">
-            View Leave Balance <ArrowRight size={12} />
+          <div className="mt-2.5">
+            <span className="text-sm font-bold text-[#201515] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{Math.round(totalLeaveBalance)}</span>
           </div>
         </Card>
       </div>
@@ -602,22 +668,30 @@ const Dashboard = () => {
             }
           />
           <Card className="flex-1 flex flex-col justify-between">
-            <div className="h-72">
+            <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={weeklyChart} margin={{ top: 35, right: 25, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={true} stroke="#e5e7eb" className="stroke-gray-200 dark:stroke-[#28251e]" />
-                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#939084' }} dy={5} />
+                <LineChart data={weeklyChart} margin={{ top: 20, right: 20, left: 5, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={true} stroke={isDark ? 'rgba(255,255,255,0.07)' : '#e5e7eb'} />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: isDark ? '#a09c8d' : '#939084' }} dy={5} />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 12, fill: '#939084' }}
+                    tick={{ fontSize: 12, fill: isDark ? '#a09c8d' : '#939084' }}
                     tickFormatter={(val) => `${val}%`}
                     domain={[0, 135]}
                     ticks={[0, 25, 50, 75, 100]}
                     width={45}
                     tickMargin={6}
                   />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: isDark ? '1px solid #38352e' : '1px solid #e5e7eb',
+                      backgroundColor: isDark ? '#1a1714' : '#ffffff',
+                      color: isDark ? '#ffffff' : '#1f2937',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+                    }}
+                  />
                   <Line type="monotone" dataKey="active" stroke="#00a76b" strokeWidth={3} dot={{ fill: '#00a76b', strokeWidth: 2, r: 5 }}>
                     <LabelList
                       dataKey="active"
@@ -625,7 +699,7 @@ const Dashboard = () => {
                       offset={12}
                       formatter={(val) => `${val}%`}
                       className="fill-gray-700 dark:fill-gray-200 text-[11px] font-bold"
-                      style={{ fontSize: '11px', fontWeight: 'bold' }}
+                      style={{ fontSize: '11px', fontWeight: 'bold', fill: isDark ? '#e5e2da' : '#374151' }}
                     />
                   </Line>
                 </LineChart>
@@ -633,24 +707,24 @@ const Dashboard = () => {
             </div>
 
             {/* Stat Cards below Attendance Chart */}
-            <div className="grid grid-cols-2 gap-3 mt-4">
-              <div className="bg-[#fff7ed] dark:bg-[#78350f]/40 p-3.5 rounded-xl border border-[#fed7aa] dark:border-[#92400e]/50 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-[#c2410c] dark:text-[#fb923c] font-semibold">Late Arrivals</p>
-                  <p className="text-[20px] font-bold text-[#ea580c] dark:text-[#fdba74] mt-0.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{attMetrics?.lateCount || 0}</p>
+            <div className="grid grid-cols-2 gap-3 mt-2.5 h-14 items-center">
+              <div className="bg-amber-50/80 dark:bg-[#241a0e] px-3 py-2.5 rounded-xl border border-amber-200/80 dark:border-amber-500/30 flex items-center justify-between transition-all h-full">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                    <Clock size={16} />
+                  </div>
+                  <span className="text-xs text-amber-700 dark:text-amber-400 font-bold">Late Arrivals</span>
                 </div>
-                <div className="w-9 h-9 rounded-lg bg-[#ffedd5] dark:bg-[#ea580c]/20 flex items-center justify-center text-[#ea580c]">
-                  <Clock size={18} />
-                </div>
+                <span className="text-base font-black text-amber-800 dark:text-amber-300" style={{ fontFamily: 'Manrope, sans-serif' }}>{attMetrics?.lateCount || 0}</span>
               </div>
-              <div className="bg-[#fef2f2] dark:bg-[#7f1d1d]/40 p-3.5 rounded-xl border border-[#fecaca] dark:border-[#991b1b]/50 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-[#b91c1c] dark:text-[#f87171] font-semibold">Absences</p>
-                  <p className="text-[20px] font-bold text-[#dc2626] dark:text-[#fca5a5] mt-0.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{leavesTakenThisMonth}</p>
+              <div className="bg-rose-50/80 dark:bg-[#281315] px-3 py-2.5 rounded-xl border border-rose-200/80 dark:border-rose-500/30 flex items-center justify-between transition-all h-full">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
+                    <CalendarX size={16} />
+                  </div>
+                  <span className="text-xs text-rose-700 dark:text-rose-400 font-bold">Absences</span>
                 </div>
-                <div className="w-9 h-9 rounded-lg bg-[#fee2e2] dark:bg-[#dc2626]/20 flex items-center justify-center text-[#dc2626]">
-                  <CalendarX size={18} />
-                </div>
+                <span className="text-base font-black text-rose-800 dark:text-rose-300" style={{ fontFamily: 'Manrope, sans-serif' }}>{leavesTakenThisMonth}</span>
               </div>
             </div>
           </Card>
@@ -662,7 +736,7 @@ const Dashboard = () => {
           <SectionHeader title="My Tasks Overview" />
           <div className="rounded-2xl flex-1 flex flex-col">
             <Card className="flex-1 flex flex-col justify-between">
-              <div className="h-64 relative flex items-center justify-center">
+              <div className="h-48 relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={totalTasks === 0 ? [{ name: 'No Tasks', value: 1, color: '#e5e7eb' }] : [
@@ -670,7 +744,7 @@ const Dashboard = () => {
                       { name: 'Ongoing', value: ongoingTasks, color: '#f59e0b' },
                       { name: 'Upcoming', value: upcomingTasks, color: '#ef4444' },
                       { name: 'Pending', value: pendingTasks, color: '#3b82f6' }
-                    ]} cx="50%" cy="50%" innerRadius={75} outerRadius={105} dataKey="value" stroke="none" paddingAngle={3}>
+                    ]} cx="50%" cy="50%" innerRadius={55} outerRadius={78} dataKey="value" stroke="none" paddingAngle={3}>
                       {
                         (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#8b5cf6' }, { color: '#f59e0b' }, { color: '#ef4444' }, { color: '#3b82f6' }]).map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
@@ -681,40 +755,43 @@ const Dashboard = () => {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-3xl font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
-                  <span className="text-[11px] font-bold text-[#939084] tracking-wider uppercase mt-1">Total Tasks</span>
+                  <span className="text-2xl font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
+                  <span className="text-[10px] font-bold text-[#939084] tracking-wider uppercase mt-1">Total Tasks</span>
                 </div>
               </div>
 
-              {/* 4 Stat Cards below Pie Chart */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3">
-                <div className="bg-blue-50 dark:bg-blue-950/40 p-2.5 rounded-xl border border-blue-200/60 dark:border-blue-800/40 flex flex-col items-center justify-center text-center">
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <span className="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
-                    <span className="text-[18px] font-bold text-blue-700 dark:text-blue-300 leading-none">{pendingTasks}</span>
+              {/* 4 Stat Items below Pie Chart */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2.5 h-14 items-center">
+                <div className="px-2 py-2.5 flex items-center justify-between h-full">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-[#3b82f6] shrink-0"></span>
+                    <span className="text-xs text-blue-600 dark:text-blue-400 font-bold truncate">Pending</span>
                   </div>
-                  <p className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold">Pending</p>
+                  <span className="text-xs font-black text-blue-700 dark:text-blue-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingTasks}</span>
                 </div>
-                <div className="bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40 flex flex-col items-center justify-center text-center">
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
-                    <span className="text-[18px] font-bold text-amber-700 dark:text-amber-300 leading-none">{ongoingTasks}</span>
+
+                <div className="px-2 py-2.5 flex items-center justify-between h-full">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-[#f59e0b] shrink-0"></span>
+                    <span className="text-xs text-amber-600 dark:text-amber-400 font-bold truncate">In Progress</span>
                   </div>
-                  <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">In Progress</p>
+                  <span className="text-xs font-black text-amber-700 dark:text-amber-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{ongoingTasks}</span>
                 </div>
-                <div className="bg-purple-50 dark:bg-purple-950/40 p-2.5 rounded-xl border border-purple-200/60 dark:border-purple-800/40 flex flex-col items-center justify-center text-center">
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <span className="w-2 h-2 rounded-full bg-[#8b5cf6]"></span>
-                    <span className="text-[18px] font-bold text-purple-700 dark:text-purple-300 leading-none">{completedTasks}</span>
+
+                <div className="px-2 py-2.5 flex items-center justify-between h-full">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-[#8b5cf6] shrink-0"></span>
+                    <span className="text-xs text-purple-600 dark:text-purple-400 font-bold truncate">Completed</span>
                   </div>
-                  <p className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold">Completed</p>
+                  <span className="text-xs font-black text-purple-700 dark:text-purple-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{completedTasks}</span>
                 </div>
-                <div className="bg-red-50 dark:bg-red-950/40 p-2.5 rounded-xl border border-red-200/60 dark:border-red-800/40 flex flex-col items-center justify-center text-center">
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <span className="w-2 h-2 rounded-full bg-[#ef4444]"></span>
-                    <span className="text-[18px] font-bold text-red-700 dark:text-red-300 leading-none">{upcomingTasks}</span>
+
+                <div className="px-2 py-2.5 flex items-center justify-between h-full">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0"></span>
+                    <span className="text-xs text-red-600 dark:text-red-400 font-bold truncate">Overdue</span>
                   </div>
-                  <p className="text-[11px] text-red-600 dark:text-red-400 font-semibold">Overdue</p>
+                  <span className="text-xs font-black text-red-700 dark:text-red-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{upcomingTasks}</span>
                 </div>
               </div>
             </Card>
@@ -725,65 +802,61 @@ const Dashboard = () => {
       {/* 6. LEAVE SUMMARY */}
       <div>
         <SectionHeader title="Leave Summary" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
           {/* Total Leaves */}
           <div
             onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-[#38352e] hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/20 dark:hover:bg-blue-950/20 transition-all duration-300 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-[#1a1714] hover:shadow-md cursor-pointer hover:-translate-y-0.5"
+            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/20 dark:hover:bg-blue-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
           >
-            <div>
-              <p className="text-xs text-[#939084] dark:text-[#a09c8d] font-semibold uppercase tracking-wider mb-1">Total Leaves</p>
-              <p className="text-2xl font-bold text-[#36342e] dark:text-[#e5e2da]" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAllocated}</p>
-              <p className="text-[10px] text-[#939084] dark:text-[#a09c8d] mt-1">Days Allocated</p>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="bg-blue-50 dark:bg-blue-950/60 p-1.5 rounded-lg text-blue-600 dark:text-blue-400 transition-colors duration-300 border border-blue-100 dark:border-blue-900/40 shrink-0">
+                <Calendar size={16} />
+              </div>
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-extrabold uppercase tracking-wider truncate">TOTAL LEAVES</p>
             </div>
-            <div className="bg-blue-50 dark:bg-blue-950/60 p-2.5 rounded-xl text-blue-600 dark:text-blue-400 transition-colors duration-300">
-              <Calendar size={20} />
-            </div>
+            <span className="text-xl font-black text-gray-900 dark:text-white ml-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAllocated}</span>
           </div>
 
           {/* Used Leaves */}
           <div
             onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-[#38352e] hover:border-orange-500 dark:hover:border-orange-400 hover:bg-orange-50/20 dark:hover:bg-orange-950/20 transition-all duration-300 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-[#1a1714] hover:shadow-md cursor-pointer hover:-translate-y-0.5"
+            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-amber-500 dark:hover:border-amber-400 hover:bg-amber-50/20 dark:hover:bg-amber-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
           >
-            <div>
-              <p className="text-xs text-[#939084] dark:text-[#a09c8d] font-semibold uppercase tracking-wider mb-1">Used Leaves</p>
-              <p className="text-2xl font-bold text-[#36342e] dark:text-[#e5e2da]" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalUsedLeaves}</p>
-              <p className="text-[10px] text-[#939084] dark:text-[#a09c8d] mt-1">Days Used</p>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="bg-amber-50 dark:bg-amber-950/60 p-1.5 rounded-lg text-amber-600 dark:text-amber-400 transition-colors duration-300 border border-amber-100 dark:border-amber-900/40 shrink-0">
+                <CalendarCheck size={16} />
+              </div>
+              <p className="text-xs text-amber-600 dark:text-amber-400 font-extrabold uppercase tracking-wider truncate">USED LEAVES</p>
             </div>
-            <div className="bg-orange-50 dark:bg-orange-950/60 p-2.5 rounded-xl text-orange-600 dark:text-orange-400 transition-colors duration-300">
-              <CalendarCheck size={20} />
-            </div>
+            <span className="text-xl font-black text-gray-900 dark:text-white ml-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalUsedLeaves}</span>
           </div>
 
           {/* Pending Leaves */}
           <div
             onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-[#38352e] hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50/20 dark:hover:bg-purple-950/20 transition-all duration-300 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-[#1a1714] hover:shadow-md cursor-pointer hover:-translate-y-0.5"
+            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50/20 dark:hover:bg-purple-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
           >
-            <div>
-              <p className="text-xs text-[#939084] dark:text-[#a09c8d] font-semibold uppercase tracking-wider mb-1">Pending Leaves</p>
-              <p className="text-2xl font-bold text-[#36342e] dark:text-[#e5e2da]" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingLeaves}</p>
-              <p className="text-[10px] text-[#939084] dark:text-[#a09c8d] mt-1">Requests Pending</p>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="bg-purple-50 dark:bg-purple-950/60 p-1.5 rounded-lg text-purple-600 dark:text-purple-400 transition-colors duration-300 border border-purple-100 dark:border-purple-900/40 shrink-0">
+                <CalendarX size={16} />
+              </div>
+              <p className="text-xs text-purple-600 dark:text-purple-400 font-extrabold uppercase tracking-wider truncate">PENDING LEAVES</p>
             </div>
-            <div className="bg-purple-50 dark:bg-purple-950/60 p-2.5 rounded-xl text-purple-600 dark:text-purple-400 transition-colors duration-300">
-              <CalendarX size={20} />
-            </div>
+            <span className="text-xl font-black text-gray-900 dark:text-white ml-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingLeaves}</span>
           </div>
 
           {/* Approved Leaves */}
           <div
             onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-[#38352e] hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/20 transition-all duration-300 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-[#1a1714] hover:shadow-md cursor-pointer hover:-translate-y-0.5"
+            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
           >
-            <div>
-              <p className="text-xs text-[#939084] dark:text-[#a09c8d] font-semibold uppercase tracking-wider mb-1">Approved Leaves</p>
-              <p className="text-2xl font-bold text-[#36342e] dark:text-[#e5e2da]" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeaves}</p>
-              <p className="text-[10px] text-[#939084] dark:text-[#a09c8d] mt-1">Days Approved</p>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="bg-emerald-50 dark:bg-emerald-950/60 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 transition-colors duration-300 border border-emerald-100 dark:border-emerald-900/40 shrink-0">
+                <CheckCircle size={16} />
+              </div>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-extrabold uppercase tracking-wider truncate">APPROVED LEAVES</p>
             </div>
-            <div className="bg-emerald-50 dark:bg-emerald-950/60 p-2.5 rounded-xl text-emerald-600 dark:text-emerald-400 transition-colors duration-300">
-              <CheckCircle size={20} />
-            </div>
+            <span className="text-xl font-black text-gray-900 dark:text-white ml-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{approvedLeavesDays}</span>
           </div>
         </div>
       </div>
@@ -833,8 +906,8 @@ const Dashboard = () => {
         {/* 8. UPCOMING HOLIDAYS */}
         <div>
           <SectionHeader title="Upcoming Holidays" />
-          <div className="relative group overflow-hidden rounded-2xl cursor-pointer" onClick={() => navigate('/employee/holidays')}>
-            <Card className="h-72 overflow-y-auto">
+          <div className="cursor-pointer" onClick={() => navigate('/employee/holidays')}>
+            <Card className="h-72 overflow-y-auto hover:!border-indigo-500 dark:hover:!border-indigo-400 transition-all duration-300">
               <div className="space-y-4">
                 {holidaysList.map((h, i) => (
                   <div key={i} className="flex gap-4 items-center border-b border-[#eceae3] dark:border-[#38352e] pb-4 last:border-0 last:pb-0">
@@ -853,17 +926,14 @@ const Dashboard = () => {
                 ))}
               </div>
             </Card>
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-r from-indigo-600 to-sky-600 text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 pointer-events-none">
-              View All →
-            </div>
           </div>
         </div>
 
         {/* 9. UPCOMING EVENTS */}
         <div>
           <SectionHeader title="Upcoming Events" />
-          <div className="relative group overflow-hidden rounded-2xl cursor-pointer" onClick={() => navigate('/employee/events')}>
-            <Card className="h-72 overflow-y-auto">
+          <div className="cursor-pointer" onClick={() => navigate('/employee/events')}>
+            <Card className="h-72 overflow-y-auto hover:!border-orange-500 dark:hover:!border-orange-400 transition-all duration-300">
               <div className="space-y-4">
                 {upcomingEvents.length > 0 ? upcomingEvents.map((e, i) => {
                   const isUnread = !e.readBy?.includes(profile?._id || profile?.employeeId);
@@ -895,17 +965,14 @@ const Dashboard = () => {
                 )}
               </div>
             </Card>
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 pointer-events-none">
-              View All Events →
-            </div>
           </div>
         </div>
 
         {/* 11. LATEST PAYSLIP */}
         <div>
           <SectionHeader title="Latest Payslips" />
-          <div className="relative group overflow-hidden rounded-2xl cursor-pointer" onClick={() => navigate('/employee/payslips')}>
-            <Card className="h-72 overflow-y-auto">
+          <div className="cursor-pointer" onClick={() => navigate('/employee/payslips')}>
+            <Card className="h-72 overflow-y-auto hover:!border-emerald-500 dark:hover:!border-emerald-400 transition-all duration-300">
               <div className="space-y-3">
                 {recentPayslips.length > 0 ? recentPayslips.map((ps, idx) => (
                   <div key={idx} className="flex items-center justify-between p-3 border border-[#eceae3] dark:border-[#38352e] rounded-xl bg-white dark:bg-[#14120e] hover:border-[#00a76b] transition-colors">
@@ -918,11 +985,6 @@ const Dashboard = () => {
                         <p className="text-[11px] text-[#939084] mt-0.5">{new Date(ps.createdAt || Date.now()).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    <div className="text-right bg-[#f0fdf4] dark:bg-[#064e3b] px-3 py-1.5 rounded-lg border border-[#bbf7d0] dark:border-[#047857]">
-                      <span className="font-bold text-[#00a76b] dark:text-[#a7f3d0] text-[13px]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                        ₹ ******
-                      </span>
-                    </div>
                   </div>
                 )) : (
                   <div className="text-center py-8">
@@ -932,9 +994,6 @@ const Dashboard = () => {
                 )}
               </div>
             </Card>
-            <div className="absolute inset-x-0 bottom-0 bg-[#00a76b] text-white text-center py-2 text-xs font-bold translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 pointer-events-none">
-              View All Payslips →
-            </div>
           </div>
         </div>
       </div>
@@ -993,7 +1052,7 @@ const Dashboard = () => {
 
           <Card className="p-5 overflow-hidden">
             {events.filter(e => eventFilter === 'all' || e.type === eventFilter).length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="flex overflow-x-auto gap-4 pb-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-neutral-800 snap-x">
                 {events
                   .filter(e => eventFilter === 'all' || e.type === eventFilter)
                   .map((ann, i) => {
@@ -1006,23 +1065,20 @@ const Dashboard = () => {
                     return (
                       <div
                         key={ann.id || i}
-                        className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 flex flex-col justify-between border ${isToday
-                          ? 'bg-white dark:bg-[#14120e] border-[#00a76b] dark:border-emerald-600 shadow-[0_4px_20px_rgba(0,167,107,0.08)] ring-1 ring-[#00a76b]/25'
-                          : 'bg-white dark:bg-[#14120e] border-[#eceae3] dark:border-[#38352e] hover:border-[#00a76b]/50 hover:shadow-md'
-                          }`}
+                        className="relative overflow-hidden rounded-2xl p-4 transition-all duration-300 flex flex-col justify-between border shrink-0 w-[270px] sm:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] snap-start bg-white dark:bg-[#14120e] border-[#eceae3] dark:border-[#38352e] hover:border-[#00a76b] dark:hover:border-emerald-500 hover:shadow-md"
                       >
                         {/* Top Row: Avatar + Info */}
-                        <div className="flex items-start gap-3.5">
+                        <div className="flex items-start gap-3">
                           <div className="relative shrink-0">
                             {ann.avatar ? (
                               <img
                                 src={ann.avatar.startsWith('http') || ann.avatar.startsWith('/') ? ann.avatar : `/${ann.avatar}`}
                                 alt={ann.name}
-                                className="w-12 h-12 rounded-xl object-cover ring-2 ring-white dark:ring-[#14120e] shadow-sm shrink-0"
+                                className="w-11 h-11 rounded-xl object-cover ring-2 ring-white dark:ring-[#14120e] shadow-sm shrink-0"
                               />
                             ) : (
                               <div
-                                className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-sm shrink-0"
+                                className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-base shadow-sm shrink-0"
                                 style={{
                                   background: 'linear-gradient(135deg, #00a76b 0%, #059669 100%)'
                                 }}
@@ -1030,24 +1086,24 @@ const Dashboard = () => {
                                 {ann.name.charAt(0).toUpperCase()}
                               </div>
                             )}
-                            <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white dark:bg-[#14120e] shadow-sm flex items-center justify-center border border-gray-100 dark:border-[#2f2b24]">
+                            <span className="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full bg-white dark:bg-[#14120e] shadow-sm flex items-center justify-center border border-gray-100 dark:border-[#2f2b24]">
                               {isBirthday ? (
-                                <Cake size={11} className="text-amber-500" />
+                                <Cake size={10} className="text-amber-500" />
                               ) : (
-                                <Sparkles size={11} className="text-amber-500" />
+                                <Sparkles size={10} className="text-amber-500" />
                               )}
                             </span>
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-[15px] text-gray-900 dark:text-white truncate">
+                            <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">
                               {ann.name}
                             </h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
                               {ann.role}
                             </p>
                             {ann.department && (
-                              <span className="inline-block text-[10px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md mt-1.5">
+                              <span className="inline-block text-[10px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md mt-1 truncate max-w-full">
                                 {ann.department}
                               </span>
                             )}
