@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -27,20 +28,34 @@ import LeaveEncashmentModal from '../../components/modals/LeaveEncashmentModal';
 import ActionConfirmModal from '../../components/ActionConfirmModal';
 
 const Leaves = () => {
+  const location = useLocation();
   const [leaves, setLeaves] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('employee'); // 'hr' or 'employee'
+  const [viewMode, setViewMode] = useState(
+    location.state?.viewMode || (location.state?.tab === 'team' ? 'hr' : 'employee')
+  ); // 'hr' or 'employee'
 
   // Modal states
   const [activeModal, setActiveModal] = useState(null);
-  const [requestFilter, setRequestFilter] = useState('pending');
+  const [requestFilter, setRequestFilter] = useState(location.state?.filter || 'pending');
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const [applyDropdownOpen, setApplyDropdownOpen] = useState(false);
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLeaveDetails, setSelectedLeaveDetails] = useState(null);
+
+  useEffect(() => {
+    if (location.state?.viewMode) {
+      setViewMode(location.state.viewMode);
+    } else if (location.state?.tab === 'team') {
+      setViewMode('hr');
+    }
+    if (location.state?.filter) {
+      setRequestFilter(location.state.filter);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     setCurrentPage(1);

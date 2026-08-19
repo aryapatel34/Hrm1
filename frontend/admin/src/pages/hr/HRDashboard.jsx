@@ -107,6 +107,8 @@ const HRDashboard = () => {
   const [payrollPeriod, setPayrollPeriod] = useState(new Date().toLocaleString('default', { month: 'long', year: 'numeric' }));
   const [selectedLeaveApproval, setSelectedLeaveApproval] = useState(null);
   const [hoveredStatCard, setHoveredStatCard] = useState(null);
+  const [hoveredRoleIndex, setHoveredRoleIndex] = useState(null);
+  const [hoveredGenderIndex, setHoveredGenderIndex] = useState(null);
 
   // Wishes states
   const [wishedEvents, setWishedEvents] = useState([]);
@@ -338,83 +340,71 @@ const HRDashboard = () => {
           {
             label: 'Total Employees',
             val: stats.totalEmployees,
-            subtext: '+12 this month',
             icon: Users,
             color: 'text-blue-600 dark:text-blue-400',
             bg: 'bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/40',
-            badge: 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/50 dark:border-blue-800/40',
             borderColor: '#3b82f6',
             glowColor: 'rgba(59, 130, 246, 0.45)'
           },
           {
             label: 'Active Employees',
             val: stats.activeEmployees,
-            subtext: `${stats.activeEmployeesPercent}% of total`,
             icon: CheckCircle,
             color: 'text-emerald-600 dark:text-emerald-400',
             bg: 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40',
-            badge: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/50 dark:border-emerald-800/40',
             borderColor: '#10b981',
             glowColor: 'rgba(16, 185, 129, 0.45)'
           },
           {
             label: 'New Joiners',
             val: stats.newJoiners,
-            subtext: '+3 this month',
             icon: UserPlus,
             color: 'text-indigo-600 dark:text-indigo-400',
             bg: 'bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/40',
-            badge: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/50 dark:border-indigo-800/40',
             borderColor: '#6366f1',
             glowColor: 'rgba(99, 102, 241, 0.45)'
           },
           {
             label: 'Employees on Leave',
             val: stats.employeesOnLeave,
-            subtext: `${stats.employeesOnLeavePercent}% of total`,
             icon: Calendar,
             color: 'text-amber-600 dark:text-amber-400',
             bg: 'bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900/40',
-            badge: 'text-amber-600 dark:text-amber-400 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/50 dark:border-amber-800/40',
             borderColor: '#f59e0b',
-            glowColor: 'rgba(245, 158, 11, 0.45)'
+            glowColor: 'rgba(245, 158, 11, 0.45)',
+            onClick: () => navigate('/hr/leave', { state: { viewMode: 'hr' } })
           },
           {
             label: 'Pending Leave',
             val: stats.pendingLeaveApprovals,
-            subtext: 'Requires action',
             icon: Clock,
             color: 'text-rose-600 dark:text-rose-400',
             bg: 'bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900/40',
-            badge: 'text-rose-600 dark:text-rose-400 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/50 dark:border-rose-800/40',
             borderColor: '#ef4444',
-            glowColor: 'rgba(239, 68, 68, 0.45)'
+            glowColor: 'rgba(239, 68, 68, 0.45)',
+            onClick: () => navigate('/hr/leave', { state: { viewMode: 'hr', filter: 'pending' } })
           },
         ].map((stat, i) => {
           const isHovered = hoveredStatCard === i;
           return (
             <Card
               key={i}
+              onClick={stat.onClick}
               onMouseEnter={() => setHoveredStatCard(i)}
               onMouseLeave={() => setHoveredStatCard(null)}
               style={{
                 borderColor: isHovered ? stat.borderColor : undefined,
                 boxShadow: isHovered ? `0 0 16px ${stat.glowColor}` : undefined
               }}
-              className="py-3.5 px-4 flex flex-col cursor-pointer shadow-sm"
+              className="py-2 px-3.5 flex items-center justify-between hover:-translate-y-0.5 transition-all duration-200 cursor-pointer shadow-xs min-h-[52px]"
             >
-              <div className="flex items-center gap-2.5 mb-2.5">
-                <div className={`inline-flex p-2 rounded-xl shrink-0 ${stat.bg}`}>
-                  <stat.icon size={18} strokeWidth={2.5} className={stat.color} />
+              <div className="flex items-center gap-2 min-w-0 mr-2">
+                <div className={`inline-flex p-1.5 rounded-lg shrink-0 ${stat.bg}`}>
+                  <stat.icon size={16} strokeWidth={2.5} className={stat.color} />
                 </div>
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider leading-tight">{stat.label}</p>
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider leading-tight">{stat.label}</p>
               </div>
-              <div className="flex items-center justify-between gap-2 mt-1 flex-nowrap overflow-hidden">
-                <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none shrink-0">{stat.val}</h3>
-                <span className={`text-[10px] font-extrabold whitespace-nowrap shrink-0 px-2 py-0.5 rounded-full ${stat.badge}`}>
-                  {stat.subtext}
-                </span>
-              </div>
+              <h3 className="text-xl font-black text-gray-900 dark:text-white leading-none shrink-0">{stat.val}</h3>
             </Card>
           );
         })}
@@ -463,24 +453,60 @@ const HRDashboard = () => {
                 <div className="h-56 w-full relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={hrRoleDistribution} cx="50%" cy="50%" innerRadius={75} outerRadius={105} paddingAngle={2} dataKey="value">
-                        {hrRoleDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                      <Pie
+                        data={hrRoleDistribution}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={75}
+                        outerRadius={105}
+                        paddingAngle={2}
+                        dataKey="value"
+                        onMouseEnter={(_, index) => setHoveredRoleIndex(index)}
+                        onMouseLeave={() => setHoveredRoleIndex(null)}
+                      >
+                        {hrRoleDistribution.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                            opacity={hoveredRoleIndex === null || hoveredRoleIndex === index ? 1 : 0.35}
+                            style={{ transition: 'all 0.2s ease', cursor: 'pointer' }}
+                          />
+                        ))}
                       </Pie>
-                      <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-2xl font-black text-gray-900 dark:text-white">{hrRoleTotal}</span>
-                    <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200">
+                    <span className="text-2xl font-black text-gray-900 dark:text-white transition-all duration-150">
+                      {hoveredRoleIndex !== null && hrRoleDistribution[hoveredRoleIndex]
+                        ? hrRoleDistribution[hoveredRoleIndex].value
+                        : hrRoleTotal}
+                    </span>
+                    <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center max-w-[100px] truncate transition-all duration-150">
+                      {hoveredRoleIndex !== null && hrRoleDistribution[hoveredRoleIndex]
+                        ? hrRoleDistribution[hoveredRoleIndex].name
+                        : 'Total'}
+                    </span>
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 w-full">
-                  {hrRoleDistribution.map((entry, index) => (
-                    <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
-                      {entry.name}: <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
-                    </div>
-                  ))}
+                  {hrRoleDistribution.map((entry, index) => {
+                    const isHovered = hoveredRoleIndex === index;
+                    return (
+                      <div
+                        key={index}
+                        onMouseEnter={() => setHoveredRoleIndex(index)}
+                        onMouseLeave={() => setHoveredRoleIndex(null)}
+                        className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-lg cursor-pointer transition-all duration-200 ${isHovered
+                            ? 'bg-gray-100 dark:bg-gray-800 scale-105 shadow-xs'
+                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
+                        <span>{entry.name}:</span>
+                        <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             ) : (
@@ -498,24 +524,60 @@ const HRDashboard = () => {
                 <div className="h-56 w-full relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={charts.genderDistribution} cx="50%" cy="50%" innerRadius={75} outerRadius={105} paddingAngle={2} dataKey="value">
-                        {charts.genderDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={['#3b82f6', '#f43f5e', '#f59e0b'][index % 3]} />)}
+                      <Pie
+                        data={charts.genderDistribution}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={75}
+                        outerRadius={105}
+                        paddingAngle={2}
+                        dataKey="value"
+                        onMouseEnter={(_, index) => setHoveredGenderIndex(index)}
+                        onMouseLeave={() => setHoveredGenderIndex(null)}
+                      >
+                        {charts.genderDistribution.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={['#3b82f6', '#f43f5e', '#f59e0b'][index % 3]}
+                            opacity={hoveredGenderIndex === null || hoveredGenderIndex === index ? 1 : 0.35}
+                            style={{ transition: 'all 0.2s ease', cursor: 'pointer' }}
+                          />
+                        ))}
                       </Pie>
-                      <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-2xl font-black text-gray-900 dark:text-white">{stats.totalEmployees}</span>
-                    <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200">
+                    <span className="text-2xl font-black text-gray-900 dark:text-white transition-all duration-150">
+                      {hoveredGenderIndex !== null && charts.genderDistribution[hoveredGenderIndex]
+                        ? charts.genderDistribution[hoveredGenderIndex].value
+                        : ((charts.genderDistribution || []).reduce((acc, curr) => acc + (Number(curr.value) || 0), 0) || stats.totalEmployees || 0)}
+                    </span>
+                    <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center max-w-[100px] truncate transition-all duration-150">
+                      {hoveredGenderIndex !== null && charts.genderDistribution[hoveredGenderIndex]
+                        ? charts.genderDistribution[hoveredGenderIndex].name
+                        : 'Total'}
+                    </span>
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 w-full">
-                  {charts.genderDistribution.map((entry, index) => (
-                    <div key={index} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ['#3b82f6', '#f43f5e', '#f59e0b'][index % 3] }}></span>
-                      {entry.name}: <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
-                    </div>
-                  ))}
+                  {charts.genderDistribution.map((entry, index) => {
+                    const isHovered = hoveredGenderIndex === index;
+                    return (
+                      <div
+                        key={index}
+                        onMouseEnter={() => setHoveredGenderIndex(index)}
+                        onMouseLeave={() => setHoveredGenderIndex(null)}
+                        className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-lg cursor-pointer transition-all duration-200 ${isHovered
+                            ? 'bg-gray-100 dark:bg-gray-800 scale-105 shadow-xs'
+                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: ['#3b82f6', '#f43f5e', '#f59e0b'][index % 3] }}></span>
+                        <span>{entry.name}:</span>
+                        <span className="text-gray-900 dark:text-white font-bold">{entry.value}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             ) : (
@@ -562,7 +624,7 @@ const HRDashboard = () => {
               <div className="bg-orange-500 h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.cancelled / currentLeaveOverview.total) * 100 : 0}%` }}></div>
             </div>
           </div>
-          <button onClick={() => navigate('/hr/leave')} className="w-full mt-3 bg-gray-50 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+          <button onClick={() => navigate('/hr/leave', { state: { viewMode: 'hr' } })} className="w-full mt-3 bg-gray-50 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
             View Leave Details <ChevronRight size={14} />
           </button>
         </Card>
@@ -600,33 +662,38 @@ const HRDashboard = () => {
           </button>
         </Card>
 
-        <Card className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900 dark:text-white">Recruitment Overview</h3>
-            <CustomDropdown
-              value="This Month"
-              options={['This Month', 'Last Month', 'This Year']}
-            />
-          </div>
-          <div className="space-y-2">
-            {[
-              { label: 'New Applications', val: '0', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/40' },
-              { label: 'Shortlisted', val: '0', icon: CheckCircle, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950/40' },
-              { label: 'Interviews Scheduled', val: '0', icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/40' },
-              { label: 'Offers Issued', val: '0', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950/40' },
-              { label: 'Hires This Month', val: '0', icon: UserPlus, color: 'text-[#00a76b]', bg: 'bg-green-50 dark:bg-green-950/40' }
-            ].map((r, i) => (
-              <div key={i} className="flex justify-between items-center py-2 px-2.5 rounded-lg border border-gray-50 dark:border-[#2b2722] hover:bg-gray-50 dark:hover:bg-[#1a1714] transition-colors">
-                <div className="flex items-center gap-2">
-                  <div className={`p-1.5 rounded-md ${r.bg} ${r.color}`}>
-                    <r.icon size={14} />
+        <Card className="p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold text-gray-900 dark:text-white">Recruitment Overview</h3>
+              <CustomDropdown
+                value="This Month"
+                options={['This Month', 'Last Month', 'This Year']}
+              />
+            </div>
+            <div className="space-y-2">
+              {[
+                { label: 'New Applications', val: '0', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/40' },
+                { label: 'Shortlisted', val: '0', icon: CheckCircle, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950/40' },
+                { label: 'Interviews Scheduled', val: '0', icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/40' },
+                { label: 'Offers Issued', val: '0', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950/40' },
+                { label: 'Hires This Month', val: '0', icon: UserPlus, color: 'text-[#00a76b]', bg: 'bg-green-50 dark:bg-green-950/40' }
+              ].map((r, i) => (
+                <div key={i} className="flex justify-between items-center py-2 px-2.5 rounded-lg border border-gray-50 dark:border-[#2b2722] hover:bg-gray-50 dark:hover:bg-[#1a1714] transition-colors">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-md ${r.bg} ${r.color}`}>
+                      <r.icon size={14} />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{r.label}</span>
                   </div>
-                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{r.label}</span>
+                  <span className="text-xs font-bold text-gray-900 dark:text-white">{r.val}</span>
                 </div>
-                <span className="text-xs font-bold text-gray-900 dark:text-white">{r.val}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+          <button onClick={() => navigate('/hr/recruitment')} className="w-full mt-3 bg-gray-50 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+            View Recruitment Details <ChevronRight size={14} />
+          </button>
         </Card>
       </div>
 
@@ -644,7 +711,7 @@ const HRDashboard = () => {
                 hoverBorder: 'hover:border-blue-400 dark:hover:border-blue-500',
                 hoverBg: 'hover:bg-blue-50/40 dark:hover:bg-blue-950/20',
                 hoverText: 'group-hover:text-blue-600 dark:group-hover:text-blue-400',
-                path: '/hr/create-user'
+                onClick: () => navigate('/hr/create-user')
               },
               {
                 label: 'Add Department',
@@ -654,7 +721,7 @@ const HRDashboard = () => {
                 hoverBorder: 'hover:border-indigo-400 dark:hover:border-indigo-500',
                 hoverBg: 'hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20',
                 hoverText: 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400',
-                path: '/hr/departments'
+                onClick: () => navigate('/hr/departments')
               },
               {
                 label: 'Create Job',
@@ -664,7 +731,7 @@ const HRDashboard = () => {
                 hoverBorder: 'hover:border-purple-400 dark:hover:border-purple-500',
                 hoverBg: 'hover:bg-purple-50/40 dark:hover:bg-purple-950/20',
                 hoverText: 'group-hover:text-purple-600 dark:group-hover:text-purple-400',
-                path: '/hr/jobs'
+                onClick: () => navigate('/hr/recruitment')
               },
               {
                 label: 'Approve Leave',
@@ -674,7 +741,7 @@ const HRDashboard = () => {
                 hoverBorder: 'hover:border-[#00a76b] dark:hover:border-[#00a76b]',
                 hoverBg: 'hover:bg-green-50/40 dark:hover:bg-green-950/20',
                 hoverText: 'group-hover:text-[#00a76b] dark:group-hover:text-[#00a76b]',
-                path: '/hr/leave'
+                onClick: () => navigate('/hr/leave', { state: { viewMode: 'hr', filter: 'pending' } })
               },
               {
                 label: 'Run Payroll',
@@ -684,7 +751,7 @@ const HRDashboard = () => {
                 hoverBorder: 'hover:border-orange-400 dark:hover:border-orange-500',
                 hoverBg: 'hover:bg-orange-50/40 dark:hover:bg-orange-950/20',
                 hoverText: 'group-hover:text-orange-600 dark:group-hover:text-orange-400',
-                path: '/hr/payroll'
+                onClick: () => navigate('/hr/payroll')
               },
               {
                 label: 'Announcement',
@@ -694,12 +761,12 @@ const HRDashboard = () => {
                 hoverBorder: 'hover:border-red-400 dark:hover:border-red-500',
                 hoverBg: 'hover:bg-red-50/40 dark:hover:bg-red-950/20',
                 hoverText: 'group-hover:text-red-600 dark:group-hover:text-red-400',
-                path: '/hr/notifications'
+                onClick: () => navigate('/hr/notifications')
               },
             ].map((action, i) => (
               <button
                 key={i}
-                onClick={() => navigate(action.path)}
+                onClick={action.onClick}
                 className={`flex flex-col items-center justify-center py-4 px-3 border border-gray-100 dark:border-[#2b2722] bg-white dark:bg-[#1a1714] rounded-2xl ${action.hoverBorder} ${action.hoverBg} transition-all group cursor-pointer shadow-2xs hover:shadow-md`}
               >
                 <div className={`p-2.5 rounded-2xl mb-2 ${action.bg} ${action.color} group-hover:scale-110 transition-transform`}>
@@ -714,7 +781,7 @@ const HRDashboard = () => {
         <Card className="p-6 flex flex-col h-[420px] lg:col-span-8 xl:col-span-8">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-gray-900 dark:text-white">Pending Approvals</h3>
-            <button onClick={() => navigate('/hr/leave')} className="text-xs font-bold text-[#00a76b] hover:underline cursor-pointer">View All</button>
+            <button onClick={() => navigate('/hr/leave', { state: { viewMode: 'hr', filter: 'pending' } })} className="text-xs font-bold text-[#00a76b] hover:underline cursor-pointer">View All</button>
           </div>
           <div className="flex-1 overflow-y-auto">
             {pendingApprovals.length > 0 ? (

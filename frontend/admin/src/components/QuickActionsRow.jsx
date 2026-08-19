@@ -12,11 +12,10 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
   const navigate = useNavigate();
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInLoading, setCheckInLoading] = useState(false);
-  const [initialChecking, setInitialChecking] = useState(true);
-  const [showTrackerModal, setShowTrackerModal] = useState(false);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [checkInHovered, setCheckInHovered] = useState(false);
+  const [showTrackerModal, setShowTrackerModal] = useState(false);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -130,13 +129,14 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
         return;
       }
 
+      // 2. Fallback direct checkout if app is not running
       try {
         await axios.put('/api/attendance/clock-out', {}, { headers });
-      } catch (_) {}
+      } catch (_) { }
 
       try {
         await axios.post('/api/time/stop', {}, { headers });
-      } catch (_) {}
+      } catch (_) { }
 
       setIsCheckedIn(false);
       toast.success('Check-out successful & Desktop Tracker stopped!', {
@@ -195,13 +195,13 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
             onClick={handleCheckOut}
             onMouseEnter={() => setCheckInHovered(true)}
             onMouseLeave={() => setCheckInHovered(false)}
-            disabled={checkInLoading || initialChecking}
-            className="flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
-            style={{ 
+            disabled={checkInLoading}
+            className="flex items-center justify-start gap-3 px-4 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
+            style={{
               backgroundColor: checkInHovered ? (isDark ? 'rgba(239, 68, 68, 0.18)' : '#fef2f2') : (isDark ? '#151c28' : '#ffffff'),
               borderWidth: '1px',
               borderStyle: 'solid',
-              borderColor: checkInHovered ? '#ef4444' : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'), 
+              borderColor: checkInHovered ? '#ef4444' : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'),
               color: '#ef4444',
               boxShadow: checkInHovered ? (isDark ? '0 0 16px rgba(239, 68, 68, 0.50)' : '0 4px 12px rgba(239, 68, 68, 0.20)') : 'none'
             }}
@@ -217,13 +217,13 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
             onClick={handleCheckIn}
             onMouseEnter={() => setCheckInHovered(true)}
             onMouseLeave={() => setCheckInHovered(false)}
-            disabled={checkInLoading || initialChecking}
-            className="flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
-            style={{ 
+            disabled={checkInLoading}
+            className="flex items-center justify-start gap-3 px-4 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
+            style={{
               backgroundColor: checkInHovered ? (isDark ? 'rgba(16, 185, 129, 0.18)' : '#f0fdf4') : (isDark ? '#151c28' : '#ffffff'),
               borderWidth: '1px',
               borderStyle: 'solid',
-              borderColor: checkInHovered ? (isDark ? '#10b981' : '#00a76b') : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'), 
+              borderColor: checkInHovered ? (isDark ? '#10b981' : '#00a76b') : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'),
               color: '#00a76b',
               boxShadow: checkInHovered ? (isDark ? '0 0 16px rgba(16, 185, 129, 0.50)' : '0 4px 12px rgba(16, 185, 129, 0.20)') : 'none'
             }}
@@ -245,12 +245,12 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
               onClick={() => navigate(act.to)}
               onMouseEnter={() => setHoveredIndex(i)}
               onMouseLeave={() => setHoveredIndex(null)}
-              className="flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer"
-              style={{ 
+              className="flex items-center justify-start gap-3 px-4 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer"
+              style={{
                 backgroundColor: isHovered ? (isDark ? act.darkBgHover : act.bgHover) : (isDark ? '#151c28' : '#ffffff'),
                 borderWidth: '1px',
                 borderStyle: 'solid',
-                borderColor: isHovered ? (isDark ? act.darkBorder : act.border) : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'), 
+                borderColor: isHovered ? (isDark ? act.darkBorder : act.border) : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'),
                 color: act.color,
                 boxShadow: isHovered ? (isDark ? `0 0 16px ${act.darkBorder}60` : `0 4px 12px ${act.color}25`) : 'none'
               }}

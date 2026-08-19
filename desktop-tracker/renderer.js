@@ -29,8 +29,10 @@ let lastStartOrResumeTime = 0;
 let baseActiveSeconds = 0;
 let segmentStartTime = null;
 let isSessionRunning = false;
+let baseInactiveSeconds = 0;
+let idleStartTime = null;
 
-// Local clock loop for smooth UI ticking (matches Web App behavior)
+// Local clock loop for smooth UI ticking using real elapsed timestamps
 setInterval(() => {
   if (status === 'ACTIVE' && isSessionRunning) {
     if (segmentStartTime) {
@@ -41,8 +43,13 @@ setInterval(() => {
     }
     updateDisplay();
   } else if (status === 'IDLE') {
-    // 🛡️ When IDLE: Active Work Time is strictly frozen, Idle Time increases
-    inactiveSeconds += 1;
+    // 🛡️ When IDLE: Active Work Time is strictly frozen, Idle Time calculates from real elapsed timestamps
+    if (idleStartTime) {
+      const idleElapsed = Math.floor((Date.now() - idleStartTime) / 1000);
+      inactiveSeconds = baseInactiveSeconds + Math.max(0, idleElapsed);
+    } else {
+      inactiveSeconds += 1;
+    }
     updateDisplay();
   }
 }, 1000);
@@ -205,7 +212,14 @@ function applyServerState(data) {
     isIdle = true;
     isSessionRunning = false;
     segmentStartTime = null;
-    inactiveSeconds = data.idleTime ?? inactiveSeconds;
+
+    if (data.idleTime !== undefined && data.idleTime > 0) {
+      baseInactiveSeconds = Math.max(baseInactiveSeconds, data.idleTime);
+      if (!idleStartTime) {
+        inactiveSeconds = baseInactiveSeconds;
+      }
+    }
+
     // 🛡️ When IDLE: Prefer the higher of local committed activeSeconds or server activeTime to prevent backward rewinds
     if (data.activeTime !== undefined && data.activeTime > 0) {
       baseActiveSeconds = Math.max(baseActiveSeconds, data.activeTime);
@@ -216,8 +230,10 @@ function applyServerState(data) {
     isIdle = false;
     idleNotificationSent = false;
     isSessionRunning = true;
+    idleStartTime = null;
     baseActiveSeconds = data.activeTime ?? baseActiveSeconds;
-    inactiveSeconds = data.idleTime ?? inactiveSeconds;
+    baseInactiveSeconds = data.idleTime ?? baseInactiveSeconds;
+    inactiveSeconds = baseInactiveSeconds;
     segmentStartTime = data.segmentStart ? new Date(data.segmentStart).getTime() : segmentStartTime;
 
     if (segmentStartTime) {
@@ -288,6 +304,11 @@ async function triggerIdle(idleSeconds = 60) {
     segmentStartTime = null;
   }
   activeSeconds = baseActiveSeconds;
+
+  // 🕒 Record exact idle start timestamp (accounting for initial idleSeconds already elapsed)
+  idleStartTime = Date.now() - (idleSeconds * 1000);
+  inactiveSeconds = baseInactiveSeconds + idleSeconds;
+
   updateDisplay();
   updateUI();
 
@@ -373,6 +394,15 @@ async function pauseSession() {
 // ============================================================
 async function resumeSession() {
   if (!authToken) return alert('Please login first.');
+
+  // 🕒 Commit accumulated idle duration to baseInactiveSeconds
+  if (idleStartTime) {
+    const idleDuration = Math.floor((Date.now() - idleStartTime) / 1000);
+    baseInactiveSeconds += Math.max(0, idleDuration);
+    idleStartTime = null;
+  }
+  inactiveSeconds = baseInactiveSeconds;
+
   // 🚀 OPTIMISTIC UI: Instantly clear idle status and banner
   status = 'ACTIVE';
   isIdle = false;
