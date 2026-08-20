@@ -858,97 +858,97 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         {/* 8. UPCOMING HOLIDAYS */}
-        <div>
-          <SectionHeader title="Upcoming Holidays" />
-          <div className="cursor-pointer" onClick={() => navigate('/employee/holidays')}>
-            <Card className="h-72 overflow-y-auto hover:!border-indigo-500 dark:hover:!border-indigo-400 transition-all duration-300">
-              <div className="space-y-4">
-                {holidaysList.map((h, i) => (
-                  <div key={i} className="flex gap-4 items-center border-b border-[#eceae3] dark:border-[#38352e] pb-4 last:border-0 last:pb-0">
-                    <div className="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl text-center min-w-[56px] p-2 border border-indigo-100 dark:border-indigo-800/50">
-                      <p className="text-xl font-bold leading-none">{h.date.split(' ')[0]}</p>
-                      <p className="text-[10px] font-bold uppercase mt-1">{h.date.split(' ')[1]}</p>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-sm text-[#201515] dark:text-white">{h.name}</p>
-                      <p className="text-xs text-[#939084] mt-0.5">{h.type}</p>
-                    </div>
-                    <span className="text-[11px] font-bold bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50 px-3 py-1 rounded-full whitespace-nowrap shadow-xs">
-                      In {h.daysLeft} days
-                    </span>
+        <div className="cursor-pointer" onClick={() => navigate('/employee/holidays')}>
+          <Card className="h-72 overflow-hidden hover:!border-indigo-500 dark:hover:!border-indigo-400 transition-all duration-300">
+            <h3 className="font-bold text-[#201515] dark:text-white text-sm mb-2.5 pb-1.5 border-b border-[#eceae3] dark:border-[#38352e]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Upcoming Holidays
+            </h3>
+            <div className="space-y-2.5">
+              {holidaysList.slice(0, 3).map((h, i) => (
+                <div key={i} className="flex gap-3 items-center border-b border-[#eceae3] dark:border-[#38352e] pb-2 last:border-0 last:pb-0">
+                  <div className="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg text-center min-w-[46px] p-1.5 border border-indigo-100 dark:border-indigo-800/50">
+                    <p className="text-base font-bold leading-none">{h.date.split(' ')[0]}</p>
+                    <p className="text-[9px] font-bold uppercase mt-0.5">{h.date.split(' ')[1]}</p>
                   </div>
-                ))}
-              </div>
-            </Card>
-          </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-xs text-[#201515] dark:text-white truncate">{h.name}</p>
+                    <p className="text-[10px] text-[#939084] mt-0.5 truncate">{h.type}</p>
+                  </div>
+                  <span className="text-[10px] font-bold bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50 px-2 py-0.5 rounded-full whitespace-nowrap shadow-2xs">
+                    In {h.daysLeft} days
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
 
         {/* 9. UPCOMING EVENTS */}
-        <div>
-          <SectionHeader title="Upcoming Events" />
-          <div className="cursor-pointer" onClick={() => navigate('/employee/events')}>
-            <Card className="h-72 overflow-y-auto hover:!border-orange-500 dark:hover:!border-orange-400 transition-all duration-300">
-              <div className="space-y-4">
-                {upcomingEvents.length > 0 ? upcomingEvents.map((e, i) => {
-                  const isUnread = !e.readBy?.includes(profile?._id || profile?.employeeId);
-                  const evtDate = new Date(e.date);
-                  return (
-                    <div key={i} className="flex gap-4 items-center border-b border-[#eceae3] dark:border-[#38352e] pb-4 last:border-0 last:pb-0 relative">
-                      {isUnread && (
-                        <div className="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full z-10 border border-white"></div>
-                      )}
-                      <div className="bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-xl text-center min-w-[56px] p-2 border border-orange-100 dark:border-orange-800/50 relative">
-                        <p className="text-xl font-bold leading-none">{evtDate.getDate()}</p>
-                        <p className="text-[10px] font-bold uppercase mt-1">{evtDate.toLocaleString('default', { month: 'short' })}</p>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-bold text-sm text-[#201515] dark:text-white">{e.title}</p>
-                        <p className="text-xs text-[#939084] line-clamp-1 mt-0.5">{e.description || 'No description'}</p>
-                      </div>
-                      <p className="text-[11px] font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/40 px-2.5 py-0.5 rounded-full whitespace-nowrap">{e.startTime}</p>
+        <div className="cursor-pointer" onClick={() => navigate('/employee/events')}>
+          <Card className="h-72 overflow-y-auto hover:!border-orange-500 dark:hover:!border-orange-400 transition-all duration-300">
+            <h3 className="font-bold text-[#201515] dark:text-white text-sm mb-3.5 pb-2 border-b border-[#eceae3] dark:border-[#38352e]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Upcoming Events
+            </h3>
+            <div className="space-y-4">
+              {upcomingEvents.length > 0 ? upcomingEvents.map((e, i) => {
+                const isUnread = !e.readBy?.includes(profile?._id || profile?.employeeId);
+                const evtDate = new Date(e.date);
+                return (
+                  <div key={i} className="flex gap-4 items-center border-b border-[#eceae3] dark:border-[#38352e] pb-4 last:border-0 last:pb-0 relative">
+                    {isUnread && (
+                      <div className="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full z-10 border border-white"></div>
+                    )}
+                    <div className="bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-xl text-center min-w-[56px] p-2 border border-orange-100 dark:border-orange-800/50 relative">
+                      <p className="text-xl font-bold leading-none">{evtDate.getDate()}</p>
+                      <p className="text-[10px] font-bold uppercase mt-1">{evtDate.toLocaleString('default', { month: 'short' })}</p>
                     </div>
-                  );
-                }) : (
-                  <div className="flex flex-col items-center justify-center py-10 text-center">
-                    <div className="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-950/40 border border-orange-100 dark:border-orange-800/40 flex items-center justify-center text-orange-500 mb-2.5">
-                      <Calendar size={22} />
+                    <div className="flex-1">
+                      <p className="font-bold text-sm text-[#201515] dark:text-white">{e.title}</p>
+                      <p className="text-xs text-[#939084] line-clamp-1 mt-0.5">{e.description || 'No description'}</p>
                     </div>
-                    <p className="text-sm font-semibold text-[#201515] dark:text-white">No Upcoming Events</p>
-                    <p className="text-xs text-[#939084] mt-0.5">No meetings or events scheduled</p>
+                    <p className="text-[11px] font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/40 px-2.5 py-0.5 rounded-full whitespace-nowrap">{e.startTime}</p>
                   </div>
-                )}
-              </div>
-            </Card>
-          </div>
+                );
+              }) : (
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-950/40 border border-orange-100 dark:border-orange-800/40 flex items-center justify-center text-orange-500 mb-2.5">
+                    <Calendar size={22} />
+                  </div>
+                  <p className="text-sm font-semibold text-[#201515] dark:text-white">No Upcoming Events</p>
+                  <p className="text-xs text-[#939084] mt-0.5">No meetings or events scheduled</p>
+                </div>
+              )}
+            </div>
+          </Card>
         </div>
 
         {/* 11. LATEST PAYSLIP */}
-        <div>
-          <SectionHeader title="Latest Payslips" />
-          <div className="cursor-pointer" onClick={() => navigate('/employee/payslips')}>
-            <Card className="h-72 overflow-y-auto hover:!border-emerald-500 dark:hover:!border-emerald-400 transition-all duration-300">
-              <div className="space-y-3">
-                {recentPayslips.length > 0 ? recentPayslips.map((ps, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 border border-[#eceae3] dark:border-[#38352e] rounded-xl bg-white dark:bg-[#14120e] hover:border-[#00a76b] transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[#f0fdf4] dark:bg-[#064e3b] border border-[#bbf7d0] dark:border-[#047857] rounded-xl flex items-center justify-center shrink-0">
-                        <FileText size={20} className="text-[#00a76b] dark:text-[#a7f3d0]" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-[13px] text-[#201515] dark:text-white">{ps.month || 'Payslip'}</p>
-                        <p className="text-[11px] text-[#939084] mt-0.5">{new Date(ps.createdAt || Date.now()).toLocaleDateString()}</p>
-                      </div>
+        <div className="cursor-pointer" onClick={() => navigate('/employee/payslips')}>
+          <Card className="h-72 overflow-y-auto hover:!border-emerald-500 dark:hover:!border-emerald-400 transition-all duration-300">
+            <h3 className="font-bold text-[#201515] dark:text-white text-sm mb-3.5 pb-2 border-b border-[#eceae3] dark:border-[#38352e]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Latest Payslips
+            </h3>
+            <div className="space-y-3">
+              {recentPayslips.length > 0 ? recentPayslips.map((ps, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 border border-[#eceae3] dark:border-[#38352e] rounded-xl bg-white dark:bg-[#14120e] hover:border-[#00a76b] transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#f0fdf4] dark:bg-[#064e3b] border border-[#bbf7d0] dark:border-[#047857] rounded-xl flex items-center justify-center shrink-0">
+                      <FileText size={20} className="text-[#00a76b] dark:text-[#a7f3d0]" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-[13px] text-[#201515] dark:text-white">{ps.month || 'Payslip'}</p>
+                      <p className="text-[11px] text-[#939084] mt-0.5">{new Date(ps.createdAt || Date.now()).toLocaleDateString()}</p>
                     </div>
                   </div>
-                )) : (
-                  <div className="text-center py-8">
-                    <FileText size={32} className="mx-auto mb-3 text-[#939084]" />
-                    <p className="text-sm font-medium text-[#939084]">No payslips available</p>
-                  </div>
-                )}
-              </div>
-            </Card>
-          </div>
+                </div>
+              )) : (
+                <div className="text-center py-8">
+                  <FileText size={32} className="mx-auto mb-3 text-[#939084]" />
+                  <p className="text-sm font-medium text-[#939084]">No payslips available</p>
+                </div>
+              )}
+            </div>
+          </Card>
         </div>
       </div>
 
@@ -1016,8 +1016,8 @@ const Dashboard = () => {
 
       {/* 12. BIRTHDAYS & ANNIVERSARIES */}
       <div className="grid grid-cols-1 gap-6">
-        <div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <Card className="p-5 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-[#eceae3] dark:border-[#38352e]">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-center text-[#00a76b] shadow-xs">
                 <PartyPopper size={18} />
@@ -1065,9 +1065,7 @@ const Dashboard = () => {
               })}
             </div>
           </div>
-
-          <Card className="p-5 overflow-hidden">
-            {events.filter(e => eventFilter === 'all' || e.type === eventFilter).length > 0 ? (
+          {events.filter(e => eventFilter === 'all' || e.type === eventFilter).length > 0 ? (
               <div className="flex overflow-x-auto gap-2.5 pb-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-neutral-800 snap-x">
                 {events
                   .filter(e => eventFilter === 'all' || e.type === eventFilter)
@@ -1199,7 +1197,6 @@ const Dashboard = () => {
               </span>
             </div>
           </Card>
-        </div>
       </div>
 
       {/* ⚠️ FluidHR Desktop Application Missing Modal */}

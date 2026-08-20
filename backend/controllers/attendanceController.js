@@ -33,7 +33,7 @@ const getTimeDetails = (date = new Date(), timeZone = 'Asia/Kolkata') => {
 exports.checkIn = async (req, res) => {
   try {
     const checkInTime = new Date();
-    const { dateStr: today, timeInMinutes } = getTimeDetails(checkInTime);
+    const { dateStr: today, timeInMinutes, hours, minutes } = getTimeDetails(checkInTime);
 
     // Check if already checked in today
     const existing = await Attendance.findOne({ user: req.user.id, date: today });
@@ -48,10 +48,13 @@ exports.checkIn = async (req, res) => {
       status = 'Late';
     }
 
+    const clockInStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+
     const attendance = await Attendance.create({
       user: req.user.id,
       date: today,
       checkInTime,
+      clockIn: clockInStr,
       status
     });
 
@@ -98,8 +101,12 @@ exports.checkIn = async (req, res) => {
 // @route   POST /api/attendance/checkout
 exports.checkOut = async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const attendance = await Attendance.findOne({ user: req.user.id, date: today });
+    const checkOutTime = new Date();
+    const { dateStr: today, hours, minutes } = getTimeDetails(checkOutTime);
+    let attendance = await Attendance.findOne({ user: req.user.id, date: today });
+    if (!attendance) {
+      attendance = await Attendance.findOne({ user: req.user.id, checkOutTime: null }).sort({ checkInTime: -1 });
+    }
 
     if (!attendance) {
       return res.status(404).json({ message: 'No check-in record found for today.' });
@@ -108,8 +115,9 @@ exports.checkOut = async (req, res) => {
       return res.status(400).json({ message: 'Already checked out for today.' });
     }
 
-    const checkOutTime = new Date();
+    const clockOutStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     attendance.checkOutTime = checkOutTime;
+    attendance.clockOut = clockOutStr;
 
     // Calculate total hours
     const diffMs = checkOutTime - new Date(attendance.checkInTime);
@@ -288,20 +296,30 @@ const buildEmployeeAttendanceHistory = async (userId) => {
     if (existingAtt) {
       let clockInStr = existingAtt.clockIn || '--';
       if (existingAtt.checkInTime) {
-        clockInStr = new Date(existingAtt.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        const { hours, minutes } = getTimeDetails(new Date(existingAtt.checkInTime));
+        clockInStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
       }
       let clockOutStr = existingAtt.clockOut || '--';
       if (existingAtt.checkOutTime) {
-        clockOutStr = new Date(existingAtt.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        const { hours, minutes } = getTimeDetails(new Date(existingAtt.checkOutTime));
+        clockOutStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
       }
 
       const tt = timeTrackRecords.find(t => t.date === dStr);
       let hoursVal = existingAtt.totalHours;
       let activeSecs = null;
+      let effectiveCheckOutTime = existingAtt.checkOutTime;
 
-      if (tt && typeof tt.activeTime === 'number' && tt.activeTime > 0) {
-        activeSecs = tt.activeTime;
-        hoursVal = parseFloat((tt.activeTime / 3600).toFixed(4));
+      if (tt) {
+        if (tt.endTime && (!effectiveCheckOutTime || new Date(tt.endTime) > new Date(effectiveCheckOutTime))) {
+          effectiveCheckOutTime = tt.endTime;
+          const { hours, minutes } = getTimeDetails(new Date(tt.endTime));
+          clockOutStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+        if (typeof tt.activeTime === 'number' && tt.activeTime > 0) {
+          activeSecs = tt.activeTime;
+          hoursVal = parseFloat((tt.activeTime / 3600).toFixed(4));
+        }
       }
 
       fullLogs.push({
@@ -310,7 +328,7 @@ const buildEmployeeAttendanceHistory = async (userId) => {
         date: dStr,
         status: existingAtt.status || 'Present',
         checkInTime: existingAtt.checkInTime,
-        checkOutTime: existingAtt.checkOutTime,
+        checkOutTime: effectiveCheckOutTime,
         clockIn: clockInStr,
         clockOut: clockOutStr,
         totalHours: hoursVal,
@@ -573,10 +591,17 @@ exports.getAttendance = async (req, res) => {
             return tEmpId === uId && t.date === rec.date;
           });
 
-          if (tt && typeof tt.activeTime === 'number' && tt.activeTime > 0) {
-            rec.totalActiveTime = tt.activeTime;
-            rec.activeTime = tt.activeTime;
-            rec.totalHours = parseFloat((tt.activeTime / 3600).toFixed(4));
+          if (tt) {
+            if (tt.endTime && (!rec.checkOutTime || new Date(tt.endTime) > new Date(rec.checkOutTime))) {
+              rec.checkOutTime = tt.endTime;
+              const { hours, minutes } = getTimeDetails(new Date(tt.endTime));
+              rec.clockOut = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            }
+            if (typeof tt.activeTime === 'number' && tt.activeTime > 0) {
+              rec.totalActiveTime = tt.activeTime;
+              rec.activeTime = tt.activeTime;
+              rec.totalHours = parseFloat((tt.activeTime / 3600).toFixed(4));
+            }
           }
         }
       }
@@ -701,12 +726,9 @@ exports.getWeeklySummary = async (req, res) => {
 
     const approvedLeaves = await Leave.find({
       user: { $in: eligibleUserIds },
-      status: 'approved',
-      $or: [
-        { startDate: { $gte: intervals[0].startDate, $lte: intervals[intervals.length - 1].endDate } },
-        { endDate: { $gte: intervals[0].startDate, $lte: intervals[intervals.length - 1].endDate } },
-        { startDate: { $lte: intervals[0].startDate }, endDate: { $gte: intervals[intervals.length - 1].endDate } }
-      ]
+      status: { $regex: /^approved$/i },
+      startDate: { $lte: intervals[intervals.length - 1].endDate },
+      endDate: { $gte: intervals[0].startDate }
     });
 
     const chartData = intervals.map(interval => {
@@ -725,7 +747,9 @@ exports.getWeeklySummary = async (req, res) => {
         const hasLeave = approvedLeaves.some(l => {
           const s = new Date(l.startDate);
           const e = new Date(l.endDate);
-          return (s <= interval.endDate && e >= interval.startDate);
+          const sDate = new Date(s.getFullYear(), s.getMonth(), s.getDate(), 0, 0, 0, 0);
+          const eDate = new Date(e.getFullYear(), e.getMonth(), e.getDate(), 23, 59, 59, 999);
+          return (sDate <= interval.endDate && eDate >= interval.startDate);
         });
         if (hasLeave && leave === 0) leave = 1;
 
@@ -747,7 +771,9 @@ exports.getWeeklySummary = async (req, res) => {
           approvedLeaves.filter(l => {
             const s = new Date(l.startDate);
             const e = new Date(l.endDate);
-            return (s <= interval.endDate && e >= interval.startDate);
+            const sDate = new Date(s.getFullYear(), s.getMonth(), s.getDate(), 0, 0, 0, 0);
+            const eDate = new Date(e.getFullYear(), e.getMonth(), e.getDate(), 23, 59, 59, 999);
+            return (sDate <= interval.endDate && eDate >= interval.startDate);
           }).map(l => String(l.user?._id || l.user))
         ).size;
 
@@ -787,12 +813,13 @@ exports.getWeeklySummary = async (req, res) => {
 
 // @desc    Clock In
 // @route   POST /api/attendance/clock-in
+// @desc    Clock In
+// @route   POST /api/attendance/clock-in
 exports.clockIn = async (req, res) => {
   try {
-    const { date, time, location } = req.body;
-    const now = new Date();
-    const formatLocalDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const todayStr = formatLocalDate(now);
+    const checkInTime = new Date();
+    const { dateStr: todayStr, timeInMinutes, hours, minutes } = getTimeDetails(checkInTime);
+    const { date, location } = req.body;
     const recordDate = date || todayStr;
 
     // Check if already clocked in today
@@ -801,11 +828,6 @@ exports.clockIn = async (req, res) => {
       return res.status(400).json({ message: 'Already clocked in for today' });
     }
 
-    const checkInTime = new Date();
-    const hours = checkInTime.getHours();
-    const minutes = checkInTime.getMinutes();
-    const timeInMinutes = hours * 60 + minutes;
-
     let status = 'Present';
     if (timeInMinutes >= 14 * 60 + 30) { // 2:30 PM
       status = 'Half Day';
@@ -813,10 +835,13 @@ exports.clockIn = async (req, res) => {
       status = 'Late';
     }
 
+    const clockInStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+
     const attendance = await Attendance.create({
       user: req.user.id,
       date: recordDate,
       checkInTime,
+      clockIn: clockInStr,
       location: location || 'Office',
       status
     });
@@ -864,19 +889,24 @@ exports.clockIn = async (req, res) => {
 // @route   PUT /api/attendance/clock-out
 exports.clockOut = async (req, res) => {
   try {
-    const { date, time } = req.body;
     const now = new Date();
-    const formatLocalDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const todayStr = formatLocalDate(now);
+    const { dateStr: todayStr, hours, minutes } = getTimeDetails(now);
+    const { date } = req.body;
     const recordDate = date || todayStr;
 
-    const attendance = await Attendance.findOne({ user: req.user.id, date: recordDate });
+    let attendance = await Attendance.findOne({ user: req.user.id, date: recordDate });
+    if (!attendance) {
+      attendance = await Attendance.findOne({ user: req.user.id, checkOutTime: null }).sort({ checkInTime: -1 });
+    }
 
     if (!attendance) {
       return res.status(404).json({ message: 'No clock-in record found for today' });
     }
 
+    const clockOutStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     attendance.checkOutTime = now;
+    attendance.clockOut = clockOutStr;
+
     if (attendance.checkInTime) {
       const diffMs = now - new Date(attendance.checkInTime);
       attendance.totalHours = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));

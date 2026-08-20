@@ -255,8 +255,19 @@ exports.stopTracking = async (req, res) => {
     // Sync with legacy Attendance model for HR dashboards
     try {
       const attendance = await Attendance.findOne({ user: id, date: session.date });
-      if (attendance && !attendance.checkOutTime) {
+      if (attendance) {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Kolkata',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+        const parts = formatter.formatToParts(now);
+        const h = parts.find(p => p.type === 'hour')?.value || '00';
+        const m = parts.find(p => p.type === 'minute')?.value || '00';
+
         attendance.checkOutTime = now;
+        attendance.clockOut = `${h}:${m}`;
         if (attendance.checkInTime) {
           const activeSecs = session.activeTime || 0;
           if (activeSecs > 0) {
@@ -571,7 +582,7 @@ exports.getAllTimeLogs = async (req, res) => {
           if (!dStr) return '--';
           const d = new Date(dStr);
           if (isNaN(d.getTime())) return String(dStr);
-          return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+          return d.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
         };
 
         const activeSecs = (att.totalHours || 0) * 3600;
@@ -643,8 +654,8 @@ exports.exportTimeLogs = async (req, res) => {
       const name = log.employeeId?.fullName || log.employeeId?.name || 'Unknown';
       const roleStr = log.employeeRole || 'N/A';
       const date = log.date;
-      const checkin = log.startTime ? new Date(log.startTime).toLocaleTimeString() : 'N/A';
-      const checkout = log.endTime ? new Date(log.endTime).toLocaleTimeString() : 'N/A';
+      const checkin = log.startTime ? new Date(log.startTime).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A';
+      const checkout = log.endTime ? new Date(log.endTime).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A';
       const pauses = log.events ? log.events.filter(e => e.type === 'pause').length : 0;
       const totalBreak = Math.floor((log.idleTime || 0) / 60);
       const activeSecs = log.totalActiveTime || log.activeTime || 0;

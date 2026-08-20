@@ -557,29 +557,41 @@ const Attendance = () => {
 
   const formatTime12h = (dateObjOrStr) => {
     if (!dateObjOrStr || dateObjOrStr === '--') return '--:--';
-    if (typeof dateObjOrStr === 'string' && dateObjOrStr.match(/^\d{1,2}:\d{2}\s*(AM|PM)?$/i)) {
+    if (typeof dateObjOrStr === 'string' && dateObjOrStr.match(/^\d{1,2}:\d{2}\s*(AM|PM)$/i)) {
       return dateObjOrStr;
+    }
+    if (typeof dateObjOrStr === 'string' && dateObjOrStr.includes(':')) {
+      const parts = dateObjOrStr.trim().split(':');
+      let h = parseInt(parts[0], 10);
+      const m = parts[1].slice(0, 2);
+      if (!isNaN(h)) {
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
+      }
     }
     try {
       const d = new Date(dateObjOrStr);
-      if (isNaN(d.getTime())) return String(dateObjOrStr);
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+      }
     } catch (e) {
       return String(dateObjOrStr);
     }
+    return String(dateObjOrStr);
   };
 
   const todayCheckInDisplay = useMemo(() => {
     if (todayLiveStatus?.startTime) return formatTime12h(todayLiveStatus.startTime);
-    if (todayRecord?.checkInTime) return formatTime12h(todayRecord.checkInTime);
     if (todayRecord?.clockIn && todayRecord.clockIn !== '--') return formatTime12h(todayRecord.clockIn);
+    if (todayRecord?.checkInTime) return formatTime12h(todayRecord.checkInTime);
     return '--:--';
   }, [todayLiveStatus, todayRecord]);
 
   const todayCheckOutDisplay = useMemo(() => {
     if (todayLiveStatus?.status === 'completed' && todayLiveStatus?.endTime) return formatTime12h(todayLiveStatus.endTime);
-    if (todayRecord?.checkOutTime) return formatTime12h(todayRecord.checkOutTime);
     if (todayRecord?.clockOut && todayRecord.clockOut !== '--') return formatTime12h(todayRecord.clockOut);
+    if (todayRecord?.checkOutTime) return formatTime12h(todayRecord.checkOutTime);
     return '--:--';
   }, [todayLiveStatus, todayRecord]);
 
@@ -1835,36 +1847,20 @@ const Attendance = () => {
                     <td className="px-3 py-1.5">
                       <div className="flex items-center gap-1 text-[11.5px] font-semibold text-slate-700 dark:text-slate-300">
                         <LogIn size={11.5} className="text-emerald-500" />
-                        {(() => {
-                          if (record.clockIn) return record.clockIn;
-                          if (record.clock_in) return record.clock_in;
-                          if (record.checkInTime) {
-                            try { return new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }); }
-                            catch (e) { return '--'; }
-                          }
-                          return '--';
-                        })()}
+                        {formatTime12h(record.clockIn || record.clock_in || record.checkInTime)}
                       </div>
                     </td>
                     <td className="px-3 py-1.5">
                       <div className="flex items-center gap-1 text-[11.5px] font-semibold text-slate-700 dark:text-slate-300">
                         <LogOut size={11.5} className="text-red-400" />
-                        {(() => {
-                          if (record.clockOut) return record.clockOut;
-                          if (record.clock_out) return record.clock_out;
-                          if (record.checkOutTime) {
-                            try { return new Date(record.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }); }
-                            catch (e) { return '--'; }
-                          }
-                          return '--';
-                        })()}
+                        {formatTime12h(record.clockOut || record.clock_out || record.checkOutTime)}
                       </div>
                     </td>
                     <td className="px-3 py-1.5">
                       <span className="text-[11.5px] font-bold text-slate-800 dark:text-white">
                         {(() => {
-                          const cIn = record.clockIn || record.clock_in || (record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : null);
-                          const cOut = record.clockOut || record.clock_out || (record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : null);
+                          const cIn = record.clockIn || record.clock_in || (record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }) : null);
+                          const cOut = record.clockOut || record.clock_out || (record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }) : null);
                           return getWorkingHours(cIn, cOut, record.totalHours, record);
                         })()}
                       </span>

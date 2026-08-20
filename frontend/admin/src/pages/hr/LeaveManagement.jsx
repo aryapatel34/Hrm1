@@ -155,10 +155,16 @@ const Leaves = () => {
   const token = sessionStorage.getItem('token');
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
 
-  // Basic stats for summary cards
+  // Basic stats for summary cards (Scoped to current month for 'This Month' label)
+  const currentMonthPrefix = new Date().toISOString().slice(0, 7); // e.g. "2026-08"
+  const thisMonthLeaves = leaves.filter(l => {
+    const sDate = l.startDate ? l.startDate.split('T')[0] : '';
+    const cDate = l.createdAt ? l.createdAt.split('T')[0] : '';
+    return sDate.startsWith(currentMonthPrefix) || cDate.startsWith(currentMonthPrefix);
+  });
   const pendingRequests = leaves.filter(l => l.status?.toLowerCase() === 'pending' || l.status?.toLowerCase() === 'cancellation_pending').length;
   const approvedLeaves = leaves.filter(l => l.status?.toLowerCase() === 'approved').length;
-  const totalRequests = leaves.length;
+  const totalRequests = thisMonthLeaves.length;
 
   const dateFilteredLeaves = leaves.filter(l => {
     if (l.startDate) {
@@ -304,7 +310,7 @@ const Leaves = () => {
               { label: 'Total Leave Requests', val: totalRequests, sub: 'This Month', icon: CheckSquare, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20', hoverBorder: 'hover:border-indigo-500 hover:shadow-indigo-500/5', filter: 'all' },
               { label: 'Pending Approvals', val: pendingRequests, sub: 'Requests', icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', hoverBorder: 'hover:border-purple-500 hover:shadow-purple-500/5', filter: 'pending' },
               { label: 'Employees On Leave', val: stats?.employeesOnLeave || 0, sub: 'Today', icon: Users, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', hoverBorder: 'hover:border-orange-500 hover:shadow-orange-500/5' },
-              { label: 'Employees Present Today', val: stats ? (stats.totalEmployees - (stats.employeesOnLeave || 0)) : 0, sub: 'Present', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', hoverBorder: 'hover:border-emerald-500 hover:shadow-emerald-500/5' },
+              { label: 'Employees Present Today', val: stats?.employeesPresent !== undefined ? stats.employeesPresent : 0, sub: 'Present', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', hoverBorder: 'hover:border-emerald-500 hover:shadow-emerald-500/5' },
               { label: 'Upcoming Holidays', val: stats?.upcomingHolidays || 0, sub: 'In 30 Days', icon: Calendar, color: 'text-pink-600', bg: 'bg-pink-50 dark:bg-pink-900/20', hoverBorder: 'hover:border-pink-500 hover:shadow-pink-500/5' }
             ].map((stat, i) => {
               const isClickable = !!stat.filter;

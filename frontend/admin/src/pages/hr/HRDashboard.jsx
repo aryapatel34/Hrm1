@@ -784,9 +784,9 @@ const HRDashboard = () => {
             <button onClick={() => navigate('/hr/leave', { state: { viewMode: 'hr', filter: 'pending' } })} className="text-xs font-bold text-[#00a76b] hover:underline cursor-pointer">View All</button>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {pendingApprovals.length > 0 ? (
+            {pendingApprovals.filter(a => a.role?.toLowerCase() !== 'hr' && a.role?.toLowerCase() !== 'admin').length > 0 ? (
               <div className="space-y-3">
-                {pendingApprovals.map((approval) => (
+                {pendingApprovals.filter(a => a.role?.toLowerCase() !== 'hr' && a.role?.toLowerCase() !== 'admin').map((approval) => (
                   <div
                     key={approval._id}
                     onClick={() => setSelectedLeaveApproval(approval)}
