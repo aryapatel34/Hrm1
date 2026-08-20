@@ -464,11 +464,11 @@ const EmployeeDashboard = () => {
   const pendingLeaves = leaves.filter(l => l.status?.toLowerCase() === 'pending' || l.status?.toLowerCase() === 'cancellation_pending').length;
   const leavesTakenThisMonth = leaves.filter(l => l.status === 'approved' && new Date(l.startDate).getMonth() === new Date().getMonth()).length;
 
-  const completedTasks = tasks.filter(t => (t.status || '').toLowerCase() === 'completed').length;
-  const ongoingTasks = tasks.filter(t => ['in progress', 'in-progress', 'pending'].includes((t.status || '').toLowerCase())).length;
-  const upcomingTasks = tasks.filter(t => ['upcoming', 'to do', 'todo', 'ongoing'].includes((t.status || '').toLowerCase())).length;
+  const completedTasks = tasks.filter(t => ['completed', 'done'].includes((t.status || '').toLowerCase())).length;
+  const ongoingTasks = tasks.filter(t => ['in progress', 'in-progress', 'ongoing'].includes((t.status || '').toLowerCase())).length;
+  const overdueTasks = tasks.filter(t => (t.status || '').toLowerCase() === 'overdue' || (t.dueDate && new Date(t.dueDate) < new Date() && !['completed', 'done'].includes((t.status || '').toLowerCase()))).length;
+  const pendingTasks = tasks.filter(t => ['pending', 'to do', 'todo', 'upcoming'].includes((t.status || '').toLowerCase()) && !(t.dueDate && new Date(t.dueDate) < new Date())).length;
   const totalTasks = tasks.length;
-  const pendingTasks = totalTasks - completedTasks - ongoingTasks - upcomingTasks;
 
   const recentPayslips = payroll.length > 0 ? payroll.slice(0, 3) : [
     { month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }), createdAt: new Date(), netPay: 45000, amount: 45000 },
@@ -734,18 +734,18 @@ const EmployeeDashboard = () => {
         <div className="flex flex-col h-full">
           <SectionHeader title="My Tasks Overview" />
           <div className="rounded-2xl flex-1 flex flex-col">
-            <Card className="flex-1 flex flex-col justify-between">
-              <div className="h-48 relative flex items-center justify-center">
+            <Card className="flex-1 flex flex-col justify-center gap-2 p-5">
+              <div className="h-52 relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={totalTasks === 0 ? [{ name: 'No Tasks', value: 1, color: '#e5e7eb' }] : [
+                      { name: 'Pending', value: pendingTasks, color: '#3b82f6' },
+                      { name: 'In Progress', value: ongoingTasks, color: '#f59e0b' },
                       { name: 'Completed', value: completedTasks, color: '#8b5cf6' },
-                      { name: 'Ongoing', value: ongoingTasks, color: '#f59e0b' },
-                      { name: 'Upcoming', value: upcomingTasks, color: '#ef4444' },
-                      { name: 'Pending', value: pendingTasks, color: '#3b82f6' }
+                      { name: 'Overdue', value: overdueTasks, color: '#ef4444' }
                     ]} cx="50%" cy="50%" innerRadius={55} outerRadius={78} dataKey="value" stroke="none" paddingAngle={3}>
                       {
-                        (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#8b5cf6' }, { color: '#f59e0b' }, { color: '#ef4444' }, { color: '#3b82f6' }]).map((entry, index) => (
+                        (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#3b82f6' }, { color: '#f59e0b' }, { color: '#8b5cf6' }, { color: '#ef4444' }]).map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))
                       }
@@ -760,8 +760,8 @@ const EmployeeDashboard = () => {
               </div>
 
               {/* 4 Stat Items below Pie Chart styled same as Attendance Overview */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2.5 h-14 items-center">
-                <div className="px-2 py-2 flex items-center justify-between transition-all h-full">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1 items-center">
+                <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="w-2 h-2 rounded-full bg-[#3b82f6] shrink-0"></span>
                     <span className="text-xs text-blue-700 dark:text-blue-400 font-bold truncate">Pending</span>
@@ -769,7 +769,7 @@ const EmployeeDashboard = () => {
                   <span className="text-sm font-black text-blue-800 dark:text-blue-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingTasks}</span>
                 </div>
 
-                <div className="px-2 py-2 flex items-center justify-between transition-all h-full">
+                <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="w-2 h-2 rounded-full bg-[#f59e0b] shrink-0"></span>
                     <span className="text-xs text-amber-700 dark:text-amber-400 font-bold truncate">In Progress</span>
@@ -777,7 +777,7 @@ const EmployeeDashboard = () => {
                   <span className="text-sm font-black text-amber-800 dark:text-amber-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{ongoingTasks}</span>
                 </div>
 
-                <div className="px-2 py-2 flex items-center justify-between transition-all h-full">
+                <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="w-2 h-2 rounded-full bg-[#8b5cf6] shrink-0"></span>
                     <span className="text-xs text-purple-700 dark:text-purple-400 font-bold truncate">Completed</span>
@@ -785,12 +785,12 @@ const EmployeeDashboard = () => {
                   <span className="text-sm font-black text-purple-800 dark:text-purple-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{completedTasks}</span>
                 </div>
 
-                <div className="px-2 py-2 flex items-center justify-between transition-all h-full">
+                <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0"></span>
                     <span className="text-xs text-rose-700 dark:text-rose-400 font-bold truncate">Overdue</span>
                   </div>
-                  <span className="text-sm font-black text-rose-800 dark:text-rose-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{upcomingTasks}</span>
+                  <span className="text-sm font-black text-rose-800 dark:text-rose-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{overdueTasks}</span>
                 </div>
               </div>
             </Card>

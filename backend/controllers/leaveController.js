@@ -563,7 +563,7 @@ exports.hrApprove = async (req, res) => {
         userRole: approvingUser.role || 'hr',
         action: oldStatus === 'cancellation_pending' ? 'Approve Leave Cancellation' : 'Approve Leave',
         module: 'Leave',
-        description: oldStatus === 'cancellation_pending' 
+        description: oldStatus === 'cancellation_pending'
           ? `${approvingUser.name || 'HR'} approved cancellation of ${leave.totalDays || 1} day(s) leave for ${leaveUser.name || 'User'}.`
           : `${approvingUser.name || 'HR'} approved ${leave.totalDays || 1} day(s) leave for ${leaveUser.name || 'User'}.`,
         status: 'Success'
@@ -710,7 +710,7 @@ exports.cancelLeave = async (req, res) => {
     const formattedStart = new Date(leave.startDate).toLocaleDateString('en-GB');
     const formattedEnd = new Date(leave.endDate).toLocaleDateString('en-GB');
     const message = `${employee.name} has cancelled their pending leave request from ${formattedStart} to ${formattedEnd}.`;
-    
+
     if (employee.reportingManager) {
       await createInAppAndEmailNotification(req, {
         userId: employee.reportingManager,
@@ -1469,7 +1469,7 @@ exports.requestLeaveCancellation = async (req, res) => {
     const formattedStart = new Date(leave.startDate).toLocaleDateString('en-GB');
     const formattedEnd = new Date(leave.endDate).toLocaleDateString('en-GB');
     const message = `${employee.name} has requested cancellation for their approved leave from ${formattedStart} to ${formattedEnd}.`;
-    
+
     if (employee.reportingManager) {
       await createInAppAndEmailNotification(req, {
         userId: employee.reportingManager,
