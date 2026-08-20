@@ -32,8 +32,10 @@ const Leaves = () => {
   const [leaves, setLeaves] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const role = sessionStorage.getItem('role');
+
   const [viewMode, setViewMode] = useState(
-    location.state?.viewMode || (location.state?.tab === 'team' ? 'hr' : 'employee')
+    role === 'admin' ? 'hr' : (location.state?.viewMode || (location.state?.tab === 'team' ? 'hr' : 'employee'))
   ); // 'hr' or 'employee'
 
   // Modal states
@@ -47,6 +49,10 @@ const Leaves = () => {
   const [selectedLeaveDetails, setSelectedLeaveDetails] = useState(null);
 
   useEffect(() => {
+    if (role === 'admin') {
+      setViewMode('hr');
+      return;
+    }
     if (location.state?.viewMode) {
       setViewMode(location.state.viewMode);
     } else if (location.state?.tab === 'team') {
@@ -55,7 +61,7 @@ const Leaves = () => {
     if (location.state?.filter) {
       setRequestFilter(location.state.filter);
     }
-  }, [location.state]);
+  }, [location.state, role]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -148,7 +154,6 @@ const Leaves = () => {
 
   const token = sessionStorage.getItem('token');
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
-  const role = sessionStorage.getItem('role');
 
   // Basic stats for summary cards
   const pendingRequests = leaves.filter(l => l.status?.toLowerCase() === 'pending' || l.status?.toLowerCase() === 'cancellation_pending').length;
@@ -168,14 +173,26 @@ const Leaves = () => {
 
   // Counts and filters for the request filter tabs
   const countAll = dateFilteredLeaves.length;
-  const countPending = dateFilteredLeaves.filter(l => l.status?.toLowerCase() === 'pending').length;
+  const countPending = dateFilteredLeaves.filter(l => l.status?.toLowerCase() === 'pending' || l.status?.toLowerCase() === 'cancellation_pending').length;
   const countApproved = dateFilteredLeaves.filter(l => l.status?.toLowerCase() === 'approved').length;
   const countCancellation = dateFilteredLeaves.filter(l => l.status?.toLowerCase() === 'cancellation_pending').length;
   const countRejected = dateFilteredLeaves.filter(l => l.status?.toLowerCase() === 'rejected').length;
   const countCancelled = dateFilteredLeaves.filter(l => l.status?.toLowerCase() === 'cancelled').length;
 
   const filteredLeaves = dateFilteredLeaves.filter(l => {
+    // Hide HR's own leaves or requests from HR role users when logged in as HR (HR leaves are managed by Admin)
+    if (role === 'hr') {
+      const applicantRole = l.user?.role?.toLowerCase();
+      const applicantId = (l.user?._id || l.user)?.toString();
+      const currentUserId = (user.id || user._id)?.toString();
+      if (applicantRole === 'hr' || applicantId === currentUserId) {
+        return false;
+      }
+    }
     if (requestFilter === 'all') return true;
+    if (requestFilter === 'pending') {
+      return l.status?.toLowerCase() === 'pending' || l.status?.toLowerCase() === 'cancellation_pending';
+    }
     return l.status?.toLowerCase() === requestFilter;
   });
 
@@ -183,8 +200,9 @@ const Leaves = () => {
     if (viewMode !== 'hr') return;
     const fetchData = async () => {
       try {
+        const endpoint = role === 'admin' ? '/api/leaves' : '/api/leaves/hr';
         const [leavesRes, statsRes] = await Promise.all([
-          axios.get('/api/leaves', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(endpoint, { headers: { Authorization: `Bearer ${token}` } }),
           axios.get('/api/hr-dashboard/summary', { headers: { Authorization: `Bearer ${token}` } })
         ]);
         setLeaves(leavesRes.data || []);
@@ -198,7 +216,7 @@ const Leaves = () => {
       }
     };
     fetchData();
-  }, [token, refreshTrigger, viewMode]);
+  }, [token, refreshTrigger, viewMode, role]);
 
   const handleDownloadReport = () => {
     if (!leaves || leaves.length === 0) {
@@ -243,36 +261,38 @@ const Leaves = () => {
         </div>
       </div>
 
-      {/* VIEW MODE TOGGLE & ACTIONS */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full mb-4 mt-2">
-        <div className="bg-white dark:bg-[#1e293b] p-1 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm inline-flex">
-          <button
-            onClick={() => setViewMode('employee')}
-            className={`px-6 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'employee' ? 'bg-[#00a76b] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
-          >
-            My Leaves
-          </button>
-          <button
-            onClick={() => setViewMode('hr')}
-            className={`px-6 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'hr' ? 'bg-[#00a76b] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
-          >
-            Team Leaves ({role === 'admin' ? 'Admin' : 'HR'})
-          </button>
-        </div>
+      {/* VIEW MODE TOGGLE & ACTIONS (ONLY SHOWN FOR HR, NOT ADMIN) */}
+      {role !== 'admin' && (
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full mb-4 mt-2">
+          <div className="bg-white dark:bg-[#1e293b] p-1 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm inline-flex">
+            <button
+              onClick={() => setViewMode('employee')}
+              className={`px-6 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'employee' ? 'bg-[#00a76b] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
+            >
+              My Leaves
+            </button>
+            <button
+              onClick={() => setViewMode('hr')}
+              className={`px-6 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'hr' ? 'bg-[#00a76b] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
+            >
+              Team Leaves (HR)
+            </button>
+          </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-3">
-          <button 
-            onClick={() => {
-              setViewMode('employee');
-              setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'apply-leave' })), 100);
-            }} 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap cursor-pointer"
-          >
-            <Plus size={16} /> Apply for Leave
-          </button>
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => {
+                setViewMode('employee');
+                setTimeout(() => window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: 'apply-leave' })), 100);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-colors whitespace-nowrap cursor-pointer"
+            >
+              <Plus size={16} /> Apply for Leave
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {viewMode === 'employee' ? (
         <EmployeeLeaveManagement isChild={true} />
@@ -341,7 +361,7 @@ const Leaves = () => {
                     className="w-26 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg h-9 flex items-center text-[11px] font-semibold text-gray-700 dark:text-gray-300"
                   />
                   {(filterStartDate || filterEndDate) && (
-                    <button 
+                    <button
                       onClick={() => { setFilterStartDate(''); setFilterEndDate(''); }}
                       className="text-[10px] font-black text-red-500 hover:text-red-700 uppercase px-2 py-1 bg-red-50 dark:bg-red-950/20 rounded-md transition-colors cursor-pointer"
                     >
@@ -364,7 +384,7 @@ const Leaves = () => {
                     {requestFilter === 'cancelled' && `Cancelled (${countCancelled})`}
                     <ChevronDown size={14} className={`transition-transform duration-200 ${filterDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  
+
                   {filterDropdownOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setFilterDropdownOpen(false)} />
@@ -425,11 +445,10 @@ const Leaves = () => {
                               </div>
                             </td>
                             <td className="py-2">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                leave.leaveType === 'sick' ? 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400' :
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${leave.leaveType === 'sick' ? 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400' :
                                 leave.leaveType === 'casual' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400' :
-                                'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400'
-                              }`}>
+                                  'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400'
+                                }`}>
                                 {leave.leaveType || leave.type}
                               </span>
                             </td>

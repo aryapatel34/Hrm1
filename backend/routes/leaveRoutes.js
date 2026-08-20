@@ -17,6 +17,7 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 
 // 👤 Employee Routes
 router.post('/apply', protect, authorize('employee', 'manager', 'hr', 'admin'), applyLeave);
+router.put('/update/:id', protect, require('../controllers/leaveController').updateLeave);
 router.get('/my', protect, getMyLeaves);
 router.get('/my-quotas', protect, require('../controllers/leaveController').getMyLeaveQuotas);
 router.put('/cancel/:id', protect, cancelLeave);

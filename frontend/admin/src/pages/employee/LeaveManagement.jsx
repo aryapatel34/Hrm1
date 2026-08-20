@@ -52,8 +52,8 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", has
                   setIsOpen(false);
                 }}
                 className={`w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer ${value === opt.value
-                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20'
-                    : 'text-gray-700 dark:text-gray-300'
+                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20'
+                  : 'text-gray-700 dark:text-gray-300'
                   }`}
               >
                 {opt.label}
@@ -226,6 +226,15 @@ const LeaveManagement = ({ isChild = false }) => {
     if (!formData.endDate) errors.endDate = 'Please pick an end date';
     if (!formData.reason || !formData.reason.trim()) errors.reason = 'Please state your reason';
 
+    if (formData.startDate && formData.endDate) {
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+      if (start > end) {
+        errors.startDate = 'Start date cannot be later than end date';
+        errors.endDate = 'End date cannot be earlier than start date';
+      }
+    }
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -286,12 +295,25 @@ const LeaveManagement = ({ isChild = false }) => {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    if (editFormData.startDate && editFormData.endDate) {
+      const start = new Date(editFormData.startDate);
+      const end = new Date(editFormData.endDate);
+      if (start > end) {
+        toast.error('Start date cannot be later than end date.');
+        return;
+      }
+    }
+
     try {
       setIsSubmitting(true);
       const days = calculateDays(editFormData.startDate, editFormData.endDate);
-      await axios.put(`/api/leaves/update/${selectedLeave._id}`, { ...editFormData, totalDays: days }, {
+      const res = await axios.put(`/api/leaves/update/${selectedLeave._id}`, { ...editFormData, totalDays: days }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (res.data) {
+        setSelectedLeave(res.data);
+      }
       setSuccessMessage('Your leave request has been updated successfully!');
       setShowSuccessScreen(true);
       fetchMyLeaves();
@@ -759,8 +781,8 @@ const LeaveManagement = ({ isChild = false }) => {
                 <h2 className="text-base font-bold text-gray-900 dark:text-white">Leave Policy & Guidelines</h2>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400">Key highlights of annual leave allowances, carry forward limits, and policy rules.</p>
               </div>
-              <button 
-                onClick={() => setIsPolicyDrawerOpen(true)} 
+              <button
+                onClick={() => setIsPolicyDrawerOpen(true)}
                 className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors shrink-0 cursor-pointer border border-blue-200 dark:border-blue-800/60 px-3 py-1.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/40"
               >
                 View Full Policy
@@ -996,8 +1018,20 @@ const LeaveManagement = ({ isChild = false }) => {
                           name="startDate"
                           value={formData.startDate}
                           onChange={e => {
-                            setFormErrors(prev => ({ ...prev, startDate: null }));
-                            setFormData({ ...formData, startDate: e.target.value });
+                            const newStart = e.target.value;
+                            setFormData(prev => {
+                              const updated = { ...prev, startDate: newStart };
+                              if (newStart && updated.endDate && new Date(newStart) > new Date(updated.endDate)) {
+                                setFormErrors(errs => ({
+                                  ...errs,
+                                  startDate: 'Start date cannot be later than end date',
+                                  endDate: 'End date cannot be earlier than start date'
+                                }));
+                              } else {
+                                setFormErrors(errs => ({ ...errs, startDate: null, endDate: null }));
+                              }
+                              return updated;
+                            });
                           }}
                           placeholder="dd-mm-yyyy"
                           className={`w-full bg-gray-50 dark:bg-[#0f172a] border rounded-lg h-10 flex items-center text-xs text-gray-900 dark:text-white ${formErrors.startDate ? 'border-[#ff4f00]' : 'border-gray-300 dark:border-gray-600'}`}
@@ -1012,8 +1046,20 @@ const LeaveManagement = ({ isChild = false }) => {
                           name="endDate"
                           value={formData.endDate}
                           onChange={e => {
-                            setFormErrors(prev => ({ ...prev, endDate: null }));
-                            setFormData({ ...formData, endDate: e.target.value });
+                            const newEnd = e.target.value;
+                            setFormData(prev => {
+                              const updated = { ...prev, endDate: newEnd };
+                              if (updated.startDate && newEnd && new Date(updated.startDate) > new Date(newEnd)) {
+                                setFormErrors(errs => ({
+                                  ...errs,
+                                  startDate: 'Start date cannot be later than end date',
+                                  endDate: 'End date cannot be earlier than start date'
+                                }));
+                              } else {
+                                setFormErrors(errs => ({ ...errs, startDate: null, endDate: null }));
+                              }
+                              return updated;
+                            });
                           }}
                           placeholder="dd-mm-yyyy"
                           align="right"

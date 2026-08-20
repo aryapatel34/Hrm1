@@ -554,7 +554,24 @@ const ManagerDashboard = () => {
                     onMouseEnter={(_, index) => setHoveredTaskDonut(index)}
                     onMouseLeave={() => setHoveredTaskDonut(null)}
                   >
-                    {donutData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                    {donutData.map((entry, index) => {
+                      const isHovered = hoveredTaskDonut === index;
+                      return (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.color} 
+                          stroke={isHovered ? '#ffffff' : 'none'}
+                          strokeWidth={isHovered ? 2 : 0}
+                          style={{
+                            filter: isHovered ? `drop-shadow(0px 0px 8px ${entry.color}a0) brightness(1.25)` : 'none',
+                            transform: isHovered ? 'scale(1.08)' : 'scale(1)',
+                            transformOrigin: 'center center',
+                            transition: 'all 0.2s ease-in-out',
+                            cursor: 'pointer'
+                          }}
+                        />
+                      );
+                    })}
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
@@ -577,16 +594,24 @@ const ManagerDashboard = () => {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 justify-center">
-              {donutData.map((d, i) => (
-                <div key={i} className="flex items-center gap-2.5">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
-                  <div>
-                    <p className="text-sm font-bold text-[#0f172a] dark:text-white leading-none">{d.value}</p>
-                    <p className="text-[11px] font-semibold text-gray-500 dark:text-[#a3a094] mt-0.5">{d.name}</p>
+            <div className="flex flex-col gap-2 justify-center">
+              {donutData.map((d, i) => {
+                const isHovered = hoveredTaskDonut === i;
+                return (
+                  <div 
+                    key={i} 
+                    onMouseEnter={() => setHoveredTaskDonut(i)}
+                    onMouseLeave={() => setHoveredTaskDonut(null)}
+                    className={`flex items-center gap-2.5 p-1.5 rounded-lg transition-all cursor-pointer ${isHovered ? 'bg-gray-100 dark:bg-gray-800/80 scale-105' : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}
+                  >
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0 transition-transform" style={{ backgroundColor: d.color, boxShadow: isHovered ? `0 0 8px ${d.color}` : 'none' }} />
+                    <div>
+                      <p className="text-sm font-bold text-[#0f172a] dark:text-white leading-none" style={{ color: isHovered ? d.color : undefined }}>{d.value}</p>
+                      <p className="text-[11px] font-semibold text-gray-500 dark:text-[#a3a094] mt-0.5">{d.name}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </Card>

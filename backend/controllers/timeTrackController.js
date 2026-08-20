@@ -105,8 +105,15 @@ exports.startTracking = async (req, res) => {
     // Sync with legacy Attendance model for HR dashboards
     const existingAttendance = await Attendance.findOne({ user: id, date: today });
     if (!existingAttendance) {
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+      const parts = formatter.formatToParts(now);
+      const hours = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+      const minutes = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
       const timeInMinutes = hours * 60 + minutes;
 
       let status = 'Present';

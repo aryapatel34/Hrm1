@@ -1,22 +1,45 @@
 const Attendance = require('../models/Attendance');
 const Employee = require('../models/Employee');
 
+// Helper to compute local date and minutes from midnight in Asia/Kolkata (IST), independent of server timezone (UTC on Render/AWS)
+const getTimeDetails = (date = new Date(), timeZone = 'Asia/Kolkata') => {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  const parts = formatter.formatToParts(date);
+  const getPart = type => parts.find(p => p.type === type)?.value;
+
+  const yyyy = getPart('year');
+  const mm = getPart('month');
+  const dd = getPart('day');
+  const hours = parseInt(getPart('hour') || '0', 10);
+  const minutes = parseInt(getPart('minute') || '0', 10);
+
+  const dateStr = `${yyyy}-${mm}-${dd}`;
+  const timeInMinutes = hours * 60 + minutes;
+
+  return { dateStr, hours, minutes, timeInMinutes };
+};
+
 // @desc    Clock In / Check In
 // @route   POST /api/attendance/checkin
 exports.checkIn = async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const checkInTime = new Date();
+    const { dateStr: today, timeInMinutes } = getTimeDetails(checkInTime);
 
     // Check if already checked in today
     const existing = await Attendance.findOne({ user: req.user.id, date: today });
     if (existing) {
       return res.status(400).json({ message: 'Already checked in for today.' });
     }
-
-    const checkInTime = new Date();
-    const hours = checkInTime.getHours();
-    const minutes = checkInTime.getMinutes();
-    const timeInMinutes = hours * 60 + minutes;
 
     let status = 'Present';
     if (timeInMinutes >= 14 * 60 + 30) { // 2:30 PM
@@ -860,8 +883,7 @@ exports.clockOut = async (req, res) => {
       if (attendance.totalHours < 7.5) {
         attendance.status = 'Half Day';
       } else {
-        const cTime = new Date(attendance.checkInTime);
-        const timeInMinutes = cTime.getHours() * 60 + cTime.getMinutes();
+        const { timeInMinutes } = getTimeDetails(new Date(attendance.checkInTime));
         if (timeInMinutes >= 14 * 60 + 30) {
           attendance.status = 'Half Day';
         } else if (timeInMinutes >= 10 * 60 + 30) {
@@ -902,8 +924,7 @@ exports.clockOut = async (req, res) => {
           if (attendance.totalHours < 7.5) {
             attendance.status = 'Half Day';
           } else {
-            const cTime = new Date(attendance.checkInTime);
-            const timeInMinutes = cTime.getHours() * 60 + cTime.getMinutes();
+            const { timeInMinutes } = getTimeDetails(new Date(attendance.checkInTime));
             if (timeInMinutes >= 14 * 60 + 30) {
               attendance.status = 'Half Day';
             } else if (timeInMinutes >= 10 * 60 + 30) {

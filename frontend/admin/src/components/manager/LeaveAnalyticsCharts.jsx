@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LabelList } from 'recharts';
-import { X, Download, FileSpreadsheet, ExternalLink, BarChart3 } from 'lucide-react';
+import { X, BarChart3 } from 'lucide-react';
 
 const LeaveAnalyticsCharts = () => {
   const navigate = useNavigate();
@@ -246,36 +246,13 @@ const LeaveAnalyticsCharts = () => {
             </div>
 
             {/* Footer Actions */}
-            <div className="pt-4 border-t border-gray-150 dark:border-gray-800 flex flex-wrap justify-between items-center gap-3 mt-4 shrink-0">
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => handleExport('pdf')}
-                  className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
-                >
-                  <Download size={14} /> PDF Report
-                </button>
-                <button 
-                  onClick={() => handleExport('xlsx')}
-                  className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
-                >
-                  <FileSpreadsheet size={14} /> Excel Report
-                </button>
-              </div>
-
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => { setReportModal(null); navigate(`/${userRole}/reports`); }}
-                  className="px-3.5 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 hover:bg-blue-100 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  Go to Full Reports <ExternalLink size={14} />
-                </button>
-                <button 
-                  onClick={() => setReportModal(null)}
-                  className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold transition-colors cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
+            <div className="pt-4 border-t border-gray-150 dark:border-gray-800 flex justify-end items-center gap-3 mt-4 shrink-0">
+              <button 
+                onClick={() => setReportModal(null)}
+                className="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>,

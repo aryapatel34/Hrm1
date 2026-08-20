@@ -86,7 +86,7 @@ exports.getDashboardStats = async (req, res) => {
     // alongside the rest as just one more branch of the big Promise.all.
     const getPendingLeavesData = async () => {
       const currentUser = await User.findById(req.user.id);
-      let pendingLeaveQuery = { status: { $regex: /^pending$/i } };
+      let pendingLeaveQuery = { status: { $in: ['pending', 'cancellation_pending'] } };
 
       if (currentUser.role === 'hr') {
         const allowedUsers = await User.find({ role: { $nin: ['admin', 'manager'] } }).select('_id');
@@ -131,7 +131,7 @@ exports.getDashboardStats = async (req, res) => {
       Employee.countDocuments({}),
       Employee.countDocuments({ status: { $in: ['active', 'Active'] } }),
       Employee.countDocuments({ joinDate: { $gte: startOfMonth } }),
-      Leave.countDocuments({ status: { $regex: /^pending$/i } }),
+      Leave.countDocuments({ status: { $in: ['pending', 'cancellation_pending'] } }),
       Leave.countDocuments({
         status: { $regex: /^approved$/i },
         startDate: { $lte: endOfToday },
@@ -405,10 +405,11 @@ exports.getDashboardStats = async (req, res) => {
         })),
         pendingApprovals: pendingLeaves.map(l => {
           const diffDays = Math.max(1, Math.round((new Date(l.endDate) - new Date(l.startDate)) / (1000 * 60 * 60 * 24)) + 1);
+          const isCancelReq = l.status === 'cancellation_pending';
           return {
             _id: l._id,
-            type: 'Leave Request',
-            subType: l.leaveType,
+            type: isCancelReq ? 'Cancellation Requested' : 'Leave Request',
+            subType: isCancelReq ? 'Cancellation Requested' : l.leaveType,
             name: l.user?.name || 'Employee',
             email: l.user?.email || '',
             role: l.user?.role || 'employee',
@@ -417,7 +418,7 @@ exports.getDashboardStats = async (req, res) => {
             startDate: l.startDate,
             endDate: l.endDate,
             totalDays: l.totalDays || diffDays,
-            reason: l.reason || 'No reason provided',
+            reason: isCancelReq ? (l.cancellationReason || l.reason || 'Cancellation requested') : (l.reason || 'No reason provided'),
             status: l.status || 'pending',
             date: l.createdAt,
             details: `${new Date(l.startDate).toLocaleDateString()} - ${new Date(l.endDate).toLocaleDateString()}`

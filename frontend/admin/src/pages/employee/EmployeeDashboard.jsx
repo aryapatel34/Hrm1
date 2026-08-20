@@ -630,172 +630,203 @@ const EmployeeDashboard = () => {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
         {/* 3. ATTENDANCE SUMMARY */}
-        <div className="flex flex-col h-full">
-          <SectionHeader
-            title="Attendance Overview"
-            action={
-              <div className="relative" ref={timeRangeRef}>
-                <button
-                  type="button"
-                  onClick={() => setTimeRangeOpen(prev => !prev)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#d5d0c1] dark:border-[#38352e] bg-white dark:bg-[#1a1714] text-xs font-semibold text-[#36342e] dark:text-[#e5e2da] hover:border-[#00a76b] hover:bg-[#f7f6f2] dark:hover:bg-[#25211e] transition-all shadow-[0_1px_3px_rgba(0,0,0,0.04)] cursor-pointer select-none"
-                >
-                  <Calendar size={13} className="text-[#00a76b]" />
-                  <span>{timeRange === 'weekly' ? 'This Week' : 'This Month'}</span>
-                  <ChevronDown size={13} className={`text-[#939084] transition-transform duration-200 ${timeRangeOpen ? 'rotate-180 text-[#00a76b]' : ''}`} />
-                </button>
+        <Card className="flex-1 flex flex-col justify-between">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-bold text-[#201515] dark:text-white text-lg" style={{ fontFamily: 'Manrope, sans-serif' }}>Attendance Overview</h2>
+            <div className="relative" ref={timeRangeRef}>
+              <button
+                type="button"
+                onClick={() => setTimeRangeOpen(prev => !prev)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#d5d0c1] dark:border-[#38352e] bg-white dark:bg-[#1a1714] text-xs font-semibold text-[#36342e] dark:text-[#e5e2da] hover:border-[#00a76b] hover:bg-[#f7f6f2] dark:hover:bg-[#25211e] transition-all shadow-[0_1px_3px_rgba(0,0,0,0.04)] cursor-pointer select-none"
+              >
+                <Calendar size={13} className="text-[#00a76b]" />
+                <span>{timeRange === 'weekly' ? 'This Week' : 'This Month'}</span>
+                <ChevronDown size={13} className={`text-[#939084] transition-transform duration-200 ${timeRangeOpen ? 'rotate-180 text-[#00a76b]' : ''}`} />
+              </button>
 
-                {timeRangeOpen && (
-                  <div className="absolute right-0 mt-1.5 w-36 bg-white dark:bg-[#1a1714] border border-[#d5d0c1] dark:border-[#38352e] rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.08)] py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100 overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => { setTimeRange('weekly'); setTimeRangeOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${timeRange === 'weekly'
-                        ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
-                        : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
-                        }`}
-                    >
-                      <span>This Week</span>
-                      {timeRange === 'weekly' && <span className="w-1.5 h-1.5 rounded-full bg-[#00a76b]" />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setTimeRange('monthly'); setTimeRangeOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${timeRange === 'monthly'
-                        ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
-                        : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
-                        }`}
-                    >
-                      <span>This Month</span>
-                      {timeRange === 'monthly' && <span className="w-1.5 h-1.5 rounded-full bg-[#00a76b]" />}
-                    </button>
-                  </div>
-                )}
-              </div>
-            }
-          />
-          <Card className="flex-1 flex flex-col justify-between">
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={weeklyChart} margin={{ top: 20, right: 20, left: 5, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={true} stroke={isDark ? 'rgba(255,255,255,0.07)' : '#e5e7eb'} />
-                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: isDark ? '#a09c8d' : '#939084' }} dy={5} />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: isDark ? '#a09c8d' : '#939084' }}
-                    tickFormatter={(val) => `${val}%`}
-                    domain={[0, 135]}
-                    ticks={[0, 25, 50, 75, 100]}
-                    width={45}
-                    tickMargin={6}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: '12px',
-                      border: isDark ? '1px solid #38352e' : '1px solid #e5e7eb',
-                      backgroundColor: isDark ? '#1a1714' : '#ffffff',
-                      color: isDark ? '#ffffff' : '#1f2937',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-                    }}
-                  />
-                  <Line type="monotone" dataKey="active" stroke="#00a76b" strokeWidth={3} dot={{ fill: '#00a76b', strokeWidth: 2, r: 5 }}>
-                    <LabelList
-                      dataKey="active"
-                      position="top"
-                      offset={12}
-                      formatter={(val) => `${val}%`}
-                      className="fill-gray-700 dark:fill-gray-200 text-[11px] font-bold"
-                      style={{ fontSize: '11px', fontWeight: 'bold', fill: isDark ? '#e5e2da' : '#374151' }}
-                    />
-                  </Line>
-                </LineChart>
-              </ResponsiveContainer>
+              {timeRangeOpen && (
+                <div className="absolute right-0 mt-1.5 w-36 bg-white dark:bg-[#1a1714] border border-[#d5d0c1] dark:border-[#38352e] rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.08)] py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => { setTimeRange('weekly'); setTimeRangeOpen(false); }}
+                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${timeRange === 'weekly'
+                      ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
+                      : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
+                      }`}
+                  >
+                    <span>This Week</span>
+                    {timeRange === 'weekly' && <span className="w-1.5 h-1.5 rounded-full bg-[#00a76b]" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setTimeRange('monthly'); setTimeRangeOpen(false); }}
+                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${timeRange === 'monthly'
+                      ? 'bg-[#00a76b]/10 text-[#00a76b] font-bold'
+                      : 'text-[#4b4841] dark:text-[#cac6ba] hover:bg-[#f5f3ee] dark:hover:bg-[#25211e] font-medium'
+                      }`}
+                  >
+                    <span>This Month</span>
+                    {timeRange === 'monthly' && <span className="w-1.5 h-1.5 rounded-full bg-[#00a76b]" />}
+                  </button>
+                </div>
+              )}
             </div>
+          </div>
 
-            {/* Stat Cards below Attendance Chart */}
-            <div className="flex items-center justify-center gap-8 mt-2.5 h-14 w-full">
-              <div className="flex items-center gap-1.5 transition-all">
-                <span className="w-2 h-2 rounded-full bg-[#f59e0b] shrink-0"></span>
-                <span className="text-xs text-amber-700 dark:text-amber-400 font-bold">Late Arrivals</span>
-                <span className="text-sm font-black text-amber-800 dark:text-amber-300 ml-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{attMetrics?.lateCount || 0}</span>
-              </div>
-              <div className="flex items-center gap-1.5 transition-all">
-                <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0"></span>
-                <span className="text-xs text-rose-700 dark:text-rose-400 font-bold">Absences</span>
-                <span className="text-sm font-black text-rose-800 dark:text-rose-300 ml-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{leavesTakenThisMonth}</span>
-              </div>
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={weeklyChart} margin={{ top: 25, right: 20, left: 15, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="attendanceGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#00a76b" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#00a76b" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? 'rgba(255,255,255,0.07)' : '#f0f0f0'} />
+                <XAxis
+                  dataKey="day"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: isDark ? '#a09c8d' : '#939084' }}
+                  dy={5}
+                  minTickGap={timeRange === 'monthly' ? 20 : 0}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: isDark ? '#a09c8d' : '#939084' }}
+                  tickFormatter={(val) => `${val}%`}
+                  domain={[0, 125]}
+                  ticks={[0, 50, 100]}
+                  width={48}
+                  tickMargin={6}
+                />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      const val = payload[0].value;
+                      return (
+                        <div className="bg-white dark:bg-[#1a1714] border border-gray-200 dark:border-[#38352e] px-3 py-2 rounded-xl shadow-xl text-xs">
+                          <p className="text-gray-400 font-medium text-[11px] mb-0.5">{label}</p>
+                          <p className="text-[#00a76b] font-extrabold text-sm">{val}% Attendance</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="active"
+                  stroke="#00a76b"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#attendanceGradient)"
+                  dot={{ fill: '#00a76b', stroke: '#ffffff', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 7, fill: '#00a76b', stroke: '#ffffff', strokeWidth: 3 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Stat Cards below Attendance Chart */}
+          <div className="flex items-center justify-center gap-8 mt-2.5 h-14 w-full">
+            <div className="flex items-center gap-1.5 transition-all">
+              <span className="w-2 h-2 rounded-full bg-[#f59e0b] shrink-0"></span>
+              <span className="text-xs text-amber-700 dark:text-amber-400 font-bold">Late Arrivals</span>
+              <span className="text-sm font-black text-amber-800 dark:text-amber-300 ml-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{attMetrics?.lateCount || 0}</span>
             </div>
-          </Card>
-
-        </div>
+            <div className="flex items-center gap-1.5 transition-all">
+              <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0"></span>
+              <span className="text-xs text-rose-700 dark:text-rose-400 font-bold">Absences</span>
+              <span className="text-sm font-black text-rose-800 dark:text-rose-300 ml-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{leavesTakenThisMonth}</span>
+            </div>
+          </div>
+        </Card>
 
         {/* 4. MY TASKS OVERVIEW */}
-        <div className="flex flex-col h-full">
-          <SectionHeader title="My Tasks Overview" />
-          <div className="rounded-2xl flex-1 flex flex-col">
-            <Card className="flex-1 flex flex-col justify-center gap-2 p-5">
-              <div className="h-52 relative flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={totalTasks === 0 ? [{ name: 'No Tasks', value: 1, color: '#e5e7eb' }] : [
-                      { name: 'Pending', value: pendingTasks, color: '#3b82f6' },
-                      { name: 'In Progress', value: ongoingTasks, color: '#f59e0b' },
-                      { name: 'Completed', value: completedTasks, color: '#8b5cf6' },
-                      { name: 'Overdue', value: overdueTasks, color: '#ef4444' }
-                    ]} cx="50%" cy="50%" innerRadius={55} outerRadius={78} dataKey="value" stroke="none" paddingAngle={3}>
-                      {
-                        (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#3b82f6' }, { color: '#f59e0b' }, { color: '#8b5cf6' }, { color: '#ef4444' }]).map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))
-                      }
-                    </Pie>
-                    <Tooltip position={{ y: -10 }} isAnimationActive={false} contentStyle={{ borderRadius: '8px', border: '1px solid #38332c', backgroundColor: '#1e1a17', color: '#fff', zIndex: 100 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-2xl font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
-                  <span className="text-[10px] font-bold text-[#939084] tracking-wider uppercase mt-1">Total Tasks</span>
-                </div>
-              </div>
-
-              {/* 4 Stat Items below Pie Chart styled same as Attendance Overview */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1 items-center">
-                <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-2 h-2 rounded-full bg-[#3b82f6] shrink-0"></span>
-                    <span className="text-xs text-blue-700 dark:text-blue-400 font-bold truncate">Pending</span>
-                  </div>
-                  <span className="text-sm font-black text-blue-800 dark:text-blue-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingTasks}</span>
-                </div>
-
-                <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-2 h-2 rounded-full bg-[#f59e0b] shrink-0"></span>
-                    <span className="text-xs text-amber-700 dark:text-amber-400 font-bold truncate">In Progress</span>
-                  </div>
-                  <span className="text-sm font-black text-amber-800 dark:text-amber-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{ongoingTasks}</span>
-                </div>
-
-                <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-2 h-2 rounded-full bg-[#8b5cf6] shrink-0"></span>
-                    <span className="text-xs text-purple-700 dark:text-purple-400 font-bold truncate">Completed</span>
-                  </div>
-                  <span className="text-sm font-black text-purple-800 dark:text-purple-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{completedTasks}</span>
-                </div>
-
-                <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0"></span>
-                    <span className="text-xs text-rose-700 dark:text-rose-400 font-bold truncate">Overdue</span>
-                  </div>
-                  <span className="text-sm font-black text-rose-800 dark:text-rose-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{overdueTasks}</span>
-                </div>
-              </div>
-            </Card>
+        <Card className="flex-1 flex flex-col justify-between">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="font-bold text-[#201515] dark:text-white text-lg" style={{ fontFamily: 'Manrope, sans-serif' }}>My Tasks Overview</h2>
           </div>
-        </div>
+          <div className="h-52 relative flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={totalTasks === 0 ? [{ name: 'No Tasks', value: 1, color: '#e5e7eb' }] : [
+                  { name: 'Pending', value: pendingTasks, color: '#3b82f6' },
+                  { name: 'In Progress', value: ongoingTasks, color: '#f59e0b' },
+                  { name: 'Completed', value: completedTasks, color: '#8b5cf6' },
+                  { name: 'Overdue', value: overdueTasks, color: '#ef4444' }
+                ]} cx="50%" cy="50%" innerRadius={60} outerRadius={85} dataKey="value" stroke="none" paddingAngle={3}>
+                  {
+                    (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#3b82f6' }, { color: '#f59e0b' }, { color: '#8b5cf6' }, { color: '#ef4444' }]).map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.color} 
+                        style={{
+                          transition: 'all 0.2s ease-in-out',
+                          cursor: 'pointer'
+                        }}
+                      />
+                    ))
+                  }
+                </Pie>
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const item = payload[0];
+                      return (
+                        <div className="bg-white dark:bg-[#1a1714] border border-gray-200 dark:border-[#38352e] px-3 py-1.5 rounded-xl shadow-xl text-xs font-bold text-[#201515] dark:text-white">
+                          <span style={{ color: item.payload?.color || '#00a76b' }}>{item.name}</span> : {item.value}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-2xl font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
+              <span className="text-[10px] font-bold text-[#939084] tracking-wider uppercase mt-1">Total Tasks</span>
+            </div>
+          </div>
+
+          {/* 4 Stat Items below Pie Chart styled same as Attendance Overview */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 h-14 items-center">
+            <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-[#3b82f6] shrink-0"></span>
+                <span className="text-xs text-blue-700 dark:text-blue-400 font-bold truncate">Pending</span>
+              </div>
+              <span className="text-sm font-black text-blue-800 dark:text-blue-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingTasks}</span>
+            </div>
+
+            <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-[#f59e0b] shrink-0"></span>
+                <span className="text-xs text-amber-700 dark:text-amber-400 font-bold truncate">In Progress</span>
+              </div>
+              <span className="text-sm font-black text-amber-800 dark:text-amber-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{ongoingTasks}</span>
+            </div>
+
+            <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-[#8b5cf6] shrink-0"></span>
+                <span className="text-xs text-purple-700 dark:text-purple-400 font-bold truncate">Completed</span>
+              </div>
+              <span className="text-sm font-black text-purple-800 dark:text-purple-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{completedTasks}</span>
+            </div>
+
+            <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0"></span>
+                <span className="text-xs text-rose-700 dark:text-rose-400 font-bold truncate">Overdue</span>
+              </div>
+              <span className="text-sm font-black text-rose-800 dark:text-rose-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{overdueTasks}</span>
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* 5. QUICK ACTIONS */}

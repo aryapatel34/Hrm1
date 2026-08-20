@@ -257,7 +257,26 @@ const createInAppAndEmailNotification = async (req, { userId, title, message, ty
 // @access  Private/Employee
 exports.applyLeave = async (req, res) => {
   try {
-    const { leaveType, startDate, endDate, reason, totalDays } = req.body;
+    const { leaveType, startDate, endDate, reason, totalDays: inputTotalDays } = req.body;
+
+    const calcDays = (sDate, eDate) => {
+      if (!sDate || !eDate) return 1;
+      const start = new Date(sDate);
+      const end = new Date(eDate);
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      return isNaN(diffDays) ? 1 : Math.max(1, diffDays);
+    };
+
+    const totalDays = inputTotalDays || calcDays(startDate, endDate);
+
+    if (req.user && req.user.role === 'admin') {
+      return res.status(400).json({ message: 'Admin users cannot submit leave requests.' });
+    }
+
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      return res.status(400).json({ message: 'Start date cannot be later than end date.' });
+    }
 
     if (isLeaveDatePassed(startDate, endDate)) {
       return res.status(400).json({ message: 'Cannot apply for leave for dates that have already passed.' });
@@ -758,6 +777,56 @@ exports.cancelLeave = async (req, res) => {
   }
 };
 
+// @desc    Update / Edit an existing leave request
+// @route   PUT /api/leaves/update/:id
+// @access  Private
+exports.updateLeave = async (req, res) => {
+  try {
+    const leave = await Leave.findById(req.params.id);
+    if (!leave) return res.status(404).json({ message: 'Leave request not found' });
+
+    const isOwner = leave.user && (leave.user._id || leave.user).toString() === req.user.id.toString();
+    const isManagerOrHR = ['manager', 'hr', 'admin'].includes(req.user.role);
+
+    if (!isOwner && !isManagerOrHR) {
+      return res.status(403).json({ message: 'Not authorized to edit this leave request' });
+    }
+
+    const { leaveType, startDate, endDate, reason, totalDays } = req.body;
+
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      return res.status(400).json({ message: 'Start date cannot be later than end date.' });
+    }
+
+    if (leaveType) leave.leaveType = leaveType;
+    if (startDate) leave.startDate = startDate;
+    if (endDate) leave.endDate = endDate;
+    if (reason !== undefined) leave.reason = reason;
+    if (totalDays !== undefined) leave.totalDays = totalDays;
+
+    await leave.save();
+
+    try {
+      const LeaveHistory = require('../models/LeaveHistory');
+      await LeaveHistory.create({
+        leaveId: leave._id,
+        actorId: req.user.id,
+        actorRole: req.user.role || 'user',
+        action: 'Updated Description',
+        oldStatus: leave.status,
+        newStatus: leave.status,
+        reason: reason || leave.reason || ''
+      });
+    } catch (hErr) {
+      console.warn('Could not record LeaveHistory for edit:', hErr.message);
+    }
+
+    res.json(leave);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Get my leaves
 // @route   GET /api/leaves/my
 // @access  Private/Employee
@@ -802,12 +871,22 @@ exports.getMyLeaveQuotas = async (req, res) => {
   }
 };
 
-// @desc    Get all leaves (Admin)
+// @desc    Get all leaves (Admin / HR)
 // @route   GET /api/leaves
-// @access  Private/Admin
+// @access  Private/Admin/HR
 exports.getAllLeaves = async (req, res) => {
   try {
-    const leaves = await Leave.find().populate('user', 'name email profile').lean();
+    let query = {};
+    if (req.user && req.user.role === 'hr') {
+      const hrUsers = await User.find({ role: 'hr' }).select('_id');
+      const hrIds = hrUsers.map(h => h._id);
+      query = { user: { $nin: hrIds } };
+    }
+
+    const leaves = await Leave.find(query)
+      .populate('user', 'name email profile role employeeId profileImage')
+      .populate('managerId', 'name email')
+      .lean();
     res.json(leaves);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -821,7 +900,7 @@ exports.getManagerStats = async (req, res) => {
     const subordinates = await User.find({ reportingManager: req.user.id }).select('_id');
     const subIds = subordinates.map(s => s._id);
 
-    const pending = await Leave.countDocuments({ user: { $in: subIds }, status: 'pending' });
+    const pending = await Leave.countDocuments({ user: { $in: subIds }, status: { $in: ['pending', 'cancellation_pending'] } });
 
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -892,10 +971,12 @@ exports.getTeamLeaves = async (req, res) => {
 
     const query = { user: { $in: subIds } };
 
-    if (status && status !== 'all') {
+    if (status === 'pending') {
+      query.status = { $in: ['pending', 'cancellation_pending'] };
+    } else if (status && status !== 'all') {
       query.status = status;
     } else if (!status) {
-      query.status = 'pending';
+      query.status = { $in: ['pending', 'cancellation_pending'] };
     }
 
     if (startDate) {
@@ -919,7 +1000,7 @@ exports.getTeamLeaves = async (req, res) => {
 
     const counts = {
       all: allTeamLeaves.length,
-      pending: allTeamLeaves.filter(l => l.status === 'pending').length,
+      pending: allTeamLeaves.filter(l => l.status === 'pending' || l.status === 'cancellation_pending').length,
       approved: allTeamLeaves.filter(l => l.status === 'approved').length,
       cancellation_pending: allTeamLeaves.filter(l => l.status === 'cancellation_pending').length,
       rejected: allTeamLeaves.filter(l => l.status === 'rejected').length,
