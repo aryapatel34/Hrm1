@@ -752,33 +752,42 @@ const LeaveManagement = ({ isChild = false }) => {
         </div>
 
         {/* Leave Policy */}
-        <div className="lg:col-span-7 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 transition-all duration-200 hover:border-purple-500 h-[290px]">
-          <div className="flex justify-between items-center mb-3.5">
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">Leave Policy</h2>
-            <button onClick={() => setIsPolicyDrawerOpen(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">View Full Policy</button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="py-2 px-3 border border-gray-100 dark:border-gray-800 hover:border-purple-500 dark:hover:border-purple-500 transition-colors rounded-xl flex items-center gap-3 cursor-pointer">
-              <div className="w-7 h-7 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40 flex items-center justify-center shrink-0">
-                <Calendar size={14} />
-              </div>
+        <div className="lg:col-span-7 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 transition-all duration-200 hover:border-purple-500 flex flex-col justify-between min-h-[290px]">
+          <div>
+            <div className="flex justify-between items-center mb-3">
               <div>
-                <h4 className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Annual Leave Allocation</h4>
-                <p className="font-bold text-gray-900 dark:text-gray-100 text-xs mt-0.5">
-                  CL: {clAllowance} | SL: {slAllowance} | EL: {elAllowance} <span className="text-[9px] text-gray-400 font-normal font-sans">/ year</span>
-                </p>
+                <h2 className="text-base font-bold text-gray-900 dark:text-white">Leave Policy & Guidelines</h2>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">Key highlights of annual leave allowances, carry forward limits, and policy rules.</p>
               </div>
+              <button 
+                onClick={() => setIsPolicyDrawerOpen(true)} 
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors shrink-0 cursor-pointer border border-blue-200 dark:border-blue-800/60 px-3 py-1.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/40"
+              >
+                View Full Policy
+              </button>
             </div>
-            <div className="py-2 px-3 border border-gray-100 dark:border-gray-800 hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors rounded-xl flex items-center gap-3 cursor-pointer">
-              <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 flex items-center justify-center shrink-0">
-                <Clock size={14} />
-              </div>
-              <div>
-                <h4 className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Carry Forward</h4>
-                <p className="font-bold text-gray-900 dark:text-gray-100 text-xs mt-0.5">
-                  {cfEarned > 0 ? `Max ${cfEarned} Days` : 'Not Allowed'} <span className="text-[9px] text-gray-400 font-normal font-sans">/ year</span>
-                </p>
-              </div>
+
+            {/* Direct Policy Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 my-1">
+              {(policies && policies.length > 0 ? policies : [
+                { _id: 'p1', name: 'Casual Leave (CL)', type: 'casual', annualAllowance: clAllowance || 12, carryForwardLimit: 0, description: '12 Days paid casual leave per calendar year for personal urgent affairs & short absences.' },
+                { _id: 'p2', name: 'Sick Leave (SL)', type: 'sick', annualAllowance: slAllowance || 10, carryForwardLimit: 0, description: '10 Days paid sick leave per calendar year. Medical certificate required for >2 consecutive days.' },
+                { _id: 'p3', name: 'Earned Leave (EL)', type: 'earned', annualAllowance: elAllowance || 20, carryForwardLimit: cfEarned || 5, description: '20 Days earned annual leave. Maximum 5 days carry forward allowed per calendar year.' },
+                { _id: 'p4', name: 'Compensatory Off (CO)', type: 'compoff', annualAllowance: 3, carryForwardLimit: 0, description: 'Earned by working on non-working days or holidays with prior manager approval.' }
+              ]).slice(0, 4).map((p, idx) => (
+                <div key={p._id || idx} className="p-2.5 border border-gray-100 dark:border-gray-800/80 hover:border-purple-500/60 dark:hover:border-purple-500/60 transition-colors rounded-xl bg-gray-50/50 dark:bg-[#15231f]">
+                  <div className="flex justify-between items-start mb-1">
+                    <h4 className="text-xs font-bold text-gray-900 dark:text-white">{p.name}</h4>
+                    <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40">
+                      {p.annualAllowance || p.allowance || 0} Days / yr
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-tight mb-1.5">{p.description || 'Standard company leave policy guidelines apply.'}</p>
+                  <div className="flex items-center gap-2 text-[9px] text-gray-400 font-semibold border-t border-gray-100 dark:border-gray-800/60 pt-1">
+                    <span>Carry Forward: <strong className="text-gray-700 dark:text-gray-300">{p.carryForwardLimit > 0 ? `Max ${p.carryForwardLimit} Days` : 'Not Allowed'}</strong></span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

@@ -34,13 +34,14 @@ const LeavePolicyOverview = ({ refreshTrigger }) => {
               <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Policy Name</th>
               <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Days</th>
               <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Carry Forward</th>
+              <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Policy Rules & Description</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
             {loading ? (
-              <tr><td colSpan="3" className="text-center py-8 text-gray-400">Loading policies...</td></tr>
+              <tr><td colSpan="4" className="text-center py-8 text-gray-400">Loading policies...</td></tr>
             ) : policies.length === 0 ? (
-              <tr><td colSpan="3" className="text-center py-8 text-gray-400">No leave policies defined.</td></tr>
+              <tr><td colSpan="4" className="text-center py-8 text-gray-400">No leave policies defined.</td></tr>
             ) : (
               (() => {
                 const getCatKey = (p) => {
@@ -60,11 +61,12 @@ const LeavePolicyOverview = ({ refreshTrigger }) => {
                 });
                 return Array.from(uniqueMap.values()).map((policy) => (
                   <tr key={policy._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="px-4 py-4 font-bold text-gray-900 dark:text-white text-xs">{policy.name}</td>
+                    <td className="px-4 py-4 font-bold text-gray-900 dark:text-white text-xs whitespace-nowrap">{policy.name}</td>
                     <td className="px-4 py-4 text-xs font-black text-gray-900 dark:text-white text-center tabular-nums">{policy.annualAllowance || 0}</td>
-                    <td className="px-4 py-4 text-xs font-bold text-gray-700 dark:text-gray-300 text-center">
+                    <td className="px-4 py-4 text-xs font-bold text-gray-700 dark:text-gray-300 text-center whitespace-nowrap">
                       {policy.carryForwardLimit > 0 ? `Yes (Max: ${policy.carryForwardLimit})` : 'No'}
                     </td>
+                    <td className="px-4 py-4 text-xs text-gray-500 dark:text-gray-400">{policy.description || 'Standard company leave policy guidelines apply.'}</td>
                   </tr>
                 ));
               })()

@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LabelList } from 'recharts';
+import { X, Download, FileSpreadsheet, ExternalLink, BarChart3 } from 'lucide-react';
 
 const LeaveAnalyticsCharts = () => {
+  const navigate = useNavigate();
   const [monthlyTrend, setMonthlyTrend] = useState([]);
   const [departmentData, setDepartmentData] = useState([]);
   const [loading1, setLoading1] = useState(true);
   const [loading2, setLoading2] = useState(true);
+  const [reportModal, setReportModal] = useState(null); // 'monthly' | 'department' | null
+
+  const userRole = sessionStorage.getItem('role') || 'manager';
 
   useEffect(() => {
     const fetchTrend = async () => {
@@ -40,6 +47,27 @@ const LeaveAnalyticsCharts = () => {
     fetchDept();
   }, []);
 
+  const handleExport = async (format) => {
+    try {
+      const loadingToast = toast.loading(`Generating ${format.toUpperCase()} report...`);
+      const response = await axios.get(`/api/leaves/manager/export?format=${format}`, {
+        headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `team_leaves_report.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      toast.dismiss(loadingToast);
+      toast.success('Report downloaded successfully!');
+    } catch (error) {
+      toast.error('Failed to download report');
+    }
+  };
+
   const mockMonthlyTrend = [
     { month: 'Jan', count: 2 },
     { month: 'Feb', count: 4 },
@@ -66,11 +94,8 @@ const LeaveAnalyticsCharts = () => {
   const displayTrend = (monthlyTrend && monthlyTrend.length > 0 && monthlyTrend.some(d => d.count > 0)) ? monthlyTrend : mockMonthlyTrend;
   const displayDept = (departmentData && departmentData.length > 0 && departmentData.some(d => d.count > 0)) ? departmentData : mockDepartmentData;
 
-  const maxMonthlyCount = Math.max(10, ...(displayTrend.map(d => d.count)));
-  const yAxisTicks = [0, 20, 40, 60, 80];
-
-  const maxDeptCount = Math.max(10, 60, ...(displayDept.map(d => d.count)));
-  const colors = ['bg-emerald-600', 'bg-blue-600', 'bg-purple-600', 'bg-indigo-600', 'bg-orange-500', 'bg-teal-500', 'bg-gray-500'];
+  const totalAnnualLeaves = displayTrend.reduce((acc, d) => acc + (d.count || 0), 0);
+  const totalDeptLeaves = displayDept.reduce((acc, d) => acc + (d.count || 0), 0);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -79,7 +104,12 @@ const LeaveAnalyticsCharts = () => {
       <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-[350px] transition-all duration-200 hover:border-blue-500">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Monthly Leave Trend <span className="text-gray-500 text-sm font-medium">(This Year)</span></h2>
-          <button className="text-indigo-600 text-sm font-bold hover:underline cursor-pointer">View report</button>
+          <button 
+            onClick={() => setReportModal('monthly')}
+            className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-bold hover:underline cursor-pointer flex items-center gap-1"
+          >
+            View report
+          </button>
         </div>
 
         {loading1 ? (
@@ -117,7 +147,12 @@ const LeaveAnalyticsCharts = () => {
       <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-[350px] transition-all duration-200 hover:border-indigo-500">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Department Leave Analytics <span className="text-gray-500 text-sm font-medium">(This Month)</span></h2>
-          <button className="text-indigo-600 text-sm font-bold hover:underline cursor-pointer">View report</button>
+          <button 
+            onClick={() => setReportModal('department')}
+            className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-bold hover:underline cursor-pointer flex items-center gap-1"
+          >
+            View report
+          </button>
         </div>
 
         {loading2 ? (
@@ -146,6 +181,106 @@ const LeaveAnalyticsCharts = () => {
           </div>
         )}
       </div>
+
+      {/* 📊 Interactive Detailed Report Modal */}
+      {reportModal && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setReportModal(null); }}
+        >
+          <div className="bg-white dark:bg-[#1e293b] rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col max-h-[85vh] overflow-hidden">
+            {/* Header */}
+            <div className="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-gray-800 mb-4 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                  <BarChart3 size={20} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                    {reportModal === 'monthly' ? 'Monthly Leave Trend Detailed Report' : 'Department Leave Analytics Detailed Report'}
+                  </h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {reportModal === 'monthly' ? 'Annual breakdown of team leave requests by month' : 'Current month distribution of leaves across departments'}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setReportModal(null)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content Table */}
+            <div className="flex-1 overflow-y-auto pr-1">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-150 dark:border-gray-800 text-gray-400 uppercase text-[10px] tracking-wider font-bold">
+                    <th className="py-2.5 px-3">{reportModal === 'monthly' ? 'Month' : 'Department'}</th>
+                    <th className="py-2.5 px-3 text-center">Total Leaves</th>
+                    <th className="py-2.5 px-3 text-center">Share of Total</th>
+                    <th className="py-2.5 px-3 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {(reportModal === 'monthly' ? displayTrend : displayDept).map((item, idx) => {
+                    const label = reportModal === 'monthly' ? item.month : item.department;
+                    const total = reportModal === 'monthly' ? totalAnnualLeaves : totalDeptLeaves;
+                    const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
+                    return (
+                      <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                        <td className="py-3 px-3 font-bold text-gray-900 dark:text-white">{label}</td>
+                        <td className="py-3 px-3 font-black text-center text-gray-900 dark:text-white tabular-nums">{item.count} Days</td>
+                        <td className="py-3 px-3 text-center font-semibold text-gray-600 dark:text-gray-300">{pct}%</td>
+                        <td className="py-3 px-3 text-right font-medium">
+                          <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${item.count > 0 ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>
+                            {item.count > 0 ? 'Recorded' : 'No Leaves'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="pt-4 border-t border-gray-150 dark:border-gray-800 flex flex-wrap justify-between items-center gap-3 mt-4 shrink-0">
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => handleExport('pdf')}
+                  className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                >
+                  <Download size={14} /> PDF Report
+                </button>
+                <button 
+                  onClick={() => handleExport('xlsx')}
+                  className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                >
+                  <FileSpreadsheet size={14} /> Excel Report
+                </button>
+              </div>
+
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => { setReportModal(null); navigate(`/${userRole}/reports`); }}
+                  className="px-3.5 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 hover:bg-blue-100 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  Go to Full Reports <ExternalLink size={14} />
+                </button>
+                <button 
+                  onClick={() => setReportModal(null)}
+                  className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );
