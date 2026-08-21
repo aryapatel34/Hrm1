@@ -527,12 +527,10 @@ exports.managerApprove = async (req, res) => {
 // @access  Private/HR
 exports.getHRLeaves = async (req, res) => {
   try {
-    const targetUsers = await User.find({ role: { $in: ['employee', 'manager'] } }).select('_id');
-    const targetUserIds = targetUsers.map(u => u._id);
-
-    const leaves = await Leave.find({ user: { $in: targetUserIds } })
+    const leaves = await Leave.find({})
       .populate('user', 'name email profile role employeeId profileImage')
       .populate('managerId', 'name email')
+      .sort({ createdAt: -1 })
       .lean();
     res.json(leaves);
   } catch (error) {

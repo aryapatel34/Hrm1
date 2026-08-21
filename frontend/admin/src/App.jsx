@@ -258,6 +258,7 @@ const App = () => {
             <Route path="leave" element={<LeaveManagement />} />
             <Route path="attendance" element={<Attendance />} />
             <Route path="employees" element={<HREmployees />} />
+            <Route path="employees/add" element={<EmployeeForm />} />
             <Route path="employees/view/:id" element={<EmployeeDetail />} />
             <Route path="employees/edit/:id" element={<EmployeeForm />} />
             <Route path="create-user" element={<CreateUser />} />
@@ -326,8 +327,10 @@ const App = () => {
             <Route path="tasks" element={<ManagerTasks />} />
             <Route path="events" element={<EventsManagement />} />
             <Route path="employees" element={<HREmployees />} />
+            <Route path="employees/add" element={<EmployeeForm />} />
             <Route path="employees/edit/:id" element={<EmployeeForm />} />
             <Route path="employees/view/:id" element={<EmployeeDetail />} />
+            <Route path="create-user" element={<CreateUser />} />
             <Route path="task-management" element={<TaskManagement />} />
             <Route path="task-management/create" element={<TaskCreate />} />
             <Route path="task-management/update/:id" element={<TaskUpdate />} />

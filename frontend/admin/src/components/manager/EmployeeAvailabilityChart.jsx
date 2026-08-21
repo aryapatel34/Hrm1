@@ -51,7 +51,7 @@ const EmployeeAvailabilityChart = ({ trigger }) => {
   })).filter(item => item.value > 0);
 
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 h-full flex flex-col transition-all duration-200 hover:border-teal-500">
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 h-full flex flex-col transition-colors duration-300 hover:!border-teal-500 dark:hover:!border-teal-400">
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Employee Availability</h2>
       </div>
@@ -78,9 +78,9 @@ const EmployeeAvailabilityChart = ({ trigger }) => {
                 {chartData.map((entry, index) => {
                   const isHovered = hoveredItem?.key === legend[index]?.key;
                   return (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.color} 
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.color}
                       stroke={isHovered ? '#ffffff' : 'none'}
                       strokeWidth={isHovered ? 2 : 0}
                       style={{
@@ -95,7 +95,7 @@ const EmployeeAvailabilityChart = ({ trigger }) => {
                 })}
               </Pie>
             </PieChart>
-            
+
             {/* Center Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-3xl font-black text-gray-900 dark:text-white">
@@ -113,8 +113,8 @@ const EmployeeAvailabilityChart = ({ trigger }) => {
               const val = activeData ? activeData[item.key] : 0;
               const pct = total > 0 ? Math.round((val / total) * 100) : 0;
               return (
-                <div 
-                  key={item.key} 
+                <div
+                  key={item.key}
                   onMouseEnter={() => setHoveredItem(item)}
                   onMouseLeave={() => setHoveredItem(null)}
                   className={`flex items-center justify-between gap-3 font-semibold cursor-pointer py-1.5 px-3 rounded-lg transition-all duration-150 ${hoveredItem?.key === item.key ? 'bg-gray-100 dark:bg-gray-800 scale-[1.02]' : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}

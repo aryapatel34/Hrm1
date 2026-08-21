@@ -570,8 +570,7 @@ const LeaveManagement = ({ isChild = false }) => {
               style={{
                 borderColor: isHovered ? card.borderColor : (isDark ? '#1f2d26' : '#f1f5f9'),
                 borderWidth: '2px',
-                borderStyle: 'solid',
-                boxShadow: isHovered ? `0 0 16px ${card.glowColor}` : undefined
+                borderStyle: 'solid'
               }}
               className="bg-white dark:bg-[#111c18] py-2 px-3 rounded-xl shadow-xs flex items-center justify-between gap-2.5 cursor-pointer transition-colors duration-200 group select-none"
             >
@@ -613,7 +612,7 @@ const LeaveManagement = ({ isChild = false }) => {
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 mb-4 items-stretch">
 
         {/* Leave Balance Summary */}
-        <div className="lg:col-span-7 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 flex flex-col justify-start gap-2 transition-all duration-200 hover:border-emerald-500">
+        <div className="lg:col-span-7 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 flex flex-col justify-start gap-2 transition-colors duration-300 hover:!border-emerald-500 dark:hover:!border-emerald-400">
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-base font-bold text-gray-900 dark:text-white">Leave Balance Summary</h2>
@@ -657,7 +656,7 @@ const LeaveManagement = ({ isChild = false }) => {
         </div>
 
         {/* Leave Calendar */}
-        <div className="lg:col-span-3 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 flex flex-col justify-between transition-all duration-200 hover:border-indigo-500">
+        <div className="lg:col-span-3 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 flex flex-col justify-between transition-colors duration-300 hover:!border-indigo-500 dark:hover:!border-indigo-400">
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-base font-bold text-gray-900 dark:text-white">Leave Calendar</h2>
           </div>
@@ -735,7 +734,7 @@ const LeaveManagement = ({ isChild = false }) => {
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 mb-4 items-stretch">
 
         {/* My Upcoming Leaves */}
-        <div className="lg:col-span-3 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col justify-between transition-all duration-200 hover:border-orange-500 h-[290px]">
+        <div className="lg:col-span-3 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col justify-between transition-colors duration-300 hover:!border-orange-500 dark:hover:!border-orange-400 h-[290px]">
           <div className="flex justify-between items-center mb-2 shrink-0">
             <h2 className="text-base font-bold text-gray-900 dark:text-white">My Upcoming Leaves</h2>
             <button onClick={() => setIsUpcomingLeavesDrawerOpen(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">View All</button>
@@ -745,7 +744,7 @@ const LeaveManagement = ({ isChild = false }) => {
               const upcoming = leaves.filter(l => new Date(l.startDate) >= new Date() && (l.status === 'approved' || l.status === 'pending'));
               if (upcoming.length > 0) {
                 return upcoming.slice(0, 1).map((l, idx) => (
-                  <div key={idx} onClick={() => setIsUpcomingLeavesDrawerOpen(true)} className="flex gap-4 p-3 border border-gray-100 dark:border-gray-800 rounded-lg hover:shadow-md transition-all cursor-pointer hover:bg-slate-50/50 dark:hover:bg-[#162722]/40 shrink-0">
+                  <div key={idx} onClick={() => setIsUpcomingLeavesDrawerOpen(true)} className="flex gap-4 p-3 border border-gray-100 dark:border-gray-800 rounded-lg hover:!border-blue-500 dark:hover:!border-blue-400 transition-colors cursor-pointer hover:bg-slate-50/50 dark:hover:bg-[#162722]/40 shrink-0">
                     <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-lg p-2.5 flex flex-col items-center justify-center min-w-[65px] shrink-0">
                       <span className="text-[9px] font-bold uppercase">{new Date(l.startDate).toLocaleString('default', { month: 'short' })}</span>
                       <span className="text-base font-black leading-none my-0.5">{new Date(l.startDate).getDate()}</span>
@@ -774,7 +773,7 @@ const LeaveManagement = ({ isChild = false }) => {
         </div>
 
         {/* Leave Policy */}
-        <div className="lg:col-span-7 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 transition-all duration-200 hover:border-purple-500 flex flex-col justify-between min-h-[290px]">
+        <div className="lg:col-span-7 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 transition-colors duration-300 hover:!border-purple-500 dark:hover:!border-purple-400 flex flex-col justify-between min-h-[290px]">
           <div>
             <div className="flex justify-between items-center mb-3">
               <div>
@@ -797,7 +796,7 @@ const LeaveManagement = ({ isChild = false }) => {
                 { _id: 'p3', name: 'Earned Leave (EL)', type: 'earned', annualAllowance: elAllowance || 20, carryForwardLimit: cfEarned || 5, description: '20 Days earned annual leave. Maximum 5 days carry forward allowed per calendar year.' },
                 { _id: 'p4', name: 'Compensatory Off (CO)', type: 'compoff', annualAllowance: 3, carryForwardLimit: 0, description: 'Earned by working on non-working days or holidays with prior manager approval.' }
               ]).filter(p => !(`${p.type || ''} ${p.name || ''}`).toLowerCase().includes('maternity')).slice(0, 4).map((p, idx) => (
-                <div key={p._id || idx} className="p-2.5 border border-gray-100 dark:border-gray-800/80 hover:border-purple-500/60 dark:hover:border-purple-500/60 transition-colors rounded-xl bg-gray-50/50 dark:bg-[#15231f]">
+                <div key={p._id || idx} className="p-2.5 border border-gray-100 dark:border-gray-800/80 hover:!border-purple-500/80 dark:hover:!border-purple-400/80 transition-colors rounded-xl bg-gray-50/50 dark:bg-[#15231f]">
                   <div className="flex justify-between items-start mb-1">
                     <h4 className="text-xs font-bold text-gray-900 dark:text-white">{p.name}</h4>
                     <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40">
@@ -819,7 +818,7 @@ const LeaveManagement = ({ isChild = false }) => {
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
 
         {/* My Leave Requests */}
-        <div className="lg:col-span-7 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 transition-all duration-200 hover:border-blue-500">
+        <div className="lg:col-span-7 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 transition-colors duration-300 hover:!border-blue-500 dark:hover:!border-blue-400">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-base font-bold text-gray-900 dark:text-white">My Leave Requests</h2>
             <div className="flex items-center gap-3.5">
@@ -894,7 +893,7 @@ const LeaveManagement = ({ isChild = false }) => {
         </div>
 
         {/* Upcoming Holidays */}
-        <div className="lg:col-span-3 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 transition-all duration-200 hover:border-pink-500">
+        <div className="lg:col-span-3 bg-white dark:bg-[#111c18] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 transition-colors duration-300 hover:!border-pink-500 dark:hover:!border-pink-400">
           <div className="flex justify-between items-center mb-3.5">
             <h2 className="text-base font-bold text-gray-900 dark:text-white">Upcoming Holidays</h2>
             <button onClick={() => setIsHolidaysDrawerOpen(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">View Calendar</button>

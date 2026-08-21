@@ -57,7 +57,7 @@ const CompanyShutdowns = () => {
               <tr>
                 <td colSpan="5">
                   <div className="flex flex-col items-center justify-center py-8">
-                     <Calendar size={24} className="text-gray-300 mb-2" />
+                    <Calendar size={24} className="text-gray-300 mb-2" />
                     <p className="text-sm font-bold text-gray-400">No company shutdowns scheduled.</p>
                   </div>
                 </td>

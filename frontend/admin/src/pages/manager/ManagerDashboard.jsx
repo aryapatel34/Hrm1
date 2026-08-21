@@ -29,7 +29,7 @@ const fmtDate = () =>
 const Card = ({ children, className = '', style = {}, ...props }) => (
   <div
     style={style}
-    className={`bg-white dark:bg-[#161311] border border-[#eceae3] dark:border-[#28251e] rounded-2xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] ${className}`}
+    className={`bg-white dark:bg-[#161311] border border-[#eceae3] dark:border-[#28251e] rounded-2xl p-5 transition-colors duration-300 ${className}`}
     {...props}
   >
     {children}
@@ -495,7 +495,7 @@ const ManagerDashboard = () => {
       {/* 1. HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-3">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#0f172a] dark:text-white">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
             {getGreeting()}, {managerName}! 👋
           </h1>
           <p className="text-gray-500 dark:text-[#a3a094] mt-1 font-medium">
@@ -503,13 +503,13 @@ const ManagerDashboard = () => {
           </p>
         </div>
         <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-1.5 bg-white dark:bg-[#161311] border border-gray-200 dark:border-[#28251e] px-3.5 py-2 rounded-xl shadow-xs font-mono text-xs font-bold text-gray-700 dark:text-gray-200 tabular-nums">
+          <div className="flex items-center gap-2 whitespace-nowrap bg-white dark:bg-[#161311] border border-gray-200 dark:border-[#28251e] px-4 py-2 rounded-xl shadow-xs text-xs font-bold text-gray-700 dark:text-gray-200 font-mono tabular-nums">
             <Clock size={16} className="text-[#00a76b] shrink-0 animate-pulse" />
             <span>{liveTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-white dark:bg-[#161311] border border-gray-200 dark:border-[#28251e] px-3.5 py-2 rounded-xl shadow-xs text-xs font-semibold text-gray-700 dark:text-gray-200">
+          <div className="flex items-center gap-2 whitespace-nowrap bg-white dark:bg-[#161311] border border-gray-200 dark:border-[#28251e] px-4 py-2 rounded-xl shadow-xs text-xs font-semibold text-gray-700 dark:text-gray-200">
             <CalendarIcon size={16} className="text-[#00a76b] shrink-0" />
-            <span>{fmtDate()}</span>
+            <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
           </div>
         </div>
       </div>
@@ -519,7 +519,7 @@ const ManagerDashboard = () => {
 
       {/* 3. SECOND ROW (Attendance Trend & Task Status) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="min-h-[280px] flex flex-col">
+        <Card className="min-h-[280px] flex flex-col hover:!border-[#22c55e] dark:hover:!border-[#34d399] transition-colors duration-300">
           <SectionHeader
             title="Team Attendance Trend"
             action={<Dropdown value={attFilter} onChange={setAttFilter} options={[{ value: 'weekly', label: 'This Week' }, { value: 'monthly', label: 'This Month' }]} />}
@@ -546,7 +546,7 @@ const ManagerDashboard = () => {
           </div>
         </Card>
 
-        <Card className="min-h-[280px] flex flex-col">
+        <Card className="min-h-[280px] flex flex-col hover:!border-[#3b82f6] dark:hover:!border-[#60a5fa] transition-colors duration-300">
           <SectionHeader
             title="Task Status Overview"
             action={<Dropdown value={taskFilter} onChange={setTaskFilter} options={[{ value: 'monthly', label: 'This Month' }, { value: 'weekly', label: 'This Week' }]} />}
@@ -569,9 +569,9 @@ const ManagerDashboard = () => {
                     {donutData.map((entry, index) => {
                       const isHovered = hoveredTaskDonut === index;
                       return (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={entry.color} 
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
                           stroke={isHovered ? '#ffffff' : 'none'}
                           strokeWidth={isHovered ? 2 : 0}
                           style={{
@@ -610,8 +610,8 @@ const ManagerDashboard = () => {
               {donutData.map((d, i) => {
                 const isHovered = hoveredTaskDonut === i;
                 return (
-                  <div 
-                    key={i} 
+                  <div
+                    key={i}
                     onMouseEnter={() => setHoveredTaskDonut(i)}
                     onMouseLeave={() => setHoveredTaskDonut(null)}
                     className={`flex items-center gap-2.5 p-1.5 rounded-lg transition-all cursor-pointer ${isHovered ? 'bg-gray-100 dark:bg-gray-800/80 scale-105' : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}
@@ -700,10 +700,9 @@ const ManagerDashboard = () => {
               onMouseEnter={() => setHoveredStatCard(i)}
               onMouseLeave={() => setHoveredStatCard(null)}
               style={isHovered ? {
-                borderColor: stat.borderColor,
-                boxShadow: `0 6px 16px -2px ${stat.glowColor}`
+                borderColor: stat.borderColor
               } : undefined}
-              className={`!p-3 flex items-center justify-between hover:-translate-y-0.5 transition-all duration-300 cursor-pointer shadow-xs ${stat.hoverBorder}`}
+              className={`!p-3 flex items-center justify-between transition-all duration-300 cursor-pointer shadow-xs ${stat.hoverBorder}`}
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <div className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center ${stat.bg} ${stat.iconColor}`}>
@@ -724,7 +723,7 @@ const ManagerDashboard = () => {
       {/* 6. FOURTH ROW (Calendar, Availability) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Calendar */}
-        <Card className="h-[350px] flex flex-col">
+        <Card className="h-[350px] flex flex-col hover:!border-[#8b5cf6] dark:hover:!border-[#a78bfa] transition-colors duration-300">
           <SectionHeader title="Team Calendar" />
           <div className="flex-1 flex flex-col">
             <div className="flex justify-between items-center mb-4 px-2">
@@ -849,7 +848,7 @@ const ManagerDashboard = () => {
         </Card>
 
         {/* Availability */}
-        <Card className="h-[350px] flex flex-col">
+        <Card className="h-[350px] flex flex-col hover:!border-[#6366f1] dark:hover:!border-[#818cf8] transition-colors duration-300">
           <SectionHeader
             title="Team Availability"
             action={
@@ -891,7 +890,7 @@ const ManagerDashboard = () => {
         {/* Upcoming Schedule */}
         <Card
           onClick={() => navigate('/manager/events')}
-          className="h-72 flex flex-col cursor-pointer hover:border-[#00a76b] dark:hover:border-emerald-500 transition-colors"
+          className="h-72 flex flex-col cursor-pointer hover:!border-[#f59e0b] dark:hover:!border-[#fbbf24] transition-colors duration-300"
         >
           <SectionHeader title="Upcoming Schedule" />
           <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 custom-scrollbar">
@@ -930,20 +929,20 @@ const ManagerDashboard = () => {
         </Card>
 
         {/* Quick Actions */}
-        <Card className="h-72 flex flex-col bg-transparent border-none shadow-none p-0">
+        <Card className="h-72 flex flex-col hover:!border-[#00a76b] dark:hover:!border-[#34d399] transition-colors duration-300">
           <SectionHeader title="Quick Actions" />
           <div className="flex-1 grid grid-cols-3 gap-3">
             {[
-              { icon: <ClipboardList size={20} />, label: 'Assign Task', color: '#22c55e', bg: 'bg-[#f0fdf4] dark:bg-green-950/40 text-[#22c55e] dark:text-[#34d399]', path: '/manager/task-management/create' },
-              { icon: <Briefcase size={20} />, label: 'Create Project', color: '#3b82f6', bg: 'bg-[#eff6ff] dark:bg-blue-950/40 text-[#3b82f6] dark:text-[#60a5fa]', path: '/manager/projects' },
-              { icon: <UserCheck size={20} />, label: 'Approve Leave', color: '#f59e0b', bg: 'bg-[#fffbeb] dark:bg-amber-950/40 text-[#f59e0b] dark:text-[#fbbf24]', path: '/manager/leave' },
-              { icon: <TrendingUp size={20} />, label: 'Team Report', color: '#a855f7', bg: 'bg-[#f3e8ff] dark:bg-purple-950/40 text-[#a855f7] dark:text-[#c084fc]', path: '/manager/reports' },
-              { icon: <CalendarIcon size={20} />, label: 'Schedule Meeting', color: '#ef4444', bg: 'bg-[#fee2e2] dark:bg-red-950/40 text-[#ef4444] dark:text-[#f87171]', path: '/manager/events' },
-              { icon: <Star size={20} />, label: 'Performance Review', color: '#14b8a6', bg: 'bg-[#ccfbf1] dark:bg-teal-950/40 text-[#14b8a6] dark:text-[#2dd4bf]', path: '/manager/performance' },
+              { icon: <ClipboardList size={20} />, label: 'Assign Task', color: '#22c55e', bg: 'bg-[#f0fdf4] dark:bg-green-950/40 text-[#22c55e] dark:text-[#34d399]', hoverClass: 'hover:!border-[#22c55e] dark:hover:!border-[#34d399]', path: '/manager/task-management/create' },
+              { icon: <Briefcase size={20} />, label: 'Create Project', color: '#3b82f6', bg: 'bg-[#eff6ff] dark:bg-blue-950/40 text-[#3b82f6] dark:text-[#60a5fa]', hoverClass: 'hover:!border-[#3b82f6] dark:hover:!border-[#60a5fa]', path: '/manager/projects' },
+              { icon: <UserCheck size={20} />, label: 'Approve Leave', color: '#f59e0b', bg: 'bg-[#fffbeb] dark:bg-amber-950/40 text-[#f59e0b] dark:text-[#fbbf24]', hoverClass: 'hover:!border-[#f59e0b] dark:hover:!border-[#fbbf24]', path: '/manager/leave' },
+              { icon: <TrendingUp size={20} />, label: 'Team Report', color: '#a855f7', bg: 'bg-[#f3e8ff] dark:bg-purple-950/40 text-[#a855f7] dark:text-[#c084fc]', hoverClass: 'hover:!border-[#a855f7] dark:hover:!border-[#c084fc]', path: '/manager/reports' },
+              { icon: <CalendarIcon size={20} />, label: 'Schedule Meeting', color: '#ef4444', bg: 'bg-[#fee2e2] dark:bg-red-950/40 text-[#ef4444] dark:text-[#f87171]', hoverClass: 'hover:!border-[#ef4444] dark:hover:!border-[#f87171]', path: '/manager/events' },
+              { icon: <Star size={20} />, label: 'Performance Review', color: '#14b8a6', bg: 'bg-[#ccfbf1] dark:bg-teal-950/40 text-[#14b8a6] dark:text-[#2dd4bf]', hoverClass: 'hover:!border-[#14b8a6] dark:hover:!border-[#2dd4bf]', path: '/manager/performance' },
             ].map((action, i) => (
               <button
                 key={i}
-                className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-gray-200 dark:border-[#28251e] bg-white dark:bg-[#161311] hover:border-gray-300 dark:hover:border-[#38332c] hover:bg-gray-50 dark:hover:bg-[#1f1b17] hover:shadow-md transition-all h-full cursor-pointer group"
+                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border border-gray-200 dark:border-[#28251e] bg-white dark:bg-[#161311] ${action.hoverClass} transition-colors h-full cursor-pointer group`}
                 onClick={() => navigate(action.path)}
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${action.bg}`}>
@@ -967,7 +966,7 @@ const ManagerDashboard = () => {
 
           {/* Right Slide-over Panel attached strictly to the top-right-bottom edge (full height top-0) */}
           <div className="fixed top-0 right-0 bottom-0 h-screen z-[1000000] w-full max-w-[440px] bg-white dark:bg-[#161311] shadow-2xl flex flex-col border-l border-gray-200 dark:border-[#28251e]">
-            
+
             {/* Header */}
             <div className="p-6 border-b border-gray-100 dark:border-[#28251e] flex items-center justify-between bg-white dark:bg-[#161311]">
               <h2 className="text-xl font-extrabold text-[#0f172a] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>

@@ -56,10 +56,6 @@ exports.getDashboardStats = async (req, res) => {
 
     const getPeriodLeaveMetrics = async (start, end) => {
       const matchQuery = {};
-      if (req.user.role === 'hr') {
-        const allowedUsers = await User.find({ role: { $in: ['employee', 'manager'] } }).select('_id');
-        matchQuery.user = { $in: allowedUsers.map(u => u._id) };
-      }
       if (start && end) {
         matchQuery.$or = [
           {
@@ -83,16 +79,14 @@ exports.getDashboardStats = async (req, res) => {
       ]);
 
       const result = { total: 0, approved: 0, rejected: 0, cancelled: 0, pending: 0 };
-      let total = 0;
       counts.forEach(c => {
-        total += c.count;
         const s = (c._id || '').toLowerCase();
-        if (s === 'approved') result.approved = c.count;
-        else if (s === 'rejected') result.rejected = c.count;
-        else if (s === 'cancelled' || s === 'canceled') result.cancelled = c.count;
-        else if (s === 'pending') result.pending = c.count;
+        if (s === 'approved') result.approved += c.count;
+        else if (s === 'rejected') result.rejected += c.count;
+        else if (s === 'cancelled' || s === 'canceled') result.cancelled += c.count;
+        else if (s.includes('pending')) result.pending += c.count;
       });
-      result.total = total;
+      result.total = result.approved + result.pending + result.rejected + result.cancelled;
       return result;
     };
 

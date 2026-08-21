@@ -65,10 +65,10 @@ const PendingApprovalQueue = ({ onAction }) => {
         toast.error('No pending leave requests to approve.');
         return;
       }
-      
+
       const confirmApprove = window.confirm(`Are you sure you want to approve all ${leaves.length} pending leave requests?`);
       if (!confirmApprove) return;
-      
+
       try {
         const res = await axios.put('/api/leaves/manager/bulk-approve', { ids: leaves.map(l => l._id) }, {
           headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
@@ -145,7 +145,7 @@ const PendingApprovalQueue = ({ onAction }) => {
   });
 
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 min-h-[620px] flex flex-col justify-between transition-all duration-200 hover:border-violet-500">
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 min-h-[620px] flex flex-col justify-between transition-colors duration-300 hover:!border-violet-500 dark:hover:!border-violet-400">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Employee Leave Requests</h2>
@@ -172,7 +172,7 @@ const PendingApprovalQueue = ({ onAction }) => {
               className="w-26 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg h-9 flex items-center text-[11px] font-semibold text-gray-700 dark:text-gray-300"
             />
             {(filterStartDate || filterEndDate) && (
-              <button 
+              <button
                 onClick={() => { setFilterStartDate(''); setFilterEndDate(''); }}
                 className="text-[10px] font-black text-red-500 hover:text-red-700 uppercase px-2 py-1 bg-red-50 dark:bg-red-950/20 rounded-md transition-colors cursor-pointer"
               >
@@ -195,7 +195,7 @@ const PendingApprovalQueue = ({ onAction }) => {
               {requestFilter === 'cancelled' && `Cancelled (${counts.cancelled || 0})`}
               <ChevronDown size={14} className={`transition-transform duration-200 ${filterDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
-            
+
             {filterDropdownOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setFilterDropdownOpen(false)} />
@@ -261,11 +261,10 @@ const PendingApprovalQueue = ({ onAction }) => {
                     </div>
                   </td>
                   <td className="py-2.5">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      leave.leaveType === 'sick' ? 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400' :
-                      leave.leaveType === 'casual' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400' :
-                      'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400'
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${leave.leaveType === 'sick' ? 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400' :
+                        leave.leaveType === 'casual' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400' :
+                          'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400'
+                      }`}>
                       {leave.leaveType || leave.type}
                     </span>
                   </td>
@@ -274,27 +273,26 @@ const PendingApprovalQueue = ({ onAction }) => {
                   <td className="py-2.5 font-bold text-gray-900 dark:text-white">{leave.totalDays || 0} day(s)</td>
                   <td className="py-2.5 text-gray-500 dark:text-gray-400 font-medium max-w-[150px] truncate" title={leave.reason}>{leave.reason || '-'}</td>
                   <td className="py-2.5">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      leave.status === 'approved' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' :
-                      leave.status === 'rejected' ? 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400' :
-                      leave.status === 'cancellation_pending' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400' :
-                      leave.status === 'cancelled' ? 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400' :
-                      'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400'
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${leave.status === 'approved' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' :
+                        leave.status === 'rejected' ? 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400' :
+                          leave.status === 'cancellation_pending' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400' :
+                            leave.status === 'cancelled' ? 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400' :
+                              'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400'
+                      }`}>
                       {leave.status}
                     </span>
                   </td>
                   {(requestFilter === 'pending' || requestFilter === 'cancellation_pending') && (
                     <td className="py-2.5 text-right">
                       <div className="flex justify-end gap-1.5">
-                        <button 
+                        <button
                           onClick={() => handleApprove(leave._id)}
                           className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
                           title="Approve"
                         >
                           <CheckCircle2 size={16} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleReject(leave._id)}
                           className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
                           title="Reject"
@@ -316,14 +314,14 @@ const PendingApprovalQueue = ({ onAction }) => {
           Page {currentPage} of {displayTotalPages}
         </span>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             className="px-3 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 disabled:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
           >
             Prev
           </button>
-          <button 
+          <button
             disabled={currentPage === displayTotalPages || displayTotalPages === 0}
             onClick={() => setCurrentPage(prev => Math.min(displayTotalPages, prev + 1))}
             className="px-3 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 disabled:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"

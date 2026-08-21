@@ -42,18 +42,18 @@ const TeamLeaveCalendar = () => {
   const firstDay = getFirstDayOfMonth(currentDate.getFullYear(), currentDate.getMonth());
 
   const prevMonthDays = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth() - 1);
-  
+
   const days = [];
-  
+
   // Previous month padding
   for (let i = firstDay - 1; i >= 0; i--) {
     days.push({ day: prevMonthDays - i, isCurrentMonth: false });
   }
-  
+
   // Current month
   for (let i = 1; i <= daysInMonth; i++) {
     const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
-    
+
     let isHoliday = false;
     let isWeeklyOff = (d.getDay() === 0 || d.getDay() === 6); // Sun or Sat
     let hasApprovedLeave = false;
@@ -73,9 +73,9 @@ const TeamLeaveCalendar = () => {
       data.leaves.forEach(l => {
         const s = new Date(l.startDate);
         const e = new Date(l.endDate);
-        s.setHours(0,0,0,0);
-        e.setHours(23,59,59,999);
-        
+        s.setHours(0, 0, 0, 0);
+        e.setHours(23, 59, 59, 999);
+
         if (d >= s && d <= e) {
           if (l.status === 'approved') {
             if (l.leaveType === 'emergency') hasWfh = true; // mapped to wfh based on availability
@@ -98,7 +98,7 @@ const TeamLeaveCalendar = () => {
       isToday: d.toDateString() === new Date().toDateString()
     });
   }
-  
+
   // Next month padding
   const totalSlots = Math.ceil(days.length / 7) * 7;
   const paddingNeeded = totalSlots - days.length;
@@ -110,17 +110,17 @@ const TeamLeaveCalendar = () => {
   const monthName = currentDate.toLocaleString('default', { month: 'long' });
 
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-full transition-all duration-200 hover:border-indigo-500">
-      
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-full transition-colors duration-300 hover:!border-indigo-500 dark:hover:!border-indigo-400">
+
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Team Leave Calendar</h2>
         <div className="flex items-center gap-1">
           <button onClick={prevMonth} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
-            <ChevronLeft className="w-4 h-4"/>
+            <ChevronLeft className="w-4 h-4" />
           </button>
           <span className="text-sm font-bold text-gray-900 dark:text-white w-28 text-center">{monthName} {currentDate.getFullYear()}</span>
           <button onClick={nextMonth} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
-            <ChevronRight className="w-4 h-4"/>
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>

@@ -25,7 +25,7 @@ const COLORS = ['#00a76b', '#3b82f6', '#f43f5e', '#f59e0b', '#8b5cf6', '#64748b'
 const Card = ({ children, className = '', style = {}, ...props }) => (
   <div
     style={style}
-    className={`bg-white dark:bg-[#161311] rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-[#eceae3] dark:border-[#28251e] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${className}`}
+    className={`bg-white dark:bg-[#161311] rounded-2xl border border-[#eceae3] dark:border-[#28251e] transition-colors duration-300 ${className}`}
     {...props}
   >
     {children}
@@ -326,18 +326,19 @@ const HRDashboard = () => {
       {/* 1. Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-2" style={{ fontFamily: 'Playfair Display, serif' }}>
             <span>{getGreeting()}, {firstName}!</span>
             <span className="inline-flex items-center">👋</span>
           </h1>
+          <p className="text-[#939084] dark:text-[#a3a094] mt-1 text-sm font-medium">Have a productive day at work.</p>
         </div>
-        <div className="flex flex-wrap md:flex-nowrap items-center gap-2.5 mt-4 md:mt-0">
-          <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-[#161311] px-3.5 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-[#28251e] font-semibold text-xs font-mono tabular-nums">
-            <Clock size={16} className="mr-2 text-[#00a76b] shrink-0 animate-pulse" />
+        <div className="flex items-center gap-2.5 mt-4 md:mt-0">
+          <div className="flex items-center gap-2 whitespace-nowrap bg-white dark:bg-[#161311] border border-gray-200 dark:border-[#28251e] px-4 py-2 rounded-xl shadow-xs text-xs font-bold text-gray-700 dark:text-gray-200 font-mono tabular-nums">
+            <Clock size={16} className="text-[#00a76b] shrink-0 animate-pulse" />
             <span>{liveTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span>
           </div>
-          <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-[#161311] px-3.5 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-[#28251e] font-semibold text-xs">
-            <Calendar size={16} className="mr-2 text-[#00a76b] shrink-0" />
+          <div className="flex items-center gap-2 whitespace-nowrap bg-white dark:bg-[#161311] border border-gray-200 dark:border-[#28251e] px-4 py-2 rounded-xl shadow-xs text-xs font-semibold text-gray-700 dark:text-gray-200">
+            <Calendar size={16} className="text-[#00a76b] shrink-0" />
             <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
           </div>
         </div>
@@ -352,8 +353,7 @@ const HRDashboard = () => {
             icon: Users,
             color: 'text-blue-600 dark:text-blue-400',
             bg: 'bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/40',
-            borderColor: '#3b82f6',
-            glowColor: 'rgba(59, 130, 246, 0.45)'
+            hoverBorder: 'hover:!border-[#3b82f6] dark:hover:!border-[#60a5fa]'
           },
           {
             label: 'Active Employees',
@@ -361,8 +361,7 @@ const HRDashboard = () => {
             icon: CheckCircle,
             color: 'text-emerald-600 dark:text-emerald-400',
             bg: 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40',
-            borderColor: '#10b981',
-            glowColor: 'rgba(16, 185, 129, 0.45)'
+            hoverBorder: 'hover:!border-[#10b981] dark:hover:!border-[#34d399]'
           },
           {
             label: 'New Joiners',
@@ -370,8 +369,7 @@ const HRDashboard = () => {
             icon: UserPlus,
             color: 'text-indigo-600 dark:text-indigo-400',
             bg: 'bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/40',
-            borderColor: '#6366f1',
-            glowColor: 'rgba(99, 102, 241, 0.45)'
+            hoverBorder: 'hover:!border-[#6366f1] dark:hover:!border-[#818cf8]'
           },
           {
             label: 'Employees on Leave',
@@ -379,8 +377,7 @@ const HRDashboard = () => {
             icon: Calendar,
             color: 'text-amber-600 dark:text-amber-400',
             bg: 'bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900/40',
-            borderColor: '#f59e0b',
-            glowColor: 'rgba(245, 158, 11, 0.45)',
+            hoverBorder: 'hover:!border-[#f59e0b] dark:hover:!border-[#fbbf24]',
             onClick: () => navigate('/hr/leave', { state: { viewMode: 'hr' } })
           },
           {
@@ -389,23 +386,15 @@ const HRDashboard = () => {
             icon: Clock,
             color: 'text-rose-600 dark:text-rose-400',
             bg: 'bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900/40',
-            borderColor: '#ef4444',
-            glowColor: 'rgba(239, 68, 68, 0.45)',
+            hoverBorder: 'hover:!border-[#ef4444] dark:hover:!border-[#f87171]',
             onClick: () => navigate('/hr/leave', { state: { viewMode: 'hr', filter: 'pending' } })
           },
         ].map((stat, i) => {
-          const isHovered = hoveredStatCard === i;
           return (
             <Card
               key={i}
               onClick={stat.onClick}
-              onMouseEnter={() => setHoveredStatCard(i)}
-              onMouseLeave={() => setHoveredStatCard(null)}
-              style={{
-                borderColor: isHovered ? stat.borderColor : undefined,
-                boxShadow: isHovered ? `0 0 16px ${stat.glowColor}` : undefined
-              }}
-              className="py-2 px-3.5 flex items-center justify-between hover:-translate-y-0.5 transition-all duration-200 cursor-pointer shadow-xs min-h-[52px]"
+              className={`py-2 px-3.5 flex items-center justify-between transition-colors duration-300 cursor-pointer shadow-xs min-h-[52px] ${stat.hoverBorder}`}
             >
               <div className="flex items-center gap-2 min-w-0 mr-2">
                 <div className={`inline-flex p-1.5 rounded-lg shrink-0 ${stat.bg}`}>
@@ -425,7 +414,7 @@ const HRDashboard = () => {
       {/* 3. Second Row (Charts) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Attendance */}
-        <Card className="lg:col-span-1 p-4 sm:p-5">
+        <Card className="lg:col-span-1 p-4 sm:p-5 hover:!border-[#00a76b] dark:hover:!border-[#34d399] transition-colors duration-300">
           <div className="flex flex-wrap justify-between items-center mb-8 gap-6">
             <h3 className="font-bold text-gray-900 dark:text-white whitespace-nowrap tracking-wide">Attendance Overview</h3>
             <CustomDropdown
@@ -454,7 +443,7 @@ const HRDashboard = () => {
         </Card>
 
         {/* Role Distribution */}
-        <Card className="p-4 sm:p-5">
+        <Card className="p-4 sm:p-5 hover:!border-rose-500 dark:hover:!border-rose-400 transition-colors duration-300">
           <h3 className="font-bold text-gray-900 dark:text-white mb-3">Role-wise Employees</h3>
           <div className="flex flex-col items-center justify-center">
             {hrRoleDistribution.length > 0 ? (
@@ -506,8 +495,8 @@ const HRDashboard = () => {
                         onMouseEnter={() => setHoveredRoleIndex(index)}
                         onMouseLeave={() => setHoveredRoleIndex(null)}
                         className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-lg cursor-pointer transition-all duration-200 ${isHovered
-                            ? 'bg-gray-100 dark:bg-gray-800 scale-105 shadow-xs'
-                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                          ? 'bg-gray-100 dark:bg-gray-800 scale-105 shadow-xs'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                           }`}
                       >
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
@@ -525,7 +514,7 @@ const HRDashboard = () => {
         </Card>
 
         {/* Gender Distribution */}
-        <Card className="p-4 sm:p-5">
+        <Card className="p-4 sm:p-5 hover:!border-blue-500 dark:hover:!border-blue-400 transition-colors duration-300">
           <h3 className="font-bold text-gray-900 dark:text-white mb-3">Gender Distribution</h3>
           <div className="flex flex-col items-center justify-center">
             {charts.genderDistribution.length > 0 ? (
@@ -577,8 +566,8 @@ const HRDashboard = () => {
                         onMouseEnter={() => setHoveredGenderIndex(index)}
                         onMouseLeave={() => setHoveredGenderIndex(null)}
                         className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-lg cursor-pointer transition-all duration-200 ${isHovered
-                            ? 'bg-gray-100 dark:bg-gray-800 scale-105 shadow-xs'
-                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                          ? 'bg-gray-100 dark:bg-gray-800 scale-105 shadow-xs'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                           }`}
                       >
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: ['#3b82f6', '#f43f5e', '#f59e0b'][index % 3] }}></span>
@@ -598,7 +587,7 @@ const HRDashboard = () => {
 
       {/* 4. Third Row (Leave, Payroll, Recruitment) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="p-6 flex flex-col justify-between">
+        <Card className="p-6 flex flex-col justify-between hover:!border-[#00a76b] dark:hover:!border-[#34d399] transition-colors duration-300">
           <div>
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-gray-900 dark:text-white">Team Leave Overview</h3>
@@ -608,37 +597,66 @@ const HRDashboard = () => {
                 options={['This Month', 'This Week', 'This Year', 'All Time', 'Today']}
               />
             </div>
-            <div className="grid grid-cols-2 gap-2.5 mb-3">
-              <div className="p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-0.5">Total Leaves</p>
-                <p className="text-[18px] font-black text-gray-900 dark:text-white">{currentLeaveOverview.total || 0}</p>
-              </div>
-              <div className="p-2.5 bg-green-50 dark:bg-green-900/30 rounded-xl">
-                <p className="text-[11px] font-bold text-green-700 dark:text-green-500 mb-0.5">Approved</p>
-                <p className="text-[18px] font-black text-green-800 dark:text-green-400">{currentLeaveOverview.approved || 0}</p>
-              </div>
-              <div className="p-2.5 bg-red-50 dark:bg-red-900/30 rounded-xl">
-                <p className="text-[11px] font-bold text-red-700 dark:text-red-500 mb-0.5">Rejected</p>
-                <p className="text-[18px] font-black text-red-800 dark:text-red-400">{currentLeaveOverview.rejected || 0}</p>
-              </div>
-              <div className="p-2.5 bg-orange-50 dark:bg-orange-900/30 rounded-xl">
-                <p className="text-[11px] font-bold text-orange-700 dark:text-orange-500 mb-0.5">Cancelled</p>
-                <p className="text-[18px] font-black text-orange-800 dark:text-orange-400">{currentLeaveOverview.cancelled || 0}</p>
-              </div>
-            </div>
-            {/* Segmented Approval Progress Bar */}
-            <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden flex">
-              <div className="bg-[#00a76b] h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.approved / currentLeaveOverview.total) * 100 : 0}%` }}></div>
-              <div className="bg-red-500 h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.rejected / currentLeaveOverview.total) * 100 : 0}%` }}></div>
-              <div className="bg-orange-500 h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.cancelled / currentLeaveOverview.total) * 100 : 0}%` }}></div>
-            </div>
+            {(() => {
+              const app = currentLeaveOverview.approved || 0;
+              const pend = currentLeaveOverview.pending || 0;
+              const rej = currentLeaveOverview.rejected || 0;
+              const canc = currentLeaveOverview.cancelled || 0;
+              const totalLeaves = app + pend + rej + canc;
+              const displaySum = totalLeaves || 1;
+
+              return (
+                <>
+                  <div className="space-y-2 mb-3">
+                    {/* Total Leaves Top Banner */}
+                    <div className="p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl flex justify-between items-center">
+                      <div>
+                        <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400">Total Leaves</p>
+                        <p className="text-[18px] font-black text-gray-900 dark:text-white leading-tight">{totalLeaves}</p>
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 bg-gray-200/60 dark:bg-gray-700/60 px-2 py-0.5 rounded-md">
+                        {totalLeaves} Total Requests
+                      </span>
+                    </div>
+
+                    {/* 4 Status Boxes: Approved, Pending, Rejected, Cancelled */}
+                    <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+                      <div className="p-2 bg-green-50 dark:bg-green-900/30 rounded-xl text-center">
+                        <p className="text-[10px] font-bold text-green-700 dark:text-green-500 truncate">Approved</p>
+                        <p className="text-[16px] font-black text-green-800 dark:text-green-400 leading-tight mt-0.5">{app}</p>
+                      </div>
+                      <div className="p-2 bg-amber-50 dark:bg-amber-900/30 rounded-xl text-center">
+                        <p className="text-[10px] font-bold text-amber-700 dark:text-amber-500 truncate">Pending</p>
+                        <p className="text-[16px] font-black text-amber-800 dark:text-amber-400 leading-tight mt-0.5">{pend}</p>
+                      </div>
+                      <div className="p-2 bg-red-50 dark:bg-red-900/30 rounded-xl text-center">
+                        <p className="text-[10px] font-bold text-red-700 dark:text-red-500 truncate">Rejected</p>
+                        <p className="text-[16px] font-black text-red-800 dark:text-red-400 leading-tight mt-0.5">{rej}</p>
+                      </div>
+                      <div className="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-xl text-center">
+                        <p className="text-[10px] font-bold text-orange-700 dark:text-orange-500 truncate">Cancelled</p>
+                        <p className="text-[16px] font-black text-orange-800 dark:text-orange-400 leading-tight mt-0.5">{canc}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Segmented Approval Progress Bar */}
+                  <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden flex" title={`Total Leaves: ${totalLeaves}`}>
+                    <div className="bg-[#00a76b] h-full transition-all duration-500" style={{ width: `${(app / displaySum) * 100}%` }} title={`Approved: ${app} (${Math.round((app / displaySum) * 100)}%)`}></div>
+                    <div className="bg-amber-400 h-full transition-all duration-500" style={{ width: `${(pend / displaySum) * 100}%` }} title={`Pending: ${pend} (${Math.round((pend / displaySum) * 100)}%)`}></div>
+                    <div className="bg-red-500 h-full transition-all duration-500" style={{ width: `${(rej / displaySum) * 100}%` }} title={`Rejected: ${rej} (${Math.round((rej / displaySum) * 100)}%)`}></div>
+                    <div className="bg-orange-500 h-full transition-all duration-500" style={{ width: `${(canc / displaySum) * 100}%` }} title={`Cancelled: ${canc} (${Math.round((canc / displaySum) * 100)}%)`}></div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
           <button onClick={() => navigate('/hr/leave', { state: { viewMode: 'hr' } })} className="w-full mt-3 bg-gray-50 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
             View Leave Details <ChevronRight size={14} />
           </button>
         </Card>
 
-        <Card className="p-6 flex flex-col justify-between">
+        <Card className="p-6 flex flex-col justify-between hover:!border-amber-500 dark:hover:!border-amber-400 transition-colors duration-300">
           <div>
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-gray-900 dark:text-white">Payroll Summary</h3>
@@ -671,7 +689,7 @@ const HRDashboard = () => {
           </button>
         </Card>
 
-        <Card className="p-6 flex flex-col justify-between">
+        <Card className="p-6 flex flex-col justify-between hover:!border-purple-500 dark:hover:!border-purple-400 transition-colors duration-300">
           <div>
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-gray-900 dark:text-white">Recruitment Overview</h3>
@@ -709,7 +727,7 @@ const HRDashboard = () => {
 
       {/* 5. Fourth Row (Quick Actions, Pending Approvals) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <Card className="p-6 flex flex-col h-[420px] lg:col-span-4 xl:col-span-4">
+        <Card className="p-6 flex flex-col h-[420px] lg:col-span-4 xl:col-span-4 hover:!border-[#00a76b] dark:hover:!border-[#34d399] transition-colors duration-300">
           <h3 className="font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-4">
             {[
@@ -718,7 +736,7 @@ const HRDashboard = () => {
                 icon: UserPlus,
                 color: 'text-blue-500',
                 bg: 'bg-blue-50 dark:bg-blue-950/40',
-                hoverBorder: 'hover:border-blue-400 dark:hover:border-blue-500',
+                hoverBorder: 'hover:!border-blue-400 dark:hover:!border-blue-500',
                 hoverBg: 'hover:bg-blue-50/40 dark:hover:bg-blue-950/20',
                 hoverText: 'group-hover:text-blue-600 dark:group-hover:text-blue-400',
                 onClick: () => navigate('/hr/create-user')
@@ -728,7 +746,7 @@ const HRDashboard = () => {
                 icon: Layers,
                 color: 'text-indigo-500',
                 bg: 'bg-indigo-50 dark:bg-indigo-950/40',
-                hoverBorder: 'hover:border-indigo-400 dark:hover:border-indigo-500',
+                hoverBorder: 'hover:!border-indigo-400 dark:hover:!border-indigo-500',
                 hoverBg: 'hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20',
                 hoverText: 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400',
                 onClick: () => navigate('/hr/departments')
@@ -738,7 +756,7 @@ const HRDashboard = () => {
                 icon: Briefcase,
                 color: 'text-purple-500',
                 bg: 'bg-purple-50 dark:bg-purple-950/40',
-                hoverBorder: 'hover:border-purple-400 dark:hover:border-purple-500',
+                hoverBorder: 'hover:!border-purple-400 dark:hover:!border-purple-500',
                 hoverBg: 'hover:bg-purple-50/40 dark:hover:bg-purple-950/20',
                 hoverText: 'group-hover:text-purple-600 dark:group-hover:text-purple-400',
                 onClick: () => navigate('/hr/recruitment')
@@ -748,7 +766,7 @@ const HRDashboard = () => {
                 icon: CheckCircle,
                 color: 'text-[#00a76b]',
                 bg: 'bg-green-50 dark:bg-green-950/40',
-                hoverBorder: 'hover:border-[#00a76b] dark:hover:border-[#00a76b]',
+                hoverBorder: 'hover:!border-[#00a76b] dark:hover:!border-[#00a76b]',
                 hoverBg: 'hover:bg-green-50/40 dark:hover:bg-green-950/20',
                 hoverText: 'group-hover:text-[#00a76b] dark:group-hover:text-[#00a76b]',
                 onClick: () => navigate('/hr/leave', { state: { viewMode: 'hr', filter: 'pending' } })
@@ -758,7 +776,7 @@ const HRDashboard = () => {
                 icon: Activity,
                 color: 'text-orange-500',
                 bg: 'bg-orange-50 dark:bg-orange-950/40',
-                hoverBorder: 'hover:border-orange-400 dark:hover:border-orange-500',
+                hoverBorder: 'hover:!border-orange-400 dark:hover:!border-orange-500',
                 hoverBg: 'hover:bg-orange-50/40 dark:hover:bg-orange-950/20',
                 hoverText: 'group-hover:text-orange-600 dark:group-hover:text-orange-400',
                 onClick: () => navigate('/hr/payroll')
@@ -768,7 +786,7 @@ const HRDashboard = () => {
                 icon: Bell,
                 color: 'text-red-500',
                 bg: 'bg-red-50 dark:bg-red-950/40',
-                hoverBorder: 'hover:border-red-400 dark:hover:border-red-500',
+                hoverBorder: 'hover:!border-red-400 dark:hover:!border-red-500',
                 hoverBg: 'hover:bg-red-50/40 dark:hover:bg-red-950/20',
                 hoverText: 'group-hover:text-red-600 dark:group-hover:text-red-400',
                 onClick: () => navigate('/hr/notifications')
@@ -788,7 +806,7 @@ const HRDashboard = () => {
           </div>
         </Card>
 
-        <Card className="p-6 flex flex-col h-[420px] lg:col-span-8 xl:col-span-8">
+        <Card className="p-6 flex flex-col h-[420px] lg:col-span-8 xl:col-span-8 hover:!border-blue-500 dark:hover:!border-blue-400 transition-colors duration-300">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-gray-900 dark:text-white">Pending Approvals</h3>
             <button onClick={() => navigate('/hr/leave', { state: { viewMode: 'hr', filter: 'pending' } })} className="text-xs font-bold text-[#00a76b] hover:underline cursor-pointer">View All</button>
@@ -864,7 +882,7 @@ const HRDashboard = () => {
 
       {/* 6. Fifth Row (Recent Joiners, Birthdays, Announcements) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="p-6 h-[320px] flex flex-col">
+        <Card className="p-6 h-[320px] flex flex-col hover:!border-sky-500 dark:hover:!border-sky-400 transition-colors duration-300">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-gray-900 dark:text-white">Recent Joiners</h3>
           </div>
@@ -884,7 +902,7 @@ const HRDashboard = () => {
           </div>
         </Card>
 
-        <Card className="p-6 h-[320px] flex flex-col">
+        <Card className="p-6 h-[320px] flex flex-col hover:!border-pink-500 dark:hover:!border-pink-400 transition-colors duration-300">
           <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-gray-900 dark:text-white truncate pr-2">Birthdays & Anniversaries</h3>
@@ -967,7 +985,7 @@ const HRDashboard = () => {
           </div>
         </Card>
 
-        <Card className="p-6 h-[320px] flex flex-col">
+        <Card className="p-6 h-[320px] flex flex-col hover:!border-[#00a76b] dark:hover:!border-[#34d399] transition-colors duration-300">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-gray-900 dark:text-white text-base">HR Announcements</h3>
             <button
@@ -1017,7 +1035,7 @@ const HRDashboard = () => {
       </div>
 
       {/* 7. Bottom Row (Analytics) */}
-      <Card className="p-6">
+      <Card className="p-6 hover:!border-purple-500 dark:hover:!border-purple-400 transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
           <h3 className="font-bold text-gray-900 dark:text-white">HR Analytics</h3>
           <CustomDropdown
@@ -1027,13 +1045,13 @@ const HRDashboard = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
           {[
-            { id: 'turnover', label: 'Employee Turnover Rate', val: '8.4%', trend: 'down', trendVal: '1.2%', color: '#10b981', trendColor: 'text-[#10b981]', data: [{ v: 12 }, { v: 14 }, { v: 10 }, { v: 15 }, { v: 14 }, { v: 16 }, { v: 12 }, { v: 17 }] },
-            { id: 'hire', label: 'Average Time to Hire', val: '18 Days', trend: 'down', trendVal: '2 days', color: '#3b82f6', trendColor: 'text-[#3b82f6]', data: [{ v: 20 }, { v: 22 }, { v: 20 }, { v: 18 }, { v: 21 }, { v: 19 }, { v: 18 }, { v: 25 }] },
-            { id: 'satisfaction', label: 'Employee Satisfaction', val: '4.2 / 5', trend: 'up', trendVal: '0.3', color: '#8b5cf6', trendColor: 'text-[#8b5cf6]', data: [{ v: 3.8 }, { v: 3.7 }, { v: 3.9 }, { v: 3.8 }, { v: 4.1 }, { v: 3.9 }, { v: 4.0 }, { v: 4.2 }] },
-            { id: 'absenteeism', label: 'Absenteeism Rate', val: '2.6%', trend: 'down', trendVal: '0.8%', color: '#f59e0b', trendColor: 'text-[#f59e0b]', data: [{ v: 3.2 }, { v: 3.0 }, { v: 3.1 }, { v: 2.8 }, { v: 2.9 }, { v: 2.5 }, { v: 2.7 }, { v: 2.9 }] },
-            { id: 'training', label: 'Training Completion Rate', val: '76%', trend: 'up', trendVal: '6%', color: '#14b8a6', trendColor: 'text-[#14b8a6]', data: [{ v: 65 }, { v: 68 }, { v: 66 }, { v: 70 }, { v: 70 }, { v: 74 }, { v: 73 }, { v: 76 }] },
+            { id: 'turnover', label: 'Employee Turnover Rate', val: '8.4%', trend: 'down', trendVal: '1.2%', color: '#10b981', hoverBorder: 'hover:!border-[#10b981] dark:hover:!border-[#34d399]', trendColor: 'text-[#10b981]', data: [{ v: 12 }, { v: 14 }, { v: 10 }, { v: 15 }, { v: 14 }, { v: 16 }, { v: 12 }, { v: 17 }] },
+            { id: 'hire', label: 'Average Time to Hire', val: '18 Days', trend: 'down', trendVal: '2 days', color: '#3b82f6', hoverBorder: 'hover:!border-[#3b82f6] dark:hover:!border-[#60a5fa]', trendColor: 'text-[#3b82f6]', data: [{ v: 20 }, { v: 22 }, { v: 20 }, { v: 18 }, { v: 21 }, { v: 19 }, { v: 18 }, { v: 25 }] },
+            { id: 'satisfaction', label: 'Employee Satisfaction', val: '4.2 / 5', trend: 'up', trendVal: '0.3', color: '#8b5cf6', hoverBorder: 'hover:!border-[#8b5cf6] dark:hover:!border-[#a78bfa]', trendColor: 'text-[#8b5cf6]', data: [{ v: 3.8 }, { v: 3.7 }, { v: 3.9 }, { v: 3.8 }, { v: 4.1 }, { v: 3.9 }, { v: 4.0 }, { v: 4.2 }] },
+            { id: 'absenteeism', label: 'Absenteeism Rate', val: '2.6%', trend: 'down', trendVal: '0.8%', color: '#f59e0b', hoverBorder: 'hover:!border-[#f59e0b] dark:hover:!border-[#fbbf24]', trendColor: 'text-[#f59e0b]', data: [{ v: 3.2 }, { v: 3.0 }, { v: 3.1 }, { v: 2.8 }, { v: 2.9 }, { v: 2.5 }, { v: 2.7 }, { v: 2.9 }] },
+            { id: 'training', label: 'Training Completion Rate', val: '76%', trend: 'up', trendVal: '6%', color: '#14b8a6', hoverBorder: 'hover:!border-[#14b8a6] dark:hover:!border-[#2dd4bf]', trendColor: 'text-[#14b8a6]', data: [{ v: 65 }, { v: 68 }, { v: 66 }, { v: 70 }, { v: 70 }, { v: 74 }, { v: 73 }, { v: 76 }] },
           ].map((metric, i) => (
-            <div key={i} className="group p-4 border border-gray-100 dark:border-[#2b2722] rounded-xl bg-white dark:bg-[#1a1714] shadow-sm relative overflow-hidden flex flex-col h-36 hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-pointer">
+            <div key={i} className={`group p-4 border border-gray-100 dark:border-[#2b2722] rounded-xl bg-white dark:bg-[#1a1714] shadow-sm relative overflow-hidden flex flex-col h-36 ${metric.hoverBorder} transition-colors duration-300 cursor-pointer`}>
               <p className="text-[11px] font-bold text-gray-700 dark:text-gray-300 tracking-tight mb-2 truncate">{metric.label}</p>
               <h4 className="text-2xl font-black text-gray-900 dark:text-white">{metric.val}</h4>
               <p className={`text-[10px] font-bold mt-1 flex items-center gap-1 ${metric.trendColor}`}>

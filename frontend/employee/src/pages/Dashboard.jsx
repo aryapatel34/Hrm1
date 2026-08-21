@@ -148,6 +148,8 @@ const Dashboard = () => {
 
   // Charts
   const [timeRange, setTimeRange] = useState('weekly');
+  const [hoveredTaskIndex, setHoveredTaskIndex] = useState(null);
+  const [hoveredSummaryCardIndex, setHoveredSummaryCardIndex] = useState(null);
   const [timeRangeOpen, setTimeRangeOpen] = useState(false);
   const timeRangeRef = useRef(null);
   const [weeklyChart, setWeeklyChart] = useState([]);
@@ -605,102 +607,110 @@ const Dashboard = () => {
       {/* 1. WELCOME SECTION */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
         <div>
-          <h1 className="text-[32px] font-bold text-[#201515] dark:text-white leading-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white leading-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
             {getGreeting()}, {firstName}! 👋
           </h1>
           <p className="text-[#939084] mt-1">Have a productive day at work.</p>
         </div>
-        <div className="hidden sm:flex items-center gap-2.5 pt-2">
-          <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-[#d5d0c1] dark:border-[#38352e] bg-white dark:bg-[#1a1714] text-xs font-semibold text-[#36342e] dark:text-[#e5e2da] shadow-[0_1px_3px_rgba(0,0,0,0.04)] font-mono tabular-nums">
-            <Clock size={14} className="text-[#00a76b] shrink-0 animate-pulse" />
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 whitespace-nowrap bg-white dark:bg-[#161311] border border-gray-200 dark:border-[#28251e] px-4 py-2 rounded-xl shadow-xs text-xs font-bold text-gray-700 dark:text-gray-200 font-mono tabular-nums">
+            <Clock size={16} className="text-[#00a76b] shrink-0 animate-pulse" />
             <span>{liveTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-[#d5d0c1] dark:border-[#38352e] bg-white dark:bg-[#1a1714] text-xs font-semibold text-[#36342e] dark:text-[#e5e2da] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-            <Calendar size={14} className="text-[#00a76b] shrink-0" />
-            <span>{fmtDate()}</span>
+          <div className="flex items-center gap-2 whitespace-nowrap bg-white dark:bg-[#161311] border border-gray-200 dark:border-[#28251e] px-4 py-2 rounded-xl shadow-xs text-xs font-semibold text-gray-700 dark:text-gray-200">
+            <Calendar size={16} className="text-[#00a76b] shrink-0" />
+            <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
           </div>
         </div>
       </div>
 
-      {/* 2. TODAY'S SUMMARY (5 tinted cards) */}
+      {/* 2. TODAY'S SUMMARY (5 cards) */}
       <SectionHeader title="Today's Summary" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
-        {/* Present Card */}
-        <Card className="!p-4 hover:-translate-y-1 hover:!border-[#16a34a] dark:hover:!border-[#16a34a] cursor-pointer transition-all duration-300 h-full flex flex-col justify-between" onClick={() => navigate('/employee/attendance')}>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[#dcfce7] dark:bg-[#16a34a]/20 flex items-center justify-center text-[#16a34a] dark:text-[#16a34a] shrink-0">
-              <CheckCircle size={16} stroke="#16a34a" className="text-[#16a34a] dark:text-[#16a34a]" />
-            </div>
-            <span className="text-xs font-bold text-[#36342e] dark:text-[#e5e2da]">Today's Attendance</span>
-          </div>
-          <div className="mt-2.5 flex items-baseline gap-1.5 flex-wrap">
-            <span className="text-sm font-bold text-[#201515] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              {isCheckedIn ? 'Present' : 'Not Checked-In'}
-            </span>
-            {isCheckedIn && checkInTime && (
-              <span className="text-xs font-semibold text-[#16a34a] dark:text-[#4ade80]">
-                ({checkInTime})
-              </span>
-            )}
-          </div>
-        </Card>
-
-        {/* Working Hours */}
-        <Card className="!p-4 hover:-translate-y-1 hover:!border-[#0284c7] dark:hover:!border-[#0284c7] cursor-pointer transition-all duration-300 h-full flex flex-col justify-between" onClick={() => navigate('/employee/attendance')}>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[#e0f2fe] dark:bg-[#0284c7]/20 flex items-center justify-center text-[#0284c7] dark:text-[#0284c7] shrink-0">
-              <Clock size={16} stroke="#0284c7" className="text-[#0284c7] dark:text-[#0284c7]" />
-            </div>
-            <span className="text-xs font-bold text-[#36342e] dark:text-[#e5e2da]">Working Hours</span>
-          </div>
-          <div className="mt-2.5">
-            <span className="text-sm font-bold text-[#201515] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{todayHours}</span>
-          </div>
-        </Card>
-
-        {/* Total Weekly Hours */}
-        <Card className="!p-4 hover:-translate-y-1 hover:!border-[#6366f1] dark:hover:!border-[#6366f1] cursor-pointer transition-all duration-300 h-full flex flex-col justify-between" onClick={() => navigate('/employee/attendance')}>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[#ede9fe] dark:bg-[#6366f1]/20 flex items-center justify-center text-[#6366f1] dark:text-[#6366f1] shrink-0">
-              <TrendingUp size={16} stroke="#6366f1" className="text-[#6366f1] dark:text-[#6366f1]" />
-            </div>
-            <span className="text-xs font-bold text-[#36342e] dark:text-[#e5e2da]">Total Weekly Hours</span>
-          </div>
-          <div className="mt-2.5">
-            <span className="text-sm font-bold text-[#201515] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{weeklyHours}</span>
-          </div>
-        </Card>
-
-        {/* Pending Tasks */}
-        <Card className="!p-4 hover:-translate-y-1 hover:!border-[#9333ea] dark:hover:!border-[#9333ea] cursor-pointer transition-all duration-300 h-full flex flex-col justify-between" onClick={() => navigate('/employee/task-management')}>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[#f3e8ff] dark:bg-[#9333ea]/20 flex items-center justify-center text-[#9333ea] dark:text-[#9333ea] shrink-0">
-              <Briefcase size={16} stroke="#9333ea" className="text-[#9333ea] dark:text-[#9333ea]" />
-            </div>
-            <span className="text-xs font-bold text-[#36342e] dark:text-[#e5e2da]">Pending Tasks</span>
-          </div>
-          <div className="mt-2.5">
-            <span className="text-sm font-bold text-[#201515] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingTasks}</span>
-          </div>
-        </Card>
-
-        {/* Leave Balance */}
-        <Card className="!p-4 hover:-translate-y-1 hover:!border-[#ea580c] dark:hover:!border-[#ea580c] cursor-pointer transition-all duration-300 h-full flex flex-col justify-between" onClick={() => navigate('/employee/leave')}>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[#ffedd5] dark:bg-[#ea580c]/20 flex items-center justify-center text-[#ea580c] dark:text-[#ea580c] shrink-0">
-              <CalendarCheck size={16} stroke="#ea580c" className="text-[#ea580c] dark:text-[#ea580c]" />
-            </div>
-            <span className="text-xs font-bold text-[#36342e] dark:text-[#e5e2da]">Leave Balance</span>
-          </div>
-          <div className="mt-2.5">
-            <span className="text-sm font-bold text-[#201515] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{Math.round(totalLeaveBalance)}</span>
-          </div>
-        </Card>
+        {[
+          {
+            title: "Today's Attendance",
+            value: isCheckedIn ? 'Present' : 'Not Checked-In',
+            subValue: isCheckedIn && checkInTime ? `(${checkInTime})` : null,
+            icon: CheckCircle,
+            color: 'text-emerald-600 dark:text-emerald-400',
+            hoverClass: 'hover:!border-[#10b981] dark:hover:!border-[#34d399]',
+            borderColor: '#10b981',
+            glowColor: 'rgba(16, 185, 129, 0.45)',
+            bgIcon: 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40',
+            onClick: () => navigate('/employee/attendance')
+          },
+          {
+            title: 'Working Hours',
+            value: todayHours,
+            icon: Clock,
+            color: 'text-sky-600 dark:text-sky-400',
+            hoverClass: 'hover:!border-[#0284c7] dark:hover:!border-[#38bdf8]',
+            borderColor: '#0284c7',
+            glowColor: 'rgba(2, 132, 199, 0.45)',
+            bgIcon: 'bg-sky-50 dark:bg-sky-950/50 border border-sky-100 dark:border-sky-900/40',
+            onClick: () => navigate('/employee/attendance')
+          },
+          {
+            title: 'Total Weekly Hours',
+            value: weeklyHours,
+            icon: TrendingUp,
+            color: 'text-indigo-600 dark:text-indigo-400',
+            hoverClass: 'hover:!border-[#6366f1] dark:hover:!border-[#818cf8]',
+            borderColor: '#6366f1',
+            glowColor: 'rgba(99, 102, 241, 0.45)',
+            bgIcon: 'bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/40',
+            onClick: () => navigate('/employee/attendance')
+          },
+          {
+            title: 'Pending Tasks',
+            value: pendingTasks,
+            icon: Briefcase,
+            color: 'text-purple-600 dark:text-purple-400',
+            hoverClass: 'hover:!border-[#9333ea] dark:hover:!border-[#c084fc]',
+            borderColor: '#9333ea',
+            glowColor: 'rgba(147, 51, 234, 0.45)',
+            bgIcon: 'bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/40',
+            onClick: () => navigate('/employee/task-management')
+          },
+          {
+            title: 'Leave Balance',
+            value: Math.round(totalLeaveBalance),
+            icon: CalendarCheck,
+            color: 'text-amber-600 dark:text-amber-400',
+            hoverClass: 'hover:!border-[#ea580c] dark:hover:!border-[#fb923c]',
+            borderColor: '#ea580c',
+            glowColor: 'rgba(234, 88, 12, 0.45)',
+            bgIcon: 'bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900/40',
+            onClick: () => navigate('/employee/leave')
+          }
+        ].map((card, i) => {
+          return (
+            <Card
+              key={i}
+              onClick={card.onClick}
+              className={`!p-4 cursor-pointer transition-colors duration-200 h-full flex flex-col justify-between ${card.hoverClass}`}
+            >
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${card.bgIcon}`}>
+                  <card.icon size={16} strokeWidth={2.5} className={card.color} />
+                </div>
+                <span className="text-xs font-bold text-gray-900 dark:text-white truncate">{card.title}</span>
+              </div>
+              <div className="mt-2.5 flex items-baseline gap-1.5 flex-wrap">
+                <span className="text-sm font-black text-gray-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{card.value}</span>
+                {card.subValue && (
+                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{card.subValue}</span>
+                )}
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
         {/* 3. ATTENDANCE SUMMARY */}
-        <Card className="flex-1 flex flex-col justify-between">
+        <Card className="flex-1 flex flex-col justify-between hover:!border-[#00a76b] dark:hover:!border-[#34d399] transition-colors duration-300">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-bold text-[#201515] dark:text-white text-lg" style={{ fontFamily: 'Manrope, sans-serif' }}>Attendance Overview</h2>
             <div className="relative" ref={timeRangeRef}>
@@ -825,49 +835,69 @@ const Dashboard = () => {
         </Card>
 
         {/* 4. MY TASKS OVERVIEW */}
-        <Card className="flex-1 flex flex-col justify-between">
+        <Card className="flex-1 flex flex-col justify-between hover:!border-[#8b5cf6] dark:hover:!border-[#c084fc] transition-colors duration-300">
           <div className="flex justify-between items-center mb-2">
             <h2 className="font-bold text-[#201515] dark:text-white text-lg" style={{ fontFamily: 'Manrope, sans-serif' }}>My Tasks Overview</h2>
           </div>
           <div className="h-52 relative flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={totalTasks === 0 ? [{ name: 'No Tasks', value: 1, color: '#e5e7eb' }] : [
-                  { name: 'Pending', value: pendingTasks, color: '#3b82f6' },
-                  { name: 'In Progress', value: ongoingTasks, color: '#f59e0b' },
-                  { name: 'Completed', value: completedTasks, color: '#8b5cf6' },
-                  { name: 'Overdue', value: overdueTasks, color: '#ef4444' }
-                ]} cx="50%" cy="50%" innerRadius={60} outerRadius={85} dataKey="value" stroke="none" paddingAngle={3}>
-                  {
-                    (totalTasks === 0 ? [{ color: '#e5e7eb' }] : [{ color: '#3b82f6' }, { color: '#f59e0b' }, { color: '#8b5cf6' }, { color: '#ef4444' }]).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))
-                  }
-                </Pie>
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const item = payload[0];
-                      return (
-                        <div className="bg-white dark:bg-[#1a1714] border border-gray-200 dark:border-[#38352e] px-3 py-1.5 rounded-xl shadow-xl text-xs font-bold text-[#201515] dark:text-white">
-                          <span style={{ color: item.payload?.color || '#00a76b' }}>{item.name}</span> : {item.value}
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-black text-[#201515] dark:text-white leading-none">{totalTasks}</span>
-              <span className="text-[10px] font-bold text-[#939084] tracking-wider uppercase mt-1">Total Tasks</span>
-            </div>
+            {(() => {
+              const taskPieData = [
+                { name: 'Pending', value: pendingTasks, color: '#3b82f6' },
+                { name: 'In Progress', value: ongoingTasks, color: '#f59e0b' },
+                { name: 'Completed', value: completedTasks, color: '#8b5cf6' },
+                { name: 'Overdue', value: overdueTasks, color: '#ef4444' }
+              ];
+              const displayPieData = totalTasks === 0 ? [{ name: 'No Tasks', value: 1, color: '#e5e7eb' }] : taskPieData;
+              const isHoveredValid = hoveredTaskIndex !== null && totalTasks > 0 && taskPieData[hoveredTaskIndex];
+
+              return (
+                <>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={displayPieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={85}
+                        dataKey="value"
+                        stroke="none"
+                        paddingAngle={3}
+                        onMouseEnter={(_, index) => setHoveredTaskIndex(index)}
+                        onMouseLeave={() => setHoveredTaskIndex(null)}
+                      >
+                        {displayPieData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color}
+                            opacity={hoveredTaskIndex === null || hoveredTaskIndex === index ? 1 : 0.35}
+                            style={{ transition: 'all 0.2s ease', cursor: 'pointer' }}
+                          />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200">
+                    <span
+                      className="text-2xl font-black leading-none transition-all duration-150"
+                      style={{
+                        color: isHoveredValid ? taskPieData[hoveredTaskIndex].color : undefined
+                      }}
+                    >
+                      {isHoveredValid ? taskPieData[hoveredTaskIndex].value : totalTasks}
+                    </span>
+                    <span className="text-[10px] font-bold text-[#939084] tracking-wider uppercase mt-1 transition-all duration-150">
+                      {isHoveredValid ? taskPieData[hoveredTaskIndex].name : 'Total Tasks'}
+                    </span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
-          {/* 4 Stat Items below Pie Chart styled same as Attendance Overview */}
+          {/* 4 Stat Items below Pie Chart */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 h-14 items-center">
-            <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
+            <div className="px-2 py-1.5 flex items-center justify-between transition-all">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-[#3b82f6] shrink-0"></span>
                 <span className="text-xs text-blue-700 dark:text-blue-400 font-bold truncate">Pending</span>
@@ -875,7 +905,7 @@ const Dashboard = () => {
               <span className="text-sm font-black text-blue-800 dark:text-blue-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{pendingTasks}</span>
             </div>
 
-            <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
+            <div className="px-2 py-1.5 flex items-center justify-between transition-all">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-[#f59e0b] shrink-0"></span>
                 <span className="text-xs text-amber-700 dark:text-amber-400 font-bold truncate">In Progress</span>
@@ -883,7 +913,7 @@ const Dashboard = () => {
               <span className="text-sm font-black text-amber-800 dark:text-amber-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{ongoingTasks}</span>
             </div>
 
-            <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
+            <div className="px-2 py-1.5 flex items-center justify-between transition-all">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-[#8b5cf6] shrink-0"></span>
                 <span className="text-xs text-purple-700 dark:text-purple-400 font-bold truncate">Completed</span>
@@ -891,12 +921,12 @@ const Dashboard = () => {
               <span className="text-sm font-black text-purple-800 dark:text-purple-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{completedTasks}</span>
             </div>
 
-            <div className="px-2 py-1.5 flex items-center justify-between transition-all rounded-lg bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
+            <div className="px-2 py-1.5 flex items-center justify-between transition-all">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0"></span>
-                <span className="text-xs text-rose-700 dark:text-rose-400 font-bold truncate">Overdue</span>
+                <span className="text-xs text-red-700 dark:text-red-400 font-bold truncate">Overdue</span>
               </div>
-              <span className="text-sm font-black text-rose-800 dark:text-rose-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{overdueTasks}</span>
+              <span className="text-sm font-black text-red-800 dark:text-red-300 ml-1.5" style={{ fontFamily: 'Manrope, sans-serif' }}>{overdueTasks}</span>
             </div>
           </div>
         </Card>
@@ -909,36 +939,46 @@ const Dashboard = () => {
           <button
             onClick={handleCheckOut}
             disabled={checkInLoading}
-            className="flex items-center justify-center gap-2.5 px-3 py-2.5 bg-white dark:bg-[#1a1714] border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50/70 dark:hover:bg-red-950/40 hover:border-red-400 dark:hover:border-red-700 rounded-2xl w-full h-14 transition-all duration-300 shadow-2xs hover:shadow-md cursor-pointer active:scale-[0.98]"
+            className="flex items-center justify-start gap-2.5 px-4 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs cursor-pointer border border-gray-200 dark:border-[#38352e] bg-white dark:bg-[#1a1714] hover:!border-[#ef4444] dark:hover:!border-[#f87171]"
           >
-            <LogOut size={20} className="shrink-0" />
-            <span className="text-xs font-bold whitespace-nowrap">Check Out</span>
+            <div className="inline-flex p-1.5 rounded-lg shrink-0 bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900/40">
+              {checkInLoading ? <Loader2 size={16} strokeWidth={2.5} className="animate-spin text-rose-600 dark:text-rose-400" /> : <LogOut size={16} strokeWidth={2.5} className="text-rose-600 dark:text-rose-400" />}
+            </div>
+            <span className="text-xs font-bold text-[#201515] dark:text-white whitespace-nowrap">
+              {checkInLoading ? 'Checking Out...' : 'Check Out'}
+            </span>
           </button>
         ) : (
           <button
             onClick={handleCheckIn}
             disabled={checkInLoading}
-            className="flex items-center justify-center gap-2.5 px-3 py-2.5 bg-white dark:bg-[#1a1714] border border-emerald-200 dark:border-emerald-900/60 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/40 hover:border-emerald-400 dark:hover:border-emerald-700 rounded-2xl w-full h-14 transition-all duration-300 shadow-2xs hover:shadow-md cursor-pointer active:scale-[0.98]"
+            className="flex items-center justify-start gap-2.5 px-4 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs cursor-pointer border border-gray-200 dark:border-[#38352e] bg-white dark:bg-[#1a1714] hover:!border-[#10b981] dark:hover:!border-[#34d399]"
           >
-            <LogIn size={20} className="shrink-0" />
-            <span className="text-xs font-bold whitespace-nowrap">Check In</span>
+            <div className="inline-flex p-1.5 rounded-lg shrink-0 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40">
+              {checkInLoading ? <Loader2 size={16} strokeWidth={2.5} className="animate-spin text-emerald-600 dark:text-emerald-400" /> : <LogIn size={16} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />}
+            </div>
+            <span className="text-xs font-bold text-[#201515] dark:text-white whitespace-nowrap">
+              {checkInLoading ? 'Checking In...' : 'Check In'}
+            </span>
           </button>
         )}
 
         {[
-          { icon: <CalendarPlus size={20} />, label: 'Apply Leave', style: 'border-blue-200 dark:border-blue-900/60 text-blue-600 dark:text-blue-400 hover:bg-blue-50/70 dark:hover:bg-blue-950/40 hover:border-blue-400 dark:hover:border-blue-700', to: '/employee/leave' },
-          { icon: <Briefcase size={20} />, label: 'My Tasks', style: 'border-purple-200 dark:border-purple-900/60 text-purple-600 dark:text-purple-400 hover:bg-purple-50/70 dark:hover:bg-purple-950/40 hover:border-purple-400 dark:hover:border-purple-700', to: '/employee/task-management' },
-          { icon: <Clock size={20} />, label: 'Attendance', style: 'border-amber-200 dark:border-amber-900/60 text-amber-600 dark:text-amber-400 hover:bg-amber-50/70 dark:hover:bg-amber-950/40 hover:border-amber-400 dark:hover:border-amber-700', to: '/employee/attendance' },
-          { icon: <FileText size={20} />, label: 'Payslip', style: 'border-pink-200 dark:border-pink-900/60 text-pink-600 dark:text-pink-400 hover:bg-pink-50/70 dark:hover:bg-pink-950/40 hover:border-pink-400 dark:hover:border-pink-700', to: '/employee/payslips' },
-          { icon: <User size={20} />, label: 'My Profile', style: 'border-emerald-200 dark:border-emerald-900/60 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/40 hover:border-emerald-400 dark:hover:border-emerald-700', to: '/employee/profile' }
+          { icon: <CalendarPlus size={16} strokeWidth={2.5} className="text-blue-600 dark:text-blue-400" />, label: 'Apply Leave', hoverClass: 'hover:!border-[#3b82f6] dark:hover:!border-[#60a5fa]', iconBg: 'bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/40', to: '/employee/leave' },
+          { icon: <Briefcase size={16} strokeWidth={2.5} className="text-purple-600 dark:text-purple-400" />, label: 'My Tasks', hoverClass: 'hover:!border-[#8b5cf6] dark:hover:!border-[#a78bfa]', iconBg: 'bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/40', to: '/employee/task-management' },
+          { icon: <Clock size={16} strokeWidth={2.5} className="text-amber-600 dark:text-amber-400" />, label: 'Attendance', hoverClass: 'hover:!border-[#f59e0b] dark:hover:!border-[#fbbf24]', iconBg: 'bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900/40', to: '/employee/attendance' },
+          { icon: <FileText size={16} strokeWidth={2.5} className="text-pink-600 dark:text-pink-400" />, label: 'Payslip', hoverClass: 'hover:!border-[#ec4899] dark:hover:!border-[#f472b6]', iconBg: 'bg-pink-50 dark:bg-pink-950/50 border border-pink-100 dark:border-pink-900/40', to: '/employee/payslips' },
+          { icon: <User size={16} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />, label: 'My Profile', hoverClass: 'hover:!border-[#10b981] dark:hover:!border-[#34d399]', iconBg: 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40', to: '/employee/profile' }
         ].map((act, i) => (
           <button
             key={i}
             onClick={() => navigate(act.to)}
-            className={`flex items-center justify-center gap-2.5 px-3 py-2.5 bg-white dark:bg-[#1a1714] border ${act.style} rounded-2xl w-full h-14 transition-all duration-300 shadow-2xs hover:shadow-md cursor-pointer active:scale-[0.98]`}
+            className={`flex items-center justify-start gap-2.5 px-4 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs cursor-pointer border border-gray-200 dark:border-[#38352e] bg-white dark:bg-[#1a1714] ${act.hoverClass}`}
           >
-            <span className="shrink-0">{act.icon}</span>
-            <span className="text-xs font-bold whitespace-nowrap">{act.label}</span>
+            <div className={`inline-flex p-1.5 rounded-lg shrink-0 ${act.iconBg}`}>
+              {act.icon}
+            </div>
+            <span className="text-xs font-bold text-[#201515] dark:text-white whitespace-nowrap">{act.label}</span>
           </button>
         ))}
       </div>
@@ -946,7 +986,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         {/* 8. UPCOMING HOLIDAYS */}
         <div className="cursor-pointer" onClick={() => navigate('/employee/holidays')}>
-          <Card className="h-72 overflow-hidden hover:!border-indigo-500 dark:hover:!border-indigo-400 transition-all duration-300">
+          <Card className="h-72 overflow-hidden transition-colors duration-300 hover:!border-[#6366f1] dark:hover:!border-[#818cf8]">
             <h3 className="font-bold text-[#201515] dark:text-white text-sm mb-2.5 pb-1.5 border-b border-[#eceae3] dark:border-[#38352e]" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Upcoming Holidays
             </h3>
@@ -972,7 +1012,7 @@ const Dashboard = () => {
 
         {/* 9. UPCOMING EVENTS */}
         <div className="cursor-pointer" onClick={() => navigate('/employee/events')}>
-          <Card className="h-72 overflow-y-auto hover:!border-orange-500 dark:hover:!border-orange-400 transition-all duration-300">
+          <Card className="h-72 overflow-y-auto transition-colors duration-300 hover:!border-[#f97316] dark:hover:!border-[#fb923c]">
             <h3 className="font-bold text-[#201515] dark:text-white text-sm mb-3.5 pb-2 border-b border-[#eceae3] dark:border-[#38352e]" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Upcoming Events
             </h3>
@@ -1011,13 +1051,13 @@ const Dashboard = () => {
 
         {/* 11. LATEST PAYSLIP */}
         <div className="cursor-pointer" onClick={() => navigate('/employee/payslips')}>
-          <Card className="h-72 overflow-y-auto hover:!border-emerald-500 dark:hover:!border-emerald-400 transition-all duration-300">
+          <Card className="h-72 overflow-y-auto transition-colors duration-300 hover:!border-[#10b981] dark:hover:!border-[#34d399]">
             <h3 className="font-bold text-[#201515] dark:text-white text-sm mb-3.5 pb-2 border-b border-[#eceae3] dark:border-[#38352e]" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Latest Payslips
             </h3>
             <div className="space-y-3">
               {recentPayslips.length > 0 ? recentPayslips.map((ps, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 border border-[#eceae3] dark:border-[#38352e] rounded-xl bg-white dark:bg-[#14120e] hover:border-[#00a76b] transition-colors">
+                <div key={idx} className="flex items-center justify-between p-3 border border-[#eceae3] dark:border-[#38352e] rounded-xl bg-white dark:bg-[#14120e] transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-[#f0fdf4] dark:bg-[#064e3b] border border-[#bbf7d0] dark:border-[#047857] rounded-xl flex items-center justify-center shrink-0">
                       <FileText size={20} className="text-[#00a76b] dark:text-[#a7f3d0]" />
@@ -1046,7 +1086,7 @@ const Dashboard = () => {
           {/* Total Leaves */}
           <div
             onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/20 dark:hover:bg-blue-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
+            className="group border border-gray-200/80 dark:border-gray-800/80 hover:!border-blue-500 dark:hover:!border-blue-400 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] cursor-pointer select-none"
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="bg-blue-50 dark:bg-blue-950/60 p-1.5 rounded-lg text-blue-600 dark:text-blue-400 transition-colors duration-300 border border-blue-100 dark:border-blue-900/40 shrink-0">
@@ -1060,7 +1100,7 @@ const Dashboard = () => {
           {/* Used Leaves */}
           <div
             onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-amber-500 dark:hover:border-amber-400 hover:bg-amber-50/20 dark:hover:bg-amber-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
+            className="group border border-gray-200/80 dark:border-gray-800/80 hover:!border-amber-500 dark:hover:!border-amber-400 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] cursor-pointer select-none"
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="bg-amber-50 dark:bg-amber-950/60 p-1.5 rounded-lg text-amber-600 dark:text-amber-400 transition-colors duration-300 border border-amber-100 dark:border-amber-900/40 shrink-0">
@@ -1074,7 +1114,7 @@ const Dashboard = () => {
           {/* Pending Leaves */}
           <div
             onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50/20 dark:hover:bg-purple-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
+            className="group border border-gray-200/80 dark:border-gray-800/80 hover:!border-purple-500 dark:hover:!border-purple-400 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] cursor-pointer select-none"
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="bg-purple-50 dark:bg-purple-950/60 p-1.5 rounded-lg text-purple-600 dark:text-purple-400 transition-colors duration-300 border border-purple-100 dark:border-purple-900/40 shrink-0">
@@ -1088,7 +1128,7 @@ const Dashboard = () => {
           {/* Approved Leaves */}
           <div
             onClick={() => navigate('/employee/leave')}
-            className="group border border-gray-200/80 dark:border-gray-800/80 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/30 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] hover:shadow-md cursor-pointer hover:-translate-y-0.5 select-none"
+            className="group border border-gray-200/80 dark:border-gray-800/80 hover:!border-emerald-500 dark:hover:!border-emerald-400 transition-all duration-300 rounded-xl px-3.5 py-2.5 flex items-center justify-between bg-white dark:bg-[#151c28] cursor-pointer select-none"
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="bg-emerald-50 dark:bg-emerald-950/60 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 transition-colors duration-300 border border-emerald-100 dark:border-emerald-900/40 shrink-0">
@@ -1103,7 +1143,7 @@ const Dashboard = () => {
 
       {/* 12. BIRTHDAYS & ANNIVERSARIES */}
       <div className="grid grid-cols-1 gap-6">
-        <Card className="p-5 overflow-hidden">
+        <Card className="p-5 overflow-hidden hover:!border-[#00a76b] dark:hover:!border-[#34d399] transition-colors duration-300">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-[#eceae3] dark:border-[#38352e]">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-center text-[#00a76b] shadow-xs">
@@ -1153,137 +1193,137 @@ const Dashboard = () => {
             </div>
           </div>
           {events.filter(e => eventFilter === 'all' || e.type === eventFilter).length > 0 ? (
-              <div className="flex overflow-x-auto gap-2.5 pb-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-neutral-800 snap-x">
-                {events
-                  .filter(e => eventFilter === 'all' || e.type === eventFilter)
-                  .map((ann, i) => {
-                    const isToday = ann.daysLeft === 0;
-                    const isPast = ann.daysLeft < 0;
-                    const isWished = wishedEvents.includes(ann.id || `event-${i}`);
-                    const isBirthday = ann.type === 'birthday';
-                    const yrSuffix = ann.years ? ((ann.years % 10 === 1 && ann.years !== 11) ? 'st' : (ann.years % 10 === 2 && ann.years !== 12) ? 'nd' : (ann.years % 10 === 3 && ann.years !== 13) ? 'rd' : 'th') : '';
+            <div className="flex overflow-x-auto gap-2.5 pb-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-neutral-800 snap-x">
+              {events
+                .filter(e => eventFilter === 'all' || e.type === eventFilter)
+                .map((ann, i) => {
+                  const isToday = ann.daysLeft === 0;
+                  const isPast = ann.daysLeft < 0;
+                  const isWished = wishedEvents.includes(ann.id || `event-${i}`);
+                  const isBirthday = ann.type === 'birthday';
+                  const yrSuffix = ann.years ? ((ann.years % 10 === 1 && ann.years !== 11) ? 'st' : (ann.years % 10 === 2 && ann.years !== 12) ? 'nd' : (ann.years % 10 === 3 && ann.years !== 13) ? 'rd' : 'th') : '';
 
-                    return (
-                      <div
-                        key={ann.id || i}
-                        className="relative overflow-hidden rounded-2xl p-3.5 transition-all duration-300 flex flex-col justify-between border shrink-0 w-[260px] sm:w-[calc(50%-5px)] lg:w-[calc(25%-7.5px)] snap-start bg-white dark:bg-[#14120e] border-[#eceae3] dark:border-[#38352e] hover:border-[#00a76b] dark:hover:border-emerald-500 hover:shadow-md"
-                      >
-                        {/* Top Row: Avatar + Info */}
-                        <div className="flex items-start gap-3">
-                          <div className="relative shrink-0">
-                            {ann.avatar ? (
-                              <img
-                                src={ann.avatar.startsWith('http') || ann.avatar.startsWith('/') ? ann.avatar : `/${ann.avatar}`}
-                                alt={ann.name}
-                                className="w-11 h-11 rounded-xl object-cover ring-2 ring-white dark:ring-[#14120e] shadow-sm shrink-0"
-                              />
+                  return (
+                    <div
+                      key={ann.id || i}
+                      className="relative overflow-hidden rounded-2xl p-3.5 transition-all duration-200 flex flex-col justify-between border shrink-0 w-[260px] sm:w-[calc(50%-5px)] lg:w-[calc(25%-7.5px)] snap-start bg-white dark:bg-[#14120e] border-[#eceae3] dark:border-[#38352e] hover:!border-[#10b981] dark:hover:!border-[#34d399]"
+                    >
+                      {/* Top Row: Avatar + Info */}
+                      <div className="flex items-start gap-3">
+                        <div className="relative shrink-0">
+                          {ann.avatar ? (
+                            <img
+                              src={ann.avatar.startsWith('http') || ann.avatar.startsWith('/') ? ann.avatar : `/${ann.avatar}`}
+                              alt={ann.name}
+                              className="w-11 h-11 rounded-xl object-cover ring-2 ring-white dark:ring-[#14120e] shadow-sm shrink-0"
+                            />
+                          ) : (
+                            <div
+                              className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-base shadow-sm shrink-0"
+                              style={{
+                                background: 'linear-gradient(135deg, #00a76b 0%, #059669 100%)'
+                              }}
+                            >
+                              {ann.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full bg-white dark:bg-[#14120e] shadow-sm flex items-center justify-center border border-gray-100 dark:border-[#2f2b24]">
+                            {isBirthday ? (
+                              <Cake size={10} className="text-amber-500" />
                             ) : (
-                              <div
-                                className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-base shadow-sm shrink-0"
-                                style={{
-                                  background: 'linear-gradient(135deg, #00a76b 0%, #059669 100%)'
-                                }}
-                              >
-                                {ann.name.charAt(0).toUpperCase()}
-                              </div>
+                              <Sparkles size={10} className="text-amber-500" />
                             )}
-                            <span className="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full bg-white dark:bg-[#14120e] shadow-sm flex items-center justify-center border border-gray-100 dark:border-[#2f2b24]">
-                              {isBirthday ? (
-                                <Cake size={10} className="text-amber-500" />
-                              ) : (
-                                <Sparkles size={10} className="text-amber-500" />
-                              )}
-                            </span>
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">
-                              {ann.name}
-                            </h4>
-                            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                              {ann.role}
-                            </p>
-                            {ann.department && (
-                              <span className="inline-block text-[10px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md mt-1 truncate max-w-full">
-                                {ann.department}
-                              </span>
-                            )}
-                          </div>
+                          </span>
                         </div>
 
-                        {/* Celebration Status / Timing & Action (Tightly grouped with minimal gap) */}
-                        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-[#282520] flex items-center gap-2.5 flex-wrap">
-                          {isToday ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-[#00a76b] dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
-                              <Sparkles size={12} /> {isBirthday ? 'Birthday Today!' : `${ann.years ? ann.years + yrSuffix + ' ' : ''}Anniversary Today!`}
-                            </span>
-                          ) : isPast ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-emerald-50/70 dark:bg-emerald-950/30 text-[#00a76b] dark:text-emerald-400 border border-emerald-200/50">
-                              <Sparkles size={12} className="text-[#00a76b]" />
-                              {isBirthday ? `Celebrated ${Math.abs(ann.daysLeft)}d ago` : `${ann.years ? ann.years + yrSuffix + ' ' : ''}Anniversary (${Math.abs(ann.daysLeft)}d ago)`}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300">
-                              <Calendar size={12} className="text-gray-400" />
-                              {ann.daysLeft === 1 ? (isBirthday ? 'Tomorrow' : `Tomorrow (${ann.years ? ann.years + yrSuffix : '1st'})`) : (isBirthday ? `In ${ann.daysLeft} days` : `${ann.years ? ann.years + yrSuffix + ' ' : ''}Anniversary in ${ann.daysLeft}d`)}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                            {ann.name}
+                          </h4>
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                            {ann.role}
+                          </p>
+                          {ann.department && (
+                            <span className="inline-block text-[10px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md mt-1 truncate max-w-full">
+                              {ann.department}
                             </span>
                           )}
-
-                          {/* Quick Wish Button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const eventKey = ann.id || `event-${i}`;
-                              if (!wishedEvents.includes(eventKey)) {
-                                setWishedEvents(prev => [...prev, eventKey]);
-                              }
-                            }}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 shrink-0 cursor-pointer ${isWished
-                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-[#00a76b] dark:text-emerald-400 border border-[#00a76b]/30 dark:border-emerald-800/40 shadow-xs'
-                              : isToday || isPast
-                                ? 'bg-[#00a76b] hover:bg-[#008f5b] text-white shadow-sm shadow-[#00a76b]/20 active:scale-95'
-                                : 'bg-white hover:bg-gray-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 active:scale-95'
-                              }`}
-                          >
-                            {isWished ? (
-                              <>
-                                <Heart size={12} className="fill-[#00a76b] text-[#00a76b]" />
-                                <span>Wished! 💖</span>
-                              </>
-                            ) : (
-                              <>
-                                <PartyPopper size={12} />
-                                <span>{isToday || isPast ? 'Wish Now' : 'Wish'}</span>
-                              </>
-                            )}
-                          </button>
                         </div>
                       </div>
-                    );
-                  })}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 flex items-center justify-center text-amber-500 mb-3 shadow-inner">
-                  <Cake size={32} />
-                </div>
-                <h4 className="font-bold text-gray-800 dark:text-gray-200 text-sm">No Upcoming Celebrations</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mt-1">
-                  {eventFilter === 'all'
-                    ? 'There are no team birthdays or work anniversaries scheduled in the next 14 days.'
-                    : `No ${eventFilter === 'birthday' ? 'birthdays' : 'work anniversaries'} found in this category.`}
-                </p>
-              </div>
-            )}
 
-            {/* Bottom Footer Directory Link */}
-            <div className="mt-5 pt-3.5 border-t border-[#eceae3] dark:border-[#38352e] flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-              <span className="flex items-center gap-1.5 font-medium">
-                <span>✨</span>
-                <span>Connect with colleagues and celebrate milestones together!</span>
-              </span>
+                      {/* Celebration Status / Timing & Action (Tightly grouped with minimal gap) */}
+                      <div className="mt-4 pt-3 border-t border-gray-100 dark:border-[#282520] flex items-center gap-2.5 flex-wrap">
+                        {isToday ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-[#00a76b] dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
+                            <Sparkles size={12} /> {isBirthday ? 'Birthday Today!' : `${ann.years ? ann.years + yrSuffix + ' ' : ''}Anniversary Today!`}
+                          </span>
+                        ) : isPast ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-emerald-50/70 dark:bg-emerald-950/30 text-[#00a76b] dark:text-emerald-400 border border-emerald-200/50">
+                            <Sparkles size={12} className="text-[#00a76b]" />
+                            {isBirthday ? `Celebrated ${Math.abs(ann.daysLeft)}d ago` : `${ann.years ? ann.years + yrSuffix + ' ' : ''}Anniversary (${Math.abs(ann.daysLeft)}d ago)`}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300">
+                            <Calendar size={12} className="text-gray-400" />
+                            {ann.daysLeft === 1 ? (isBirthday ? 'Tomorrow' : `Tomorrow (${ann.years ? ann.years + yrSuffix : '1st'})`) : (isBirthday ? `In ${ann.daysLeft} days` : `${ann.years ? ann.years + yrSuffix + ' ' : ''}Anniversary in ${ann.daysLeft}d`)}
+                          </span>
+                        )}
+
+                        {/* Quick Wish Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const eventKey = ann.id || `event-${i}`;
+                            if (!wishedEvents.includes(eventKey)) {
+                              setWishedEvents(prev => [...prev, eventKey]);
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 shrink-0 cursor-pointer ${isWished
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-[#00a76b] dark:text-emerald-400 border border-[#00a76b]/30 dark:border-emerald-800/40 shadow-xs'
+                            : isToday || isPast
+                              ? 'bg-[#00a76b] hover:bg-[#008f5b] text-white shadow-sm shadow-[#00a76b]/20 active:scale-95'
+                              : 'bg-white hover:bg-gray-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 active:scale-95'
+                            }`}
+                        >
+                          {isWished ? (
+                            <>
+                              <Heart size={12} className="fill-[#00a76b] text-[#00a76b]" />
+                              <span>Wished! 💖</span>
+                            </>
+                          ) : (
+                            <>
+                              <PartyPopper size={12} />
+                              <span>{isToday || isPast ? 'Wish Now' : 'Wish'}</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
-          </Card>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 flex items-center justify-center text-amber-500 mb-3 shadow-inner">
+                <Cake size={32} />
+              </div>
+              <h4 className="font-bold text-gray-800 dark:text-gray-200 text-sm">No Upcoming Celebrations</h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mt-1">
+                {eventFilter === 'all'
+                  ? 'There are no team birthdays or work anniversaries scheduled in the next 14 days.'
+                  : `No ${eventFilter === 'birthday' ? 'birthdays' : 'work anniversaries'} found in this category.`}
+              </p>
+            </div>
+          )}
+
+          {/* Bottom Footer Directory Link */}
+          <div className="mt-5 pt-3.5 border-t border-[#eceae3] dark:border-[#38352e] flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <span className="flex items-center gap-1.5 font-medium">
+              <span>✨</span>
+              <span>Connect with colleagues and celebrate milestones together!</span>
+            </span>
+          </div>
+        </Card>
       </div>
 
       {/* ⚠️ FluidHR Desktop Application Missing Modal */}

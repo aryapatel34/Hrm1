@@ -21,6 +21,7 @@ const LeaveManagement = () => {
   const [viewMode, setViewMode] = useState('manager');
   const [isLeaveTodayDrawerOpen, setIsLeaveTodayDrawerOpen] = useState(false);
   const [isUpcomingLeavesDrawerOpen, setIsUpcomingLeavesDrawerOpen] = useState(false);
+  const [hoveredCardIndex, setHoveredCardIndex] = useState(null);
   const [applyDropdownOpen, setApplyDropdownOpen] = useState(false);
 
   const fetchStats = async () => {
@@ -109,7 +110,17 @@ const LeaveManagement = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         
             {/* Pending Approvals */}
-            <div className="bg-white dark:bg-[#1e293b] py-3.5 px-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between min-h-[140px] hover:border-purple-500 hover:shadow-purple-500/5 transition-all cursor-pointer group">
+            <div
+              onMouseEnter={() => setHoveredCardIndex(0)}
+              onMouseLeave={() => setHoveredCardIndex(null)}
+              style={{
+                borderColor: hoveredCardIndex === 0 ? '#a855f7' : undefined,
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                boxShadow: hoveredCardIndex === 0 ? '0 0 16px rgba(168, 85, 247, 0.35)' : undefined
+              }}
+              className="bg-white dark:bg-[#1e293b] py-3.5 px-5 rounded-2xl border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between min-h-[140px] transition-all cursor-pointer group"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
                   <ClipboardList className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -124,7 +135,17 @@ const LeaveManagement = () => {
             </div>
 
             {/* Employees On Leave Today */}
-            <div className="bg-white dark:bg-[#1e293b] py-3.5 px-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between min-h-[140px] hover:border-emerald-500 hover:shadow-emerald-500/5 transition-all cursor-pointer group">
+            <div
+              onMouseEnter={() => setHoveredCardIndex(1)}
+              onMouseLeave={() => setHoveredCardIndex(null)}
+              style={{
+                borderColor: hoveredCardIndex === 1 ? '#10b981' : undefined,
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                boxShadow: hoveredCardIndex === 1 ? '0 0 16px rgba(16, 185, 129, 0.35)' : undefined
+              }}
+              className="bg-white dark:bg-[#1e293b] py-3.5 px-5 rounded-2xl border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between min-h-[140px] transition-all cursor-pointer group"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
                   <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
@@ -139,7 +160,17 @@ const LeaveManagement = () => {
             </div>
 
             {/* Upcoming Leaves */}
-            <div className="bg-white dark:bg-[#1e293b] py-3.5 px-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between min-h-[140px] hover:border-orange-500 hover:shadow-orange-500/5 transition-all cursor-pointer group">
+            <div
+              onMouseEnter={() => setHoveredCardIndex(2)}
+              onMouseLeave={() => setHoveredCardIndex(null)}
+              style={{
+                borderColor: hoveredCardIndex === 2 ? '#f59e0b' : undefined,
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                boxShadow: hoveredCardIndex === 2 ? '0 0 16px rgba(245, 158, 11, 0.35)' : undefined
+              }}
+              className="bg-white dark:bg-[#1e293b] py-3.5 px-5 rounded-2xl border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between min-h-[140px] transition-all cursor-pointer group"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
                   <CalendarDays className="w-5 h-5 text-orange-600 dark:text-orange-400" />
@@ -157,7 +188,17 @@ const LeaveManagement = () => {
             </div>
 
             {/* Team Availability */}
-            <div className="bg-white dark:bg-[#1e293b] py-3.5 px-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between min-h-[140px] hover:border-blue-500 hover:shadow-blue-500/5 transition-all cursor-pointer group">
+            <div
+              onMouseEnter={() => setHoveredCardIndex(3)}
+              onMouseLeave={() => setHoveredCardIndex(null)}
+              style={{
+                borderColor: hoveredCardIndex === 3 ? '#3b82f6' : undefined,
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                boxShadow: hoveredCardIndex === 3 ? '0 0 16px rgba(59, 130, 246, 0.35)' : undefined
+              }}
+              className="bg-white dark:bg-[#1e293b] py-3.5 px-5 rounded-2xl border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between min-h-[140px] transition-all cursor-pointer group"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
                   <PieChart className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -177,7 +218,17 @@ const LeaveManagement = () => {
             </div>
 
             {/* This Month Requests */}
-            <div className="bg-white dark:bg-[#1e293b] py-3.5 px-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between min-h-[140px] hover:border-indigo-500 hover:shadow-indigo-500/5 transition-all cursor-pointer group">
+            <div
+              onMouseEnter={() => setHoveredCardIndex(4)}
+              onMouseLeave={() => setHoveredCardIndex(null)}
+              style={{
+                borderColor: hoveredCardIndex === 4 ? '#6366f1' : undefined,
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                boxShadow: hoveredCardIndex === 4 ? '0 0 16px rgba(99, 102, 241, 0.35)' : undefined
+              }}
+              className="bg-white dark:bg-[#1e293b] py-3.5 px-5 rounded-2xl border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between min-h-[140px] transition-all cursor-pointer group"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
                   <TrendingUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />

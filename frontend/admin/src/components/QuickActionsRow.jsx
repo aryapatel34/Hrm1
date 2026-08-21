@@ -174,11 +174,46 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
   const leaveLabel = role === 'admin' ? 'View Team Leave' : 'Apply Leave';
 
   const actions = [
-    { icon: <CalendarPlus size={20} />, label: leaveLabel, color: '#3b82f6', border: '#3b82f6', darkBorder: '#3b82f6', bgHover: '#eff6ff', darkBgHover: 'rgba(59, 130, 246, 0.18)', to: routes.leave },
-    { icon: <Briefcase size={20} />, label: 'My Tasks', color: '#8b5cf6', border: '#8b5cf6', darkBorder: '#8b5cf6', bgHover: '#f5f3ff', darkBgHover: 'rgba(139, 92, 246, 0.18)', to: routes.tasks },
-    { icon: <Clock size={20} />, label: 'Time Tracker', color: '#f59e0b', border: '#f59e0b', darkBorder: '#f59e0b', bgHover: '#fffbeb', darkBgHover: 'rgba(245, 158, 11, 0.18)', to: routes.timeTracker },
-    { icon: <FileText size={20} />, label: 'Payslip', color: '#ec4899', border: '#ec4899', darkBorder: '#ec4899', bgHover: '#fdf2f8', darkBgHover: 'rgba(236, 72, 153, 0.18)', to: routes.payroll },
-    { icon: <User size={20} />, label: 'View Profile', color: '#10b981', border: '#10b981', darkBorder: '#10b981', bgHover: '#ecfdf5', darkBgHover: 'rgba(16, 185, 129, 0.18)', to: routes.profile },
+    {
+      icon: <CalendarPlus size={16} strokeWidth={2.5} className="text-blue-600 dark:text-blue-400" />,
+      label: leaveLabel,
+      color: '#3b82f6',
+      glowColor: 'rgba(59, 130, 246, 0.45)',
+      iconBg: 'bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/40',
+      to: routes.leave
+    },
+    {
+      icon: <Briefcase size={16} strokeWidth={2.5} className="text-purple-600 dark:text-purple-400" />,
+      label: 'My Tasks',
+      color: '#8b5cf6',
+      glowColor: 'rgba(139, 92, 246, 0.45)',
+      iconBg: 'bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/40',
+      to: routes.tasks
+    },
+    {
+      icon: <Clock size={16} strokeWidth={2.5} className="text-amber-600 dark:text-amber-400" />,
+      label: 'Time Tracker',
+      color: '#f59e0b',
+      glowColor: 'rgba(245, 158, 11, 0.45)',
+      iconBg: 'bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900/40',
+      to: routes.timeTracker
+    },
+    {
+      icon: <FileText size={16} strokeWidth={2.5} className="text-pink-600 dark:text-pink-400" />,
+      label: 'Payslip',
+      color: '#ec4899',
+      glowColor: 'rgba(236, 72, 153, 0.45)',
+      iconBg: 'bg-pink-50 dark:bg-pink-950/50 border border-pink-100 dark:border-pink-900/40',
+      to: routes.payroll
+    },
+    {
+      icon: <User size={16} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />,
+      label: 'View Profile',
+      color: '#10b981',
+      glowColor: 'rgba(16, 185, 129, 0.45)',
+      iconBg: 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40',
+      to: routes.profile
+    },
   ];
 
   return (
@@ -198,18 +233,17 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
             onMouseEnter={() => setCheckInHovered(true)}
             onMouseLeave={() => setCheckInHovered(false)}
             disabled={checkInLoading}
-            className="flex items-center justify-start gap-3 px-4 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-start gap-2.5 px-4 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs cursor-pointer disabled:opacity-50 border border-gray-200 dark:border-[#28251e] bg-white dark:bg-[#151c28]"
             style={{
-              backgroundColor: checkInHovered ? (isDark ? 'rgba(239, 68, 68, 0.18)' : '#fef2f2') : (isDark ? '#151c28' : '#ffffff'),
+              borderColor: checkInHovered ? '#ef4444' : undefined,
               borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: checkInHovered ? '#ef4444' : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'),
-              color: '#ef4444',
-              boxShadow: checkInHovered ? (isDark ? '0 0 16px rgba(239, 68, 68, 0.50)' : '0 4px 12px rgba(239, 68, 68, 0.20)') : 'none'
+              borderStyle: 'solid'
             }}
           >
-            {checkInLoading ? <Loader2 size={20} className="animate-spin shrink-0" /> : <LogOut size={20} className="shrink-0" />}
-            <span className="text-xs font-bold whitespace-nowrap">
+            <div className="inline-flex p-1.5 rounded-lg shrink-0 bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900/40">
+              {checkInLoading ? <Loader2 size={16} strokeWidth={2.5} className="animate-spin text-rose-600 dark:text-rose-400" /> : <LogOut size={16} strokeWidth={2.5} className="text-rose-600 dark:text-rose-400" />}
+            </div>
+            <span className="text-xs font-bold text-gray-900 dark:text-white whitespace-nowrap">
               {checkInLoading ? 'Checking Out...' : 'Check Out'}
             </span>
           </button>
@@ -220,18 +254,17 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
             onMouseEnter={() => setCheckInHovered(true)}
             onMouseLeave={() => setCheckInHovered(false)}
             disabled={checkInLoading}
-            className="flex items-center justify-start gap-3 px-4 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-start gap-2.5 px-4 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs cursor-pointer disabled:opacity-50 border border-gray-200 dark:border-[#28251e] bg-white dark:bg-[#151c28]"
             style={{
-              backgroundColor: checkInHovered ? (isDark ? 'rgba(16, 185, 129, 0.18)' : '#f0fdf4') : (isDark ? '#151c28' : '#ffffff'),
+              borderColor: checkInHovered ? '#10b981' : undefined,
               borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: checkInHovered ? (isDark ? '#10b981' : '#00a76b') : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'),
-              color: '#00a76b',
-              boxShadow: checkInHovered ? (isDark ? '0 0 16px rgba(16, 185, 129, 0.50)' : '0 4px 12px rgba(16, 185, 129, 0.20)') : 'none'
+              borderStyle: 'solid'
             }}
           >
-            {checkInLoading ? <Loader2 size={20} className="animate-spin shrink-0" /> : <LogIn size={20} className="shrink-0" />}
-            <span className="text-xs font-bold whitespace-nowrap">
+            <div className="inline-flex p-1.5 rounded-lg shrink-0 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40">
+              {checkInLoading ? <Loader2 size={16} strokeWidth={2.5} className="animate-spin text-emerald-600 dark:text-emerald-400" /> : <LogIn size={16} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />}
+            </div>
+            <span className="text-xs font-bold text-gray-900 dark:text-white whitespace-nowrap">
               {checkInLoading ? 'Checking In...' : 'Check In'}
             </span>
           </button>
@@ -247,18 +280,17 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
               onClick={() => navigate(act.to)}
               onMouseEnter={() => setHoveredIndex(i)}
               onMouseLeave={() => setHoveredIndex(null)}
-              className="flex items-center justify-start gap-3 px-4 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs hover:-translate-y-0.5 cursor-pointer"
+              className="flex items-center justify-start gap-2.5 px-4 py-2.5 rounded-2xl w-full h-14 transition-all duration-200 shadow-xs cursor-pointer border border-gray-200 dark:border-[#28251e] bg-white dark:bg-[#151c28]"
               style={{
-                backgroundColor: isHovered ? (isDark ? act.darkBgHover : act.bgHover) : (isDark ? '#151c28' : '#ffffff'),
+                borderColor: isHovered ? act.color : undefined,
                 borderWidth: '1px',
-                borderStyle: 'solid',
-                borderColor: isHovered ? (isDark ? act.darkBorder : act.border) : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'),
-                color: act.color,
-                boxShadow: isHovered ? (isDark ? `0 0 16px ${act.darkBorder}60` : `0 4px 12px ${act.color}25`) : 'none'
+                borderStyle: 'solid'
               }}
             >
-              <span className="shrink-0">{act.icon}</span>
-              <span className="text-xs font-bold whitespace-nowrap">{act.label}</span>
+              <div className={`inline-flex p-1.5 rounded-lg shrink-0 ${act.iconBg}`}>
+                {act.icon}
+              </div>
+              <span className="text-xs font-bold text-gray-900 dark:text-white whitespace-nowrap">{act.label}</span>
             </button>
           );
         })}

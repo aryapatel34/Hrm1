@@ -35,7 +35,7 @@ const HolidayManagement = ({ refreshTrigger }) => {
       });
 
       toast.success(res.data?.message || 'Holidays imported successfully!');
-      
+
       const updatedRes = await axios.get('/api/holidays?all=true', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -56,7 +56,7 @@ const HolidayManagement = ({ refreshTrigger }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Holiday status updated successfully');
-      
+
       const res = await axios.get('/api/holidays?all=true', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -83,7 +83,7 @@ const HolidayManagement = ({ refreshTrigger }) => {
     <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 flex flex-col h-full transition-all duration-200 hover:border-pink-500">
       <div className="flex justify-between items-center mb-3.5">
         <h2 className="text-base font-bold text-gray-900 dark:text-white">Upcoming Holidays</h2>
-        <button 
+        <button
           onClick={() => setIsDrawerOpen(true)}
           className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
         >
@@ -113,22 +113,20 @@ const HolidayManagement = ({ refreshTrigger }) => {
                     {new Date(holiday.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </td>
                   <td className="px-3 py-2.5 text-center">
-                    <span className={`px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider ${
-                      holiday.type === 'Public' || holiday.type === 'National' || holiday.type === 'public' ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-50 text-gray-600'
-                    }`}>
+                    <span className={`px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider ${holiday.type === 'Public' || holiday.type === 'National' || holiday.type === 'public' ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-50 text-gray-600'
+                      }`}>
                       {holiday.type}
                     </span>
                   </td>
                   <td className="px-3 py-2.5 text-center relative">
                     <div className="flex items-center justify-center gap-1.5">
-                      <span className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider border ${
-                        holiday.isActive !== false 
-                          ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-950/20 dark:text-green-400 dark:border-green-800' 
+                      <span className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider border ${holiday.isActive !== false
+                          ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-950/20 dark:text-green-400 dark:border-green-800'
                           : 'bg-red-50 text-red-600 border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-800'
-                      }`}>
+                        }`}>
                         {holiday.isActive !== false ? 'Given' : 'Not Given'}
                       </span>
-                      
+
                       {/* Edit Button - Visible on hover of the row */}
                       <button
                         onClick={(e) => {

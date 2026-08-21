@@ -99,12 +99,12 @@ const LeaveAnalyticsCharts = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-      
+
       {/* Monthly Leave Trend */}
-      <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-[350px] transition-all duration-200 hover:border-blue-500">
+      <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-[350px] transition-colors duration-300 hover:!border-blue-500 dark:hover:!border-blue-400">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Monthly Leave Trend <span className="text-gray-500 text-sm font-medium">(This Year)</span></h2>
-          <button 
+          <button
             onClick={() => setReportModal('monthly')}
             className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-bold hover:underline cursor-pointer flex items-center gap-1"
           >
@@ -121,14 +121,14 @@ const LeaveAnalyticsCharts = () => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} domain={[0, 'dataMax']} />
-                <Tooltip 
+                <Tooltip
                   cursor={{ stroke: '#f3f4f6', strokeWidth: 2 }}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="#3b82f6" 
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#3b82f6"
                   strokeWidth={3}
                   dot={{ r: 4, strokeWidth: 2, fill: '#3b82f6', stroke: '#fff' }}
                   activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
@@ -144,10 +144,10 @@ const LeaveAnalyticsCharts = () => {
       </div>
 
       {/* Department Leave Analytics */}
-      <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-[350px] transition-all duration-200 hover:border-indigo-500">
+      <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-[350px] transition-colors duration-300 hover:!border-indigo-500 dark:hover:!border-indigo-400">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Department Leave Analytics <span className="text-gray-500 text-sm font-medium">(This Month)</span></h2>
-          <button 
+          <button
             onClick={() => setReportModal('department')}
             className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-bold hover:underline cursor-pointer flex items-center gap-1"
           >
@@ -184,7 +184,7 @@ const LeaveAnalyticsCharts = () => {
 
       {/* 📊 Interactive Detailed Report Modal */}
       {reportModal && createPortal(
-        <div 
+        <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setReportModal(null); }}
         >
@@ -204,7 +204,7 @@ const LeaveAnalyticsCharts = () => {
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setReportModal(null)}
                 className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
@@ -247,7 +247,7 @@ const LeaveAnalyticsCharts = () => {
 
             {/* Footer Actions */}
             <div className="pt-4 border-t border-gray-150 dark:border-gray-800 flex justify-end items-center gap-3 mt-4 shrink-0">
-              <button 
+              <button
                 onClick={() => setReportModal(null)}
                 className="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold transition-colors cursor-pointer"
               >

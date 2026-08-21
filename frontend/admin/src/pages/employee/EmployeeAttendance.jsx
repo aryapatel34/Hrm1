@@ -53,6 +53,7 @@ const EmployeeAttendance = () => {
   const [logs, setLogs] = useState([]);
   const [weeklyChartData, setWeeklyChartData] = useState({ this_week: [], last_week: [] });
   const [hoveredWeeklySlice, setHoveredWeeklySlice] = useState(null);
+  const [hoveredKpiIndex, setHoveredKpiIndex] = useState(null);
   const [statsPeriod, setStatsPeriod] = useState('week'); // 'week' | 'month' | 'year'
   const [periodStats, setPeriodStats] = useState(null);
 
@@ -371,64 +372,79 @@ const EmployeeAttendance = () => {
       </div>
 
       {/* ── KPI METRIC CARDS ── */}
-      <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-4 pb-2 hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-3.5 pb-2 hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {[
           {
             label: `PRESENT (${statsPeriod})`,
             value: periodStats?.present || 0,
-            icon: <CheckCircle size={18} className="text-emerald-500" />,
-            bg: 'bg-emerald-50 dark:bg-emerald-900/30',
-            hoverBorder: 'hover:border-emerald-500'
+            icon: <CheckCircle size={16} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />,
+            bg: 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40',
+            color: 'text-emerald-600 dark:text-emerald-400',
+            borderColor: '#10b981',
+            glowColor: 'rgba(16, 185, 129, 0.45)'
           },
           {
             label: `LATE (${statsPeriod})`,
             value: periodStats?.late || 0,
-            icon: <Clock size={18} className="text-amber-500" />,
-            bg: 'bg-amber-50 dark:bg-amber-900/30',
-            hoverBorder: 'hover:border-amber-500'
+            icon: <Clock size={16} strokeWidth={2.5} className="text-amber-600 dark:text-amber-400" />,
+            bg: 'bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900/40',
+            color: 'text-amber-600 dark:text-amber-400',
+            borderColor: '#f59e0b',
+            glowColor: 'rgba(245, 158, 11, 0.45)'
           },
           {
             label: `ABSENT (${statsPeriod})`,
             value: periodStats?.absent || 0,
-            icon: <XCircle size={18} className="text-red-500" />,
-            bg: 'bg-red-50 dark:bg-red-900/30',
-            hoverBorder: 'hover:border-red-500'
+            icon: <XCircle size={16} strokeWidth={2.5} className="text-red-600 dark:text-red-400" />,
+            bg: 'bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900/40',
+            color: 'text-red-600 dark:text-red-400',
+            borderColor: '#ef4444',
+            glowColor: 'rgba(239, 68, 68, 0.45)'
           },
           {
             label: `HALF DAY (${statsPeriod})`,
             value: periodStats?.halfDay || 0,
-            icon: <Sun size={18} className="text-blue-500" />,
-            bg: 'bg-blue-50 dark:bg-blue-900/30',
-            hoverBorder: 'hover:border-blue-500'
+            icon: <Sun size={16} strokeWidth={2.5} className="text-blue-600 dark:text-blue-400" />,
+            bg: 'bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/40',
+            color: 'text-blue-600 dark:text-blue-400',
+            borderColor: '#3b82f6',
+            glowColor: 'rgba(59, 130, 246, 0.45)'
           },
           {
             label: `LEAVE (${statsPeriod})`,
             value: periodStats?.leave || 0,
-            icon: <CalendarIcon size={18} className="text-purple-500" />,
-            bg: 'bg-purple-50 dark:bg-purple-900/30',
-            hoverBorder: 'hover:border-purple-500'
+            icon: <CalendarIcon size={16} strokeWidth={2.5} className="text-purple-600 dark:text-purple-400" />,
+            bg: 'bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/40',
+            color: 'text-purple-600 dark:text-purple-400',
+            borderColor: '#8b5cf6',
+            glowColor: 'rgba(139, 92, 246, 0.45)'
           }
-        ].map((card, i) => (
-          <div
-            key={i}
-            className={`group min-w-[210px] bg-white dark:bg-[#050c0a] p-4 rounded-2xl shadow-sm border border-slate-200/60 dark:border-[#1a2d29] ${card.hoverBorder} hover:shadow-md transition-all duration-300 flex items-center justify-between flex-1`}
-          >
-            <div className="flex items-center gap-3 overflow-hidden">
-              <div className={`p-2.5 rounded-xl shrink-0 ${card.bg}`}>
-                {card.icon}
+        ].map((card, i) => {
+          const isHovered = hoveredKpiIndex === i;
+          return (
+            <div
+              key={i}
+              onMouseEnter={() => setHoveredKpiIndex(i)}
+              onMouseLeave={() => setHoveredKpiIndex(null)}
+              style={{
+                borderColor: isHovered ? card.borderColor : undefined
+              }}
+              className="flex items-center justify-between gap-2.5 px-4 py-2.5 rounded-2xl h-14 w-full min-w-[190px] transition-all duration-200 shadow-xs cursor-pointer border border-gray-200 dark:border-[#28251e] bg-white dark:bg-[#151c28]"
+            >
+              <div className="flex items-center gap-2.5 overflow-hidden">
+                <div className={`inline-flex p-1.5 rounded-lg shrink-0 ${card.bg}`}>
+                  {card.icon}
+                </div>
+                <span className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider truncate" title={card.label}>
+                  {card.label}
+                </span>
               </div>
-              <span className="text-[10px] font-bold text-slate-500 dark:text-[#a3b3af] uppercase tracking-wider truncate" title={card.label}>
-                {card.label}
-              </span>
+              <div className="shrink-0 pl-1 text-right">
+                <h3 className={`text-xl font-black ${card.color} leading-none`}>{card.value}</h3>
+              </div>
             </div>
-            <div className="flex items-baseline gap-1 pl-3 shrink-0">
-              <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tabular-nums leading-none">
-                {card.value}
-              </h2>
-              <span className="text-[9px] font-bold text-slate-400 capitalize">Days</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ── MAIN CONTENT AREA ── */}

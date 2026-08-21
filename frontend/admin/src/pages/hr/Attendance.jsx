@@ -46,6 +46,7 @@ const Attendance = () => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isCorrectionModalOpen, setIsCorrectionModalOpen] = useState(false);
+  const [hoveredCardIndex, setHoveredCardIndex] = useState(null);
   const [chartWeek, setChartWeek] = useState('this_week');
 
   // Quick Action User Session Status
@@ -466,38 +467,48 @@ const Attendance = () => {
       {/* 2. ATTENDANCE SUMMARY CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
         {[
-          { label: 'Present Today', val: stats.presentToday, trend: '+4.8% from yesterday', color: '#10B981', bg: 'rgba(16,185,129,0.08)' },
-          { label: 'Absent Today', val: stats.absentToday, trend: 'Optimal threshold', color: '#EF4444', bg: 'rgba(239,68,68,0.08)' },
-          { label: 'On Leave Today', val: stats.onLeave, trend: '3 Scheduled tomorrow', color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
-          { label: 'Avg Hours / Week', val: '38.5 hrs', progress: 77, color: '#06B6D4', bg: 'rgba(6,182,212,0.08)' }
-        ].map((card, i) => (
-          <div
-            key={i}
-            className="zap-card group hover:border-[#201515] dark:hover:border-white transition-all"
-          >
-            <div className="flex justify-between items-start mb-8">
-              <div className="w-12 h-12 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: card.bg, color: card.color }}>
-                <Clock size={20} />
+          { label: 'Present Today', val: stats.presentToday, trend: '+4.8% from yesterday', color: '#10b981', glowColor: 'rgba(16, 185, 129, 0.45)', bg: 'rgba(16,185,129,0.08)' },
+          { label: 'Absent Today', val: stats.absentToday, trend: 'Optimal threshold', color: '#ef4444', glowColor: 'rgba(239, 68, 68, 0.45)', bg: 'rgba(239,68,68,0.08)' },
+          { label: 'On Leave Today', val: stats.onLeave, trend: '3 Scheduled tomorrow', color: '#f59e0b', glowColor: 'rgba(245, 158, 11, 0.45)', bg: 'rgba(245,158,11,0.08)' },
+          { label: 'Avg Hours / Week', val: '38.5 hrs', progress: 77, color: '#06b6d4', glowColor: 'rgba(6, 182, 212, 0.45)', bg: 'rgba(6,182,212,0.08)' }
+        ].map((card, i) => {
+          const isHovered = hoveredCardIndex === i;
+          return (
+            <div
+              key={i}
+              onMouseEnter={() => setHoveredCardIndex(i)}
+              onMouseLeave={() => setHoveredCardIndex(null)}
+              style={{
+                borderColor: isHovered ? card.color : undefined,
+                borderWidth: '2px',
+                borderStyle: 'solid'
+              }}
+              className="zap-card group transition-all duration-200 cursor-pointer rounded-2xl"
+            >
+              <div className="flex justify-between items-start mb-8">
+                <div className="w-12 h-12 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: card.bg, color: card.color }}>
+                  <Clock size={20} />
+                </div>
+                {card.trend && (
+                  <span className="text-[11px] font-bold text-[#939084] dark:text-[#a3a094] uppercase tracking-wider">
+                    {card.trend}
+                  </span>
+                )}
               </div>
-              {card.trend && (
-                <span className="text-[11px] font-bold text-[#939084] dark:text-[#a3a094] uppercase tracking-wider">
-                  {card.trend}
-                </span>
+
+              <div>
+                <h3 className="text-[36px] font-medium text-[#201515] dark:text-white leading-none mb-2 tabular-nums">{card.val}</h3>
+                <p className="text-[13px] font-bold text-[#939084] dark:text-[#a3a094] uppercase tracking-wider">{card.label}</p>
+              </div>
+
+              {card.progress !== undefined && (
+                <div className="mt-6 w-full bg-[#eceae3] dark:bg-slate-800 rounded-full h-1">
+                  <div className="bg-[#10B981] h-full rounded-full transition-all" style={{ width: `${card.progress}%` }}></div>
+                </div>
               )}
             </div>
-
-            <div>
-              <h3 className="text-[36px] font-medium text-[#201515] dark:text-white leading-none mb-2 tabular-nums">{card.val}</h3>
-              <p className="text-[13px] font-bold text-[#939084] dark:text-[#a3a094] uppercase tracking-wider">{card.label}</p>
-            </div>
-
-            {card.progress !== undefined && (
-              <div className="mt-6 w-full bg-[#eceae3] dark:bg-slate-800 rounded-full h-1">
-                <div className="bg-[#10B981] h-full rounded-full transition-all" style={{ width: `${card.progress}%` }}></div>
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* 3. ROW 2: CHART + QUICK ACTIONS */}

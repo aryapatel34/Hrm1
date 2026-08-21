@@ -52,6 +52,7 @@ const Attendance = () => {
   const [logs, setLogs] = useState([]);
   const [weeklyChartData, setWeeklyChartData] = useState({ this_week: [], last_week: [] });
   const [hoveredWeeklySlice, setHoveredWeeklySlice] = useState(null);
+  const [hoveredCardIndex, setHoveredCardIndex] = useState(null);
   const [statsPeriod, setStatsPeriod] = useState('week'); // 'week' | 'month' | 'year'
   const [periodStats, setPeriodStats] = useState(null);
   const [yearlyStats, setYearlyStats] = useState(null);
@@ -423,55 +424,79 @@ const Attendance = () => {
           </div>
 
           {/* ── KPI METRIC CARDS ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
             {[
               {
                 label: `Present (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
                 value: (periodStats || yearlyStats)?.present || 0,
-                icon: <CheckCircle size={20} className="text-[#10B981]" />,
-                bg: 'bg-emerald-50 dark:bg-emerald-950/20'
+                icon: <CheckCircle size={16} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />,
+                bg: 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40',
+                color: 'text-emerald-600 dark:text-emerald-400',
+                borderColor: '#10b981',
+                glowColor: 'rgba(16, 185, 129, 0.45)'
               },
               {
                 label: `Late (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
                 value: (periodStats || yearlyStats)?.late || 0,
-                icon: <Clock size={20} className="text-amber-500" />,
-                bg: 'bg-amber-50 dark:bg-amber-950/20'
+                icon: <Clock size={16} strokeWidth={2.5} className="text-amber-600 dark:text-amber-400" />,
+                bg: 'bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900/40',
+                color: 'text-amber-600 dark:text-amber-400',
+                borderColor: '#f59e0b',
+                glowColor: 'rgba(245, 158, 11, 0.45)'
               },
               {
                 label: `Absent (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
                 value: (periodStats || yearlyStats)?.absent || 0,
-                icon: <XCircle size={20} className="text-red-500" />,
-                bg: 'bg-red-50 dark:bg-red-950/20'
+                icon: <XCircle size={16} strokeWidth={2.5} className="text-red-600 dark:text-red-400" />,
+                bg: 'bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900/40',
+                color: 'text-red-600 dark:text-red-400',
+                borderColor: '#ef4444',
+                glowColor: 'rgba(239, 68, 68, 0.45)'
               },
               {
                 label: `Half Day (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
                 value: (periodStats || yearlyStats)?.halfDay || 0,
-                icon: <Sun size={20} className="text-blue-500" />,
-                bg: 'bg-blue-50 dark:bg-blue-950/20'
+                icon: <Sun size={16} strokeWidth={2.5} className="text-blue-600 dark:text-blue-400" />,
+                bg: 'bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/40',
+                color: 'text-blue-600 dark:text-blue-400',
+                borderColor: '#3b82f6',
+                glowColor: 'rgba(59, 130, 246, 0.45)'
               },
               {
                 label: `Leave (${statsPeriod === 'week' ? 'Week' : statsPeriod === 'month' ? 'Month' : 'Year'})`,
                 value: (periodStats || yearlyStats)?.leave || 0,
-                icon: <CalendarIcon size={20} className="text-purple-500" />,
-                bg: 'bg-purple-50 dark:bg-purple-950/20'
+                icon: <CalendarIcon size={16} strokeWidth={2.5} className="text-purple-600 dark:text-purple-400" />,
+                bg: 'bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/40',
+                color: 'text-purple-600 dark:text-purple-400',
+                borderColor: '#8b5cf6',
+                glowColor: 'rgba(139, 92, 246, 0.45)'
               }
-            ].map((card, i) => (
-              <div
-                key={i}
-                className="group bg-white dark:bg-slate-900 p-5 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 flex flex-col justify-between"
-              >
-                <div className="flex justify-between items-center mb-6">
-                  <div className={`p-2.5 rounded-xl ${card.bg}`}>
-                    {card.icon}
+            ].map((card, i) => {
+              const isHovered = hoveredCardIndex === i;
+              return (
+                <div
+                  key={i}
+                  onMouseEnter={() => setHoveredCardIndex(i)}
+                  onMouseLeave={() => setHoveredCardIndex(null)}
+                  style={{
+                    borderColor: isHovered ? card.borderColor : undefined
+                  }}
+                  className="flex items-center justify-between gap-2.5 px-4 py-2.5 rounded-2xl h-14 w-full transition-all duration-200 shadow-xs cursor-pointer border border-gray-200 dark:border-[#28251e] bg-white dark:bg-[#151c28]"
+                >
+                  <div className="flex items-center gap-2.5 overflow-hidden">
+                    <div className={`inline-flex p-1.5 rounded-lg shrink-0 ${card.bg}`}>
+                      {card.icon}
+                    </div>
+                    <span className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider truncate" title={card.label}>
+                      {card.label}
+                    </span>
                   </div>
-                  {/* Select removed from here */}
+                  <div className="shrink-0 pl-1 text-right">
+                    <h3 className={`text-xl font-black ${card.color} leading-none`}>{card.value}</h3>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{card.label}</p>
-                  <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-1 tabular-nums">{card.value}</h2>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* ── MAIN CONTENT AREA ── */}

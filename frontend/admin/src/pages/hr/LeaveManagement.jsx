@@ -45,6 +45,8 @@ const Leaves = () => {
   const [applyDropdownOpen, setApplyDropdownOpen] = useState(false);
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
+  const [hoveredTeamCardIndex, setHoveredTeamCardIndex] = useState(null);
+  const [hoveredQuickActionIndex, setHoveredQuickActionIndex] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLeaveDetails, setSelectedLeaveDetails] = useState(null);
 
@@ -186,15 +188,6 @@ const Leaves = () => {
   const countCancelled = dateFilteredLeaves.filter(l => l.status?.toLowerCase() === 'cancelled').length;
 
   const filteredLeaves = dateFilteredLeaves.filter(l => {
-    // Hide HR's own leaves or requests from HR role users when logged in as HR (HR leaves are managed by Admin)
-    if (role === 'hr') {
-      const applicantRole = l.user?.role?.toLowerCase();
-      const applicantId = (l.user?._id || l.user)?.toString();
-      const currentUserId = (user.id || user._id)?.toString();
-      if (applicantRole === 'hr' || applicantId === currentUserId) {
-        return false;
-      }
-    }
     if (requestFilter === 'all') return true;
     if (requestFilter === 'pending') {
       return l.status?.toLowerCase() === 'pending' || l.status?.toLowerCase() === 'cancellation_pending';
@@ -305,35 +298,43 @@ const Leaves = () => {
       ) : (
         <>
           {/* 2. SUMMARY CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
             {[
-              { label: 'Total Leave Requests', val: totalRequests, sub: 'This Month', icon: CheckSquare, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20', hoverBorder: 'hover:border-indigo-500 hover:shadow-indigo-500/5', filter: 'all' },
-              { label: 'Pending Approvals', val: pendingRequests, sub: 'Requests', icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', hoverBorder: 'hover:border-purple-500 hover:shadow-purple-500/5', filter: 'pending' },
-              { label: 'Employees On Leave', val: stats?.employeesOnLeave || 0, sub: 'Today', icon: Users, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', hoverBorder: 'hover:border-orange-500 hover:shadow-orange-500/5' },
-              { label: 'Employees Present Today', val: stats?.employeesPresent !== undefined ? stats.employeesPresent : 0, sub: 'Present', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', hoverBorder: 'hover:border-emerald-500 hover:shadow-emerald-500/5' },
-              { label: 'Upcoming Holidays', val: stats?.upcomingHolidays || 0, sub: 'In 30 Days', icon: Calendar, color: 'text-pink-600', bg: 'bg-pink-50 dark:bg-pink-900/20', hoverBorder: 'hover:border-pink-500 hover:shadow-pink-500/5' }
+              { label: 'Total Leave Requests', val: totalRequests, sub: 'This Month', icon: CheckSquare, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/40', borderColor: '#6366f1', glowColor: 'rgba(99, 102, 241, 0.35)', filter: 'all' },
+              { label: 'Pending Approvals', val: pendingRequests, sub: 'Requests', icon: Clock, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/60 border border-purple-100 dark:border-purple-900/40', borderColor: '#a855f7', glowColor: 'rgba(168, 85, 247, 0.35)', filter: 'pending' },
+              { label: 'Employees On Leave', val: stats?.employeesOnLeave || 0, sub: 'Today', icon: Users, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/60 border border-amber-100 dark:border-amber-900/40', borderColor: '#f59e0b', glowColor: 'rgba(245, 158, 11, 0.35)' },
+              { label: 'Employees Present Today', val: stats?.employeesPresent !== undefined ? stats.employeesPresent : 0, sub: 'Present', icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-100 dark:border-emerald-900/40', borderColor: '#10b981', glowColor: 'rgba(16, 185, 129, 0.35)' },
+              { label: 'Upcoming Holidays', val: stats?.upcomingHolidays || 0, sub: 'In 30 Days', icon: Calendar, color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-50 dark:bg-pink-950/60 border border-pink-100 dark:border-pink-900/40', borderColor: '#ec4899', glowColor: 'rgba(236, 72, 153, 0.35)' }
             ].map((stat, i) => {
               const isClickable = !!stat.filter;
+              const isHovered = hoveredTeamCardIndex === i;
               return (
                 <div
                   key={i}
                   onClick={() => isClickable && scrollToRequests(stat.filter)}
-                  className={`bg-white dark:bg-[#1e293b] py-2 px-3 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm transition-all flex items-center justify-between gap-2.5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 group ${stat.hoverBorder}`}
+                  onMouseEnter={() => setHoveredTeamCardIndex(i)}
+                  onMouseLeave={() => setHoveredTeamCardIndex(null)}
+                  style={{
+                    borderColor: isHovered ? stat.borderColor : undefined,
+                    borderWidth: '2px',
+                    borderStyle: 'solid'
+                  }}
+                  className="bg-white dark:bg-[#111c18] py-2 px-3 rounded-xl shadow-xs flex items-center justify-between gap-2.5 cursor-pointer transition-colors duration-200 group select-none border-gray-100 dark:border-gray-800"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className={`p-2 rounded-lg shrink-0 ${stat.bg} group-hover:scale-110 transition-all duration-200`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${stat.bg} group-hover:scale-110 transition-transform duration-200`}>
                       <stat.icon size={16} className={stat.color} />
                     </div>
                     <div className="min-w-0 relative group">
-                      <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider truncate block cursor-help">{stat.label}</span>
+                      <h3 className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider truncate cursor-help">{stat.label}</h3>
                       <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover:block z-50 bg-gray-900 dark:bg-gray-750 text-white text-[9px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap pointer-events-none uppercase tracking-wider">
                         {stat.label}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-baseline shrink-0 ml-2">
-                    <h3 className="text-xl font-black text-gray-900 dark:text-white tabular-nums leading-none">{stat.val}</h3>
-                    {stat.sub && <p className="text-[9px] font-bold text-gray-400 ml-1 leading-none">{stat.sub}</p>}
+                    <span className="text-xl font-black text-gray-900 dark:text-white mr-1 leading-none">{stat.val}</span>
+                    {stat.sub && <span className="text-[9px] font-bold text-gray-400 leading-none">{stat.sub}</span>}
                   </div>
                 </div>
               );
@@ -534,21 +535,35 @@ const Leaves = () => {
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 ml-1">Quick Actions</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
               {[
-                { label: 'Create Policy', icon: FileText, color: 'text-purple-500', hoverBorder: 'hover:border-purple-500', hoverText: 'hover:text-purple-600 dark:hover:text-purple-455', onClick: () => setActiveModal('createPolicy') },
-                { label: 'Allocate Leave', icon: ArrowRight, color: 'text-green-500', hoverBorder: 'hover:border-green-500', hoverText: 'hover:text-green-600 dark:hover:text-green-455', onClick: () => setActiveModal('allocateLeave') },
-                { label: 'On Duty Requests', icon: Briefcase, color: 'text-blue-500', hoverBorder: 'hover:border-blue-500', hoverText: 'hover:text-blue-600 dark:hover:text-blue-455', onClick: () => setActiveModal('onDutyApproval') },
-                { label: 'Add Holiday', icon: Calendar, color: 'text-pink-500', hoverBorder: 'hover:border-pink-500', hoverText: 'hover:text-pink-600 dark:hover:text-pink-455', onClick: () => setActiveModal('addHoliday') },
-                { label: 'Compensatory Off approval', icon: HandCoins, color: 'text-emerald-500', hoverBorder: 'hover:border-emerald-500', hoverText: 'hover:text-emerald-600 dark:hover:text-emerald-455', onClick: () => setActiveModal('compOff') },
-                { label: 'Leave Encashment', icon: DollarSign, color: 'text-red-500', hoverBorder: 'hover:border-red-500', hoverText: 'hover:text-red-600 dark:hover:text-red-455', onClick: () => setActiveModal('leaveEncashment') },
-                { label: 'Download Report', icon: Upload, color: 'text-indigo-500', hoverBorder: 'hover:border-indigo-500', hoverText: 'hover:text-indigo-600 dark:hover:text-indigo-455', isRotate: true, onClick: handleDownloadReport }
-              ].map((action, i) => (
-                <button key={i} onClick={action.onClick} className={`bg-white dark:bg-[#1e293b] border border-gray-150 dark:border-gray-800 text-gray-700 dark:text-gray-200 py-2 px-3 rounded-xl transition-all flex items-center justify-start gap-2.5 shadow-sm group cursor-pointer ${action.hoverBorder} ${action.hoverText}`}>
-                  <div className={`p-2 rounded-lg bg-gray-50 dark:bg-[#0f172a] ${action.color} group-hover:scale-105 transition-transform shrink-0`}>
-                    <action.icon size={15} className={action.isRotate ? "rotate-180" : ""} />
-                  </div>
-                  <span className="text-left font-black text-[11px] tracking-tight leading-none truncate w-full">{action.label}</span>
-                </button>
-              ))}
+                { label: 'Create Policy', icon: FileText, color: 'text-purple-600 dark:text-purple-400', borderColor: '#8b5cf6', glowColor: 'rgba(139, 92, 246, 0.45)', bgIcon: 'bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/40', onClick: () => setActiveModal('createPolicy') },
+                { label: 'Allocate Leave', icon: ArrowRight, color: 'text-emerald-600 dark:text-emerald-400', borderColor: '#10b981', glowColor: 'rgba(16, 185, 129, 0.45)', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40', onClick: () => setActiveModal('allocateLeave') },
+                { label: 'On Duty Requests', icon: Briefcase, color: 'text-blue-600 dark:text-blue-400', borderColor: '#3b82f6', glowColor: 'rgba(59, 130, 246, 0.45)', bgIcon: 'bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/40', onClick: () => setActiveModal('onDutyApproval') },
+                { label: 'Add Holiday', icon: Calendar, color: 'text-pink-600 dark:text-pink-400', borderColor: '#ec4899', glowColor: 'rgba(236, 72, 153, 0.45)', bgIcon: 'bg-pink-50 dark:bg-pink-950/50 border border-pink-100 dark:border-pink-900/40', onClick: () => setActiveModal('addHoliday') },
+                { label: 'Compensatory Off approval', icon: HandCoins, color: 'text-teal-600 dark:text-teal-400', borderColor: '#14b8a6', glowColor: 'rgba(20, 184, 166, 0.45)', bgIcon: 'bg-teal-50 dark:bg-teal-950/50 border border-teal-100 dark:border-teal-900/40', onClick: () => setActiveModal('compOff') },
+                { label: 'Leave Encashment', icon: DollarSign, color: 'text-rose-600 dark:text-rose-400', borderColor: '#ef4444', glowColor: 'rgba(239, 68, 68, 0.45)', bgIcon: 'bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900/40', onClick: () => setActiveModal('leaveEncashment') },
+                { label: 'Download Report', icon: Upload, color: 'text-indigo-600 dark:text-indigo-400', borderColor: '#6366f1', glowColor: 'rgba(99, 102, 241, 0.45)', bgIcon: 'bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/40', isRotate: true, onClick: handleDownloadReport }
+              ].map((action, i) => {
+                const isHovered = hoveredQuickActionIndex === i;
+                return (
+                  <button
+                    key={i}
+                    onClick={action.onClick}
+                    onMouseEnter={() => setHoveredQuickActionIndex(i)}
+                    onMouseLeave={() => setHoveredQuickActionIndex(null)}
+                    style={{
+                      borderColor: isHovered ? action.borderColor : undefined,
+                      borderWidth: '1px',
+                      borderStyle: 'solid'
+                    }}
+                    className="bg-white dark:bg-[#1e293b] border-gray-150 dark:border-gray-800 text-gray-700 dark:text-gray-200 py-2.5 px-3 rounded-2xl h-14 transition-all duration-200 flex items-center justify-start gap-2.5 shadow-xs group cursor-pointer"
+                  >
+                    <div className={`p-1.5 rounded-lg shrink-0 ${action.bgIcon}`}>
+                      <action.icon size={16} strokeWidth={2.5} className={`${action.color} ${action.isRotate ? "rotate-180" : ""}`} />
+                    </div>
+                    <span className="text-left font-black text-xs tracking-tight leading-none truncate w-full">{action.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

@@ -47,7 +47,7 @@ const LeaveAllocationSummary = ({ refreshTrigger }) => {
             {filter === 'this_year' && 'This Year'}
             <ChevronDown size={14} className={`transition-transform duration-200 ${selectOpen ? 'rotate-180' : ''}`} />
           </button>
-          
+
           {selectOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setSelectOpen(false)} />
@@ -89,9 +89,9 @@ const LeaveAllocationSummary = ({ refreshTrigger }) => {
                   stroke="none"
                 >
                   {allocationData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.color} 
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.color}
                       style={{ outline: 'none' }}
                     />
                   ))}
@@ -121,8 +121,8 @@ const LeaveAllocationSummary = ({ refreshTrigger }) => {
             <p className="text-xs text-gray-400 text-center">Loading chart...</p>
           ) : (
             allocationData.map((item, i) => (
-              <div 
-                key={i} 
+              <div
+                key={i}
                 className={`flex items-center justify-between gap-2 text-xs font-semibold cursor-pointer p-0.5 px-2 rounded transition-all duration-150 ${hoveredSegment?.name === item.name ? 'bg-gray-150 dark:bg-gray-800 scale-[1.02]' : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}
                 onMouseEnter={() => setHoveredSegment(item)}
                 onMouseLeave={() => setHoveredSegment(null)}

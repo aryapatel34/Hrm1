@@ -155,7 +155,7 @@ const TimeTrackerWidget = ({ className = '', isDark = false, showControls = fals
     : 'bg-amber-500';
 
   return (
-    <div className={`bg-white dark:bg-[#181612] rounded-[24px] border border-gray-200/90 dark:border-[#38352e] p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-h-[170px] shadow-sm select-none ${className}`}>
+    <div className={`bg-white dark:bg-[#181612] rounded-[24px] border border-gray-200/90 dark:border-[#38352e] hover:!border-[#10b981] dark:hover:!border-[#34d399] transition-colors duration-300 p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-h-[170px] shadow-sm select-none ${className}`}>
       {/* Header Matching Image */}
       <div className="flex justify-between items-start mb-1 relative z-10">
         <div>

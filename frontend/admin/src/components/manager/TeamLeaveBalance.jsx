@@ -46,7 +46,7 @@ const TeamLeaveBalance = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-full transition-all duration-200 hover:border-emerald-500">
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-full transition-colors duration-300 hover:!border-emerald-500 dark:hover:!border-emerald-400">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Team Leave Balance</h2>
         <button className="text-indigo-600 text-sm font-bold hover:underline cursor-pointer">View all</button>
@@ -130,16 +130,16 @@ const TeamLeaveBalance = () => {
           {startEntry}-{endEntry} of {displayTotalItems}
         </span>
         <div className="flex gap-1">
-          <button 
+          <button
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(prev => prev - 1)}
             className="p-1 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
           >
             <ChevronLeft className="w-3.5 h-3.5 text-gray-600" />
           </button>
-          
+
           {Array.from({ length: displayTotalPages }).map((_, i) => (
-            <button 
+            <button
               key={i}
               onClick={() => setCurrentPage(i + 1)}
               className={`w-6 h-6 rounded-md text-xs font-bold cursor-pointer ${currentPage === i + 1 ? 'bg-indigo-600 text-white' : 'text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
@@ -147,8 +147,8 @@ const TeamLeaveBalance = () => {
               {i + 1}
             </button>
           ))}
-          
-          <button 
+
+          <button
             disabled={currentPage === displayTotalPages || displayTotalPages === 0}
             onClick={() => setCurrentPage(prev => prev + 1)}
             className="p-1 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50 cursor-pointer"

@@ -502,6 +502,7 @@ const Attendance = () => {
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
+  const [hoveredSummaryIndex, setHoveredSummaryIndex] = useState(null);
   const [statusFilter, setStatusFilter] = useState('All');
   const [dateFilter, setDateFilter] = useState('');
   const [appViewMode, setAppViewMode] = useState('attendance'); // 'attendance' | 'timeTracker'
@@ -560,10 +561,19 @@ const Attendance = () => {
     if (typeof dateObjOrStr === 'string' && dateObjOrStr.match(/^\d{1,2}:\d{2}\s*(AM|PM)$/i)) {
       return dateObjOrStr;
     }
+    // Handle ISO date strings or Date objects first before splitting simple time strings
+    if (dateObjOrStr instanceof Date || (typeof dateObjOrStr === 'string' && (dateObjOrStr.includes('T') || dateObjOrStr.includes('-')))) {
+      try {
+        const d = new Date(dateObjOrStr);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+      } catch (e) { }
+    }
     if (typeof dateObjOrStr === 'string' && dateObjOrStr.includes(':')) {
       const parts = dateObjOrStr.trim().split(':');
       let h = parseInt(parts[0], 10);
-      const m = parts[1].slice(0, 2);
+      const m = parts[1] ? parts[1].slice(0, 2) : '00';
       if (!isNaN(h)) {
         const ampm = h >= 12 ? 'PM' : 'AM';
         h = h % 12 || 12;
@@ -1238,41 +1248,52 @@ const Attendance = () => {
           const empRate = empTotal > 0 ? Math.round(((empPresent + empLate + empHalfDay) / empTotal) * 100) : 0;
 
           const cards = viewContext === 'employee' ? [
-            { label: 'Present', value: empPresent, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30', trend: `${empRate}%`, hoverBorder: 'hover:border-emerald-500' },
-            { label: 'Late', value: empLate, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/30', hoverBorder: 'hover:border-amber-500' },
-            { label: 'Absent', value: empAbsent, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-red-50 dark:bg-red-950/30', hoverBorder: 'hover:border-rose-500' },
-            { label: 'Half Day', value: empHalfDay, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30', hoverBorder: 'hover:border-sky-500' },
-            { label: 'On Leave', value: empLeave, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30', hoverBorder: 'hover:border-purple-500' },
+            { label: 'Present', value: empPresent, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40', trend: `${empRate}%`, borderColor: '#10b981', glowColor: 'rgba(16, 185, 129, 0.45)' },
+            { label: 'Late', value: empLate, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900/40', borderColor: '#f59e0b', glowColor: 'rgba(245, 158, 11, 0.45)' },
+            { label: 'Absent', value: empAbsent, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900/40', borderColor: '#ef4444', glowColor: 'rgba(239, 68, 68, 0.45)' },
+            { label: 'Half Day', value: empHalfDay, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/40', borderColor: '#3b82f6', glowColor: 'rgba(59, 130, 246, 0.45)' },
+            { label: 'On Leave', value: empLeave, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/40', borderColor: '#8b5cf6', glowColor: 'rgba(139, 92, 246, 0.45)' },
           ] : [
-            { label: 'Present', value: teamStats?.present || 0, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/30', trend: teamStats?.pct ? `${teamStats.pct}%` : '0%', hoverBorder: 'hover:border-emerald-500' },
-            { label: 'Late', value: teamStats?.late || 0, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/30', hoverBorder: 'hover:border-amber-500' },
-            { label: 'Absent', value: teamStats?.absent || 0, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-red-50 dark:bg-red-950/30', hoverBorder: 'hover:border-rose-500' },
-            { label: 'Half Day', value: teamStats?.halfDay || 0, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/30', hoverBorder: 'hover:border-sky-500' },
-            { label: 'On Leave', value: teamStats?.leave || 0, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/30', hoverBorder: 'hover:border-purple-500' },
+            { label: 'Present', value: teamStats?.present || 0, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgIcon: 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40', trend: teamStats?.pct ? `${teamStats.pct}%` : '0%', borderColor: '#10b981', glowColor: 'rgba(16, 185, 129, 0.45)' },
+            { label: 'Late', value: teamStats?.late || 0, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgIcon: 'bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900/40', borderColor: '#f59e0b', glowColor: 'rgba(245, 158, 11, 0.45)' },
+            { label: 'Absent', value: teamStats?.absent || 0, icon: XCircle, color: 'text-red-600 dark:text-red-400', bgIcon: 'bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900/40', borderColor: '#ef4444', glowColor: 'rgba(239, 68, 68, 0.45)' },
+            { label: 'Half Day', value: teamStats?.halfDay || 0, icon: Sun, color: 'text-blue-600 dark:text-blue-400', bgIcon: 'bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/40', borderColor: '#3b82f6', glowColor: 'rgba(59, 130, 246, 0.45)' },
+            { label: 'On Leave', value: teamStats?.leave || 0, icon: Calendar, color: 'text-purple-600 dark:text-purple-400', bgIcon: 'bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/40', borderColor: '#8b5cf6', glowColor: 'rgba(139, 92, 246, 0.45)' },
           ];
 
-          return cards.map((card, i) => (
-            <Card key={i} className={`!py-2.5 !px-3.5 flex items-center justify-between hover:shadow-xs transition-all duration-300 border border-slate-200/60 dark:border-[#1a2d29] ${card.hoverBorder}`}>
-              <div className="flex items-center gap-2 overflow-hidden">
-                <div className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center shrink-0 ${card.bgIcon}`}>
-                  <card.icon size={15} className={card.color} />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[10.5px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-tight truncate" title={card.label}>
-                    {card.label}
-                  </span>
-                  {card.trend && (
-                    <span className="text-[9.5px] font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
-                      <ArrowUpRight size={9} /> {card.trend}
+          return cards.map((card, i) => {
+            const isHovered = hoveredSummaryIndex === i;
+            return (
+              <div
+                key={i}
+                onMouseEnter={() => setHoveredSummaryIndex(i)}
+                onMouseLeave={() => setHoveredSummaryIndex(null)}
+                style={{
+                  borderColor: isHovered ? card.borderColor : undefined
+                }}
+                className="flex items-center justify-between gap-2.5 px-4 py-2.5 rounded-2xl h-14 w-full transition-all duration-200 shadow-xs cursor-pointer border border-gray-200 dark:border-[#28251e] bg-white dark:bg-[#151c28]"
+              >
+                <div className="flex items-center gap-2.5 overflow-hidden">
+                  <div className={`inline-flex p-1.5 rounded-lg shrink-0 ${card.bgIcon}`}>
+                    <card.icon size={16} strokeWidth={2.5} className={card.color} />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider truncate" title={card.label}>
+                      {card.label}
                     </span>
-                  )}
+                    {card.trend && (
+                      <span className="text-[9.5px] font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                        <ArrowUpRight size={9} /> {card.trend}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="shrink-0 pl-1 text-right">
+                  <h3 className={`text-xl font-black ${card.color} leading-none`}>{card.value}</h3>
                 </div>
               </div>
-              <div className="shrink-0 pl-1.5 text-right">
-                <h3 className={`text-[18px] font-black ${card.color} leading-none`}>{card.value}</h3>
-              </div>
-            </Card>
-          ));
+            );
+          });
         })()}
       </div>
 
@@ -1321,8 +1342,8 @@ const Attendance = () => {
           {viewContext === 'team' ? (
             <>
               {/* Card 1: Present Today */}
-              <div className="py-3.5 px-5 rounded-2xl bg-white dark:bg-[#181612] border border-slate-200/80 dark:border-[#38352e] flex items-center gap-6 sm:gap-8 shadow-xs hover:shadow-md transition-all group flex-1">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="py-3.5 px-5 rounded-2xl bg-white dark:bg-[#181612] border border-slate-200/80 dark:border-[#38352e] hover:!border-[#10b981] dark:hover:!border-[#34d399] transition-colors duration-300 flex items-center gap-6 sm:gap-8 shadow-xs group flex-1">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                   <Users size={18} />
                 </div>
                 <div>
@@ -1344,8 +1365,8 @@ const Attendance = () => {
               </div>
 
               {/* Card 2: Current Live */}
-              <div className="py-3.5 px-5 rounded-2xl bg-white dark:bg-[#181612] border border-slate-200/80 dark:border-[#38352e] flex items-center gap-6 sm:gap-8 shadow-xs hover:shadow-md transition-all group flex-1">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="py-3.5 px-5 rounded-2xl bg-white dark:bg-[#181612] border border-slate-200/80 dark:border-[#38352e] hover:!border-[#3b82f6] dark:hover:!border-[#60a5fa] transition-colors duration-300 flex items-center gap-6 sm:gap-8 shadow-xs group flex-1">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                   <Activity size={18} />
                 </div>
                 <div>
@@ -1367,8 +1388,8 @@ const Attendance = () => {
               </div>
 
               {/* Card 3: On Break */}
-              <div className="py-3.5 px-5 rounded-2xl bg-white dark:bg-[#181612] border border-slate-200/80 dark:border-[#38352e] flex items-center gap-6 sm:gap-8 shadow-xs hover:shadow-md transition-all group flex-1">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="py-3.5 px-5 rounded-2xl bg-white dark:bg-[#181612] border border-slate-200/80 dark:border-[#38352e] hover:!border-[#f59e0b] dark:hover:!border-[#fbbf24] transition-colors duration-300 flex items-center gap-6 sm:gap-8 shadow-xs group flex-1">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                   <Coffee size={18} />
                 </div>
                 <div>
@@ -1392,8 +1413,8 @@ const Attendance = () => {
           ) : (
             <>
               {/* Card 1: Check-in Time */}
-              <div className="py-3.5 px-5 rounded-2xl bg-white dark:bg-[#181612] border border-slate-200/80 dark:border-[#38352e] flex items-center gap-4 sm:gap-5 shadow-xs hover:shadow-md transition-all group flex-1">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="py-3.5 px-5 rounded-2xl bg-white dark:bg-[#181612] border border-slate-200/80 dark:border-[#38352e] hover:!border-[#10b981] dark:hover:!border-[#34d399] transition-colors duration-300 flex items-center gap-4 sm:gap-5 shadow-xs group flex-1">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                   <Clock size={18} />
                 </div>
                 <div>
@@ -1410,8 +1431,8 @@ const Attendance = () => {
               </div>
 
               {/* Card 2: Check-out Time */}
-              <div className="py-3.5 px-5 rounded-2xl bg-white dark:bg-[#181612] border border-slate-200/80 dark:border-[#38352e] flex items-center gap-4 sm:gap-5 shadow-xs hover:shadow-md transition-all group flex-1">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="py-3.5 px-5 rounded-2xl bg-white dark:bg-[#181612] border border-slate-200/80 dark:border-[#38352e] hover:!border-[#3b82f6] dark:hover:!border-[#60a5fa] transition-colors duration-300 flex items-center gap-4 sm:gap-5 shadow-xs group flex-1">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                   <Square size={17} />
                 </div>
                 <div>
@@ -1428,8 +1449,8 @@ const Attendance = () => {
               </div>
 
               {/* Card 3: Total Hours */}
-              <div className="py-3.5 px-5 rounded-2xl bg-white dark:bg-[#181612] border border-slate-200/80 dark:border-[#38352e] flex items-center gap-4 sm:gap-5 shadow-xs hover:shadow-md transition-all group flex-1">
-                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white shadow-md shadow-amber-500/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="py-3.5 px-5 rounded-2xl bg-white dark:bg-[#181612] border border-slate-200/80 dark:border-[#38352e] hover:!border-[#f59e0b] dark:hover:!border-[#fbbf24] transition-colors duration-300 flex items-center gap-4 sm:gap-5 shadow-xs group flex-1">
+                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white shadow-md shadow-amber-500/30 flex items-center justify-center shrink-0">
                   <Clock size={16} strokeWidth={2.2} />
                 </div>
                 <div>
@@ -1450,7 +1471,7 @@ const Attendance = () => {
 
         {/* Middle Column 2 (only in My Team Attendance mode): Upcoming Holidays Card */}
         {viewContext === 'team' && (
-          <Card className="h-full flex flex-col justify-between p-4 shadow-xs hover:shadow-md transition-all">
+          <Card className="h-full flex flex-col justify-between p-4 shadow-xs transition-colors duration-300 hover:!border-purple-500 dark:hover:!border-purple-400">
             <div>
               <div className="flex items-center justify-between mb-3.5">
                 <h3 className="text-sm font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
@@ -1498,7 +1519,7 @@ const Attendance = () => {
 
         {/* Right Column: Attendance Calendar */}
         <div className="flex flex-col">
-          <Card className="h-full flex flex-col justify-between p-3 flex-1">
+          <Card className="h-full flex flex-col justify-between p-3 flex-1 transition-colors duration-300 hover:!border-indigo-500 dark:hover:!border-indigo-400">
             {/* Calendar Header */}
             <div className="flex items-center justify-between mb-2">
               <div>

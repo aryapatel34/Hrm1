@@ -27,7 +27,7 @@ const LeaveDashboardHeader = ({ userName }) => {
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
       <div>
-        <h1 className="text-3xl font-black text-indigo-950 dark:text-white tracking-tight leading-none mb-2">
+        <h1 className="text-3xl font-bold text-indigo-950 dark:text-white tracking-tight leading-none mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
           {greeting}, {userName}! 👋
         </h1>
         <p className="text-gray-500 dark:text-gray-400 font-semibold text-sm">
