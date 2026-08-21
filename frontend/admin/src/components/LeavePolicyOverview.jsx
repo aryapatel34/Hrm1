@@ -55,10 +55,12 @@ const LeavePolicyOverview = ({ refreshTrigger }) => {
                   return str.trim();
                 };
                 const uniqueMap = new Map();
-                policies.forEach(p => {
-                  const key = getCatKey(p);
-                  if (!uniqueMap.has(key)) uniqueMap.set(key, p);
-                });
+                policies
+                  .filter(p => !(`${p.type || ''} ${p.name || ''}`).toLowerCase().includes('maternity'))
+                  .forEach(p => {
+                    const key = getCatKey(p);
+                    if (!uniqueMap.has(key)) uniqueMap.set(key, p);
+                  });
                 return Array.from(uniqueMap.values()).map((policy) => (
                   <tr key={policy._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <td className="px-4 py-4 font-bold text-gray-900 dark:text-white text-xs whitespace-nowrap">{policy.name}</td>

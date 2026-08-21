@@ -139,6 +139,12 @@ const Dashboard = () => {
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [trackerMissingModal, setTrackerMissingModal] = useState(false);
   const [timer, setTimer] = useState(0);
+  const [liveTime, setLiveTime] = useState(new Date());
+
+  useEffect(() => {
+    const clockInterval = setInterval(() => setLiveTime(new Date()), 1000);
+    return () => clearInterval(clockInterval);
+  }, []);
 
   // Charts
   const [timeRange, setTimeRange] = useState('weekly');
@@ -223,8 +229,84 @@ const Dashboard = () => {
 
       if (attRes.status === 'fulfilled') {
         const att = Array.isArray(attRes.value.data) ? attRes.value.data : [];
+        const fetchedLeaves = leaveRes && leaveRes.status === 'fulfilled' && Array.isArray(leaveRes.value.data) ? leaveRes.value.data : [];
         setAttendance(att);
+
+        const formatDateKey = (d) => {
+          if (!d) return '';
+          if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.trim())) return d.trim();
+          const obj = new Date(d);
+          if (isNaN(obj.getTime())) return '';
+          const y = obj.getFullYear();
+          const m = String(obj.getMonth() + 1).padStart(2, '0');
+          const day = String(obj.getDate()).padStart(2, '0');
+          return `${y}-${m}-${day}`;
+        };
+
         const now = new Date();
+        const todayStr = formatDateKey(now);
+
+        let startDate, endDate;
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        if (timeRange === 'weekly') {
+          startDate = new Date(startOfWeek);
+          endDate = new Date(startOfWeek);
+          endDate.setDate(startOfWeek.getDate() + 6);
+          endDate.setHours(23, 59, 59, 999);
+        } else {
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        }
+
+        const startStr = formatDateKey(startDate);
+        const endStr = formatDateKey(endDate);
+
+        // Attendance records within selected period
+        const periodAtt = att.filter(a => {
+          const dStr = formatDateKey(a.date);
+          return dStr >= startStr && dStr <= endStr;
+        });
+
+        // Present count in selected period from MongoDB
+        const periodPresentCount = periodAtt.filter(a => String(a.status).toLowerCase() === 'present').length;
+
+        // Half Day count in selected period from MongoDB
+        const periodHalfDayCount = periodAtt.filter(a => String(a.status).toLowerCase() === 'half day').length;
+
+        // Late Arrivals count in selected period from MongoDB
+        const periodLateCount = periodAtt.filter(a => String(a.status).toLowerCase() === 'late').length;
+
+        // Absences count in selected period from MongoDB (weekdays up to today without clock-in and without approved leave)
+        let periodAbsentCount = 0;
+        const calcEnd = now < endDate ? now : endDate;
+
+        for (let d = new Date(startDate); d <= calcEnd; d.setDate(d.getDate() + 1)) {
+          const dStr = formatDateKey(d);
+          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+          const record = att.find(a => formatDateKey(a.date) === dStr);
+          if (record) {
+            if (String(record.status).toLowerCase() === 'absent') {
+              periodAbsentCount++;
+            }
+          } else {
+            const dTime = d.getTime();
+            const hasLeave = fetchedLeaves.some(l => {
+              if (String(l.status).toLowerCase() !== 'approved') return false;
+              const lStart = new Date(l.startDate).setHours(0, 0, 0, 0);
+              const lEnd = new Date(l.endDate).setHours(23, 59, 59, 999);
+              return dTime >= lStart && dTime <= lEnd;
+            });
+
+            if (!hasLeave && !isWeekend && dStr <= todayStr) {
+              periodAbsentCount++;
+            }
+          }
+        }
+
         const thisMonthAtt = att.filter(a => {
           const d = new Date(a.date);
           return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
@@ -235,39 +317,30 @@ const Dashboard = () => {
           if (new Date(now.getFullYear(), now.getMonth(), i).getDay() !== 0) workingDays++;
         }
 
-        const lateCount = thisMonthAtt.filter(a => a.status === 'Late').length;
-        const halfDays = thisMonthAtt.filter(a => a.status === 'Half Day').length;
-
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
-        startOfWeek.setHours(0, 0, 0, 0);
-
-        const thisWeekAtt = att.filter(a => {
-          const d = new Date(a.date);
-          return d >= startOfWeek && d <= now;
-        });
-
-        const presentMonth = thisMonthAtt.filter(a => a.status === 'Present' || a.status === 'Late').length;
+        const halfDays = thisMonthAtt.filter(a => String(a.status).toLowerCase() === 'half day').length;
+        const presentMonth = thisMonthAtt.filter(a => ['present', 'late'].includes(String(a.status).toLowerCase())).length;
         const effectiveMonth = presentMonth + (halfDays * 0.5);
-        const presentWeek = thisWeekAtt.filter(a => a.status === 'Present' || a.status === 'Late').length;
-        const halfWeek = thisWeekAtt.filter(a => a.status === 'Half Day').length;
-        const effectiveWeek = presentWeek + (halfWeek * 0.5);
 
         setAttMetrics({
-          thisWeek: effectiveWeek,
+          thisWeek: periodAtt.length,
           thisMonth: effectiveMonth,
           workingDays: workingDays,
-          lateCount: lateCount,
+          presentCount: periodPresentCount,
+          halfDayCount: periodHalfDayCount,
+          lateCount: periodLateCount,
+          absentCount: periodAbsentCount,
           halfDays: halfDays,
           percentage: workingDays > 0 ? Math.round((effectiveMonth / workingDays) * 100) : 100
         });
 
         const getDayValue = (dateObj) => {
           if (dateObj > now) return null;
-          const record = att.find(a => new Date(a.date).toDateString() === dateObj.toDateString());
+          const dStr = formatDateKey(dateObj);
+          const record = att.find(a => formatDateKey(a.date) === dStr);
           if (!record) return 0;
-          if (record.status === 'Present' || record.status === 'Late') return 100;
-          if (record.status === 'Half Day') return 50;
+          const statusLower = String(record.status).toLowerCase();
+          if (statusLower === 'present' || statusLower === 'late') return 100;
+          if (statusLower === 'half day') return 50;
           return 0;
         };
 
@@ -537,11 +610,15 @@ const Dashboard = () => {
           </h1>
           <p className="text-[#939084] mt-1">Have a productive day at work.</p>
         </div>
-        <div className="text-right hidden sm:flex items-center pt-2">
-          <p className="text-[#939084] font-medium flex items-center gap-2">
-            <Calendar size={16} />
+        <div className="hidden sm:flex items-center gap-2.5 pt-2">
+          <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-[#d5d0c1] dark:border-[#38352e] bg-white dark:bg-[#1a1714] text-xs font-semibold text-[#36342e] dark:text-[#e5e2da] shadow-[0_1px_3px_rgba(0,0,0,0.04)] font-mono tabular-nums">
+            <Clock size={14} className="text-[#00a76b] shrink-0 animate-pulse" />
+            <span>{liveTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-[#d5d0c1] dark:border-[#38352e] bg-white dark:bg-[#1a1714] text-xs font-semibold text-[#36342e] dark:text-[#e5e2da] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <Calendar size={14} className="text-[#00a76b] shrink-0" />
             <span>{fmtDate()}</span>
-          </p>
+          </div>
         </div>
       </div>
 
@@ -723,7 +800,17 @@ const Dashboard = () => {
           </div>
 
           {/* Stat Cards below Attendance Chart */}
-          <div className="flex items-center justify-center gap-8 mt-2.5 h-14 w-full">
+          <div className="flex items-center justify-center gap-4 sm:gap-6 mt-2.5 h-14 w-full flex-wrap">
+            <div className="flex items-center gap-1.5 transition-all">
+              <span className="w-2 h-2 rounded-full bg-[#00a76b] shrink-0"></span>
+              <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold">Present</span>
+              <span className="text-sm font-black text-emerald-800 dark:text-emerald-300 ml-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{attMetrics?.presentCount || 0}</span>
+            </div>
+            <div className="flex items-center gap-1.5 transition-all">
+              <span className="w-2 h-2 rounded-full bg-[#3b82f6] shrink-0"></span>
+              <span className="text-xs text-blue-700 dark:text-blue-400 font-bold">Half Day</span>
+              <span className="text-sm font-black text-blue-800 dark:text-blue-300 ml-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{attMetrics?.halfDayCount || 0}</span>
+            </div>
             <div className="flex items-center gap-1.5 transition-all">
               <span className="w-2 h-2 rounded-full bg-[#f59e0b] shrink-0"></span>
               <span className="text-xs text-amber-700 dark:text-amber-400 font-bold">Late Arrivals</span>
@@ -732,7 +819,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-1.5 transition-all">
               <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0"></span>
               <span className="text-xs text-rose-700 dark:text-rose-400 font-bold">Absences</span>
-              <span className="text-sm font-black text-rose-800 dark:text-rose-300 ml-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{leavesTakenThisMonth}</span>
+              <span className="text-sm font-black text-rose-800 dark:text-rose-300 ml-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{attMetrics?.absentCount || 0}</span>
             </div>
           </div>
         </Card>

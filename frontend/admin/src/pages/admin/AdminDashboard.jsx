@@ -117,6 +117,7 @@ const AdminDashboard = () => {
   // Dropdown states
   const [attPeriod, setAttPeriod] = useState('This Week');
   const [leavePeriod, setLeavePeriod] = useState('This Month');
+  const [recruitmentPeriod, setRecruitmentPeriod] = useState('This Month');
   const [payrollPeriod, setPayrollPeriod] = useState(new Date().toLocaleString('default', { month: 'long', year: 'numeric' }));
   const [selectedLeaveApproval, setSelectedLeaveApproval] = useState(null);
   const [hoveredStatCard, setHoveredStatCard] = useState(null);
@@ -178,22 +179,23 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData(!dashboardData);
+  }, [attPeriod, leavePeriod]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (showSkeleton = false) => {
+    if (showSkeleton) setLoading(true);
     setError(null);
     try {
       const token = sessionStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Fetch Profile
-      const profRes = await axios.get('/api/auth/me', { headers });
-      setProfile(profRes.data);
+      // Profile and dashboard summary are independent, so fetch them together
+      const [profRes, dashRes] = await Promise.all([
+        profile ? Promise.resolve({ data: profile }) : axios.get('/api/auth/me', { headers }),
+        axios.get('/api/hr-dashboard/summary', { headers, params: { attPeriod, leavePeriod } })
+      ]);
+      setProfile(profRes.data?.data || profRes.data);
 
-      // Fetch Aggregated Dashboard Data
-      const dashRes = await axios.get('/api/hr-dashboard/summary', { headers });
       const dData = dashRes.data.data;
       setDashboardData(dData);
 
@@ -203,9 +205,13 @@ const AdminDashboard = () => {
       setWishedEvents(serverWished);
 
     } catch (err) {
-      console.error('Failed to fetch HR dashboard data:', err);
+      console.error('Failed to fetch Admin dashboard data:', err);
       const errMsg = err.response?.data?.message || err.message || 'Unknown error';
-      setError(`Unable to load dashboard data. Details: ${errMsg}`);
+      if (showSkeleton) {
+        setError(`Unable to load dashboard data. Details: ${errMsg}`);
+      } else {
+        toast.error(`Failed to update chart: ${errMsg}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -609,7 +615,7 @@ const AdminDashboard = () => {
         <Card className="p-6 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-gray-900 dark:text-white">Leave Overview</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white">Team Leave Overview</h3>
               <CustomDropdown
                 value={leavePeriod}
                 onChange={setLeavePeriod}
@@ -641,8 +647,8 @@ const AdminDashboard = () => {
               <div className="bg-orange-500 h-full" style={{ width: `${currentLeaveOverview.total ? (currentLeaveOverview.cancelled / currentLeaveOverview.total) * 100 : 0}%` }}></div>
             </div>
           </div>
-          <button onClick={() => navigate(`/${pathRole}/leave`)} className="w-full mt-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5">
-            View Leave Details <ChevronRight size={14} />
+          <button onClick={() => navigate(`/${pathRole}/leave`)} className="w-full mt-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+            View Team Leave <ChevronRight size={14} />
           </button>
         </Card>
 
@@ -684,9 +690,11 @@ const AdminDashboard = () => {
           <div>
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-gray-900 dark:text-white">Recruitment Overview</h3>
-              <select className="text-xs bg-gray-50 dark:bg-gray-800 rounded-lg font-bold text-gray-600 dark:text-gray-300 outline-none p-1.5">
-                <option>This Month</option>
-              </select>
+              <CustomDropdown
+                value={recruitmentPeriod}
+                onChange={setRecruitmentPeriod}
+                options={['This Month', 'Last Month', 'This Year', 'All Time']}
+              />
             </div>
             <div className="space-y-2">
               {[

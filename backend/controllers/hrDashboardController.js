@@ -29,6 +29,13 @@ exports.getDashboardStats = async (req, res) => {
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
 
+    const formatLocalDate = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     const attPeriod = req.query.attPeriod || 'This Week';
     const currentDayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1; // 0 for Mon, 6 for Sun
     const startOfCurrentWeek = new Date(startOfToday);
@@ -38,7 +45,11 @@ exports.getDashboardStats = async (req, res) => {
       startOfCurrentWeek.setDate(startOfCurrentWeek.getDate() - 7);
     }
 
-    const startOfCurrentWeekStr = startOfCurrentWeek.toISOString().split('T')[0];
+    const endOfCurrentWeek = new Date(startOfCurrentWeek);
+    endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + 6);
+
+    const startOfCurrentWeekStr = formatLocalDate(startOfCurrentWeek);
+    const endOfCurrentWeekStr = formatLocalDate(endOfCurrentWeek);
 
     const thirtyDaysFromNow = new Date(now);
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
@@ -107,6 +118,14 @@ exports.getDashboardStats = async (req, res) => {
         .lean();
     };
 
+    const adminUserIds = (await User.find({ role: { $regex: /^admin$/i } }).select('_id')).map(u => u._id);
+    const hrEmpFilter = req.user.role === 'hr'
+      ? {
+          userId: { $nin: adminUserIds },
+          role: { $not: /^admin$/i }
+        }
+      : {};
+
     // Every query below is independent of the others, so fetch them all
     // concurrently — total wait time becomes the slowest single query
     // instead of the sum of ~20 sequential round-trips.
@@ -133,9 +152,9 @@ exports.getDashboardStats = async (req, res) => {
       encashmentsPending,
       leaveAdjustments
     ] = await Promise.all([
-      Employee.countDocuments({}),
-      Employee.countDocuments({ status: { $in: ['active', 'Active'] } }),
-      Employee.countDocuments({ joinDate: { $gte: startOfMonth } }),
+      Employee.countDocuments(hrEmpFilter),
+      Employee.countDocuments({ ...hrEmpFilter, status: { $in: ['active', 'Active'] } }),
+      Employee.countDocuments({ ...hrEmpFilter, joinDate: { $gte: startOfMonth } }),
       req.user.role === 'hr'
         ? (async () => {
             const allowedUsers = await User.find({ role: 'employee' }).select('_id');
@@ -182,7 +201,7 @@ exports.getDashboardStats = async (req, res) => {
         { $group: { _id: { $toLower: '$status' }, total: { $sum: '$netSalary' } } }
       ]),
       Attendance.aggregate([
-        { $match: { date: { $gte: startOfCurrentWeekStr } } },
+        { $match: { date: { $gte: startOfCurrentWeekStr, $lte: endOfCurrentWeekStr } } },
         {
           $group: {
             _id: "$date",
@@ -194,8 +213,8 @@ exports.getDashboardStats = async (req, res) => {
         },
         { $sort: { _id: 1 } }
       ]),
-      Employee.find({}, 'userId gender').populate('userId', 'role').lean(),
-      Employee.find({}, 'fullName role joinDate profileImage userId').sort({ joinDate: -1 }).limit(5).populate('userId', 'name email profile').lean(),
+      Employee.find(hrEmpFilter, 'userId gender').populate('userId', 'role').lean(),
+      Employee.find(hrEmpFilter, 'fullName role joinDate profileImage userId').sort({ joinDate: -1 }).limit(5).populate('userId', 'name email profile').lean(),
       getPendingLeavesData(),
       Notification.find({
         $or: [
@@ -209,7 +228,7 @@ exports.getDashboardStats = async (req, res) => {
         .sort({ createdAt: -1 })
         .limit(40)
         .lean(),
-      Employee.find({ status: { $in: ['active', 'Active'] } }, 'fullName userId dob joinDate profileImage role designation email').populate('userId', 'name profile email role').lean(),
+      Employee.find({ ...hrEmpFilter, status: { $in: ['active', 'Active'] } }, 'fullName userId dob joinDate profileImage role designation email').populate('userId', 'name profile email role').lean(),
       Notification.find({
         senderId: req.user.id,
         type: { $in: ['birthday', 'anniversary'] },
@@ -249,7 +268,7 @@ exports.getDashboardStats = async (req, res) => {
     for (let i = 0; i < 7; i++) {
       const d = new Date(startOfCurrentWeek);
       d.setDate(d.getDate() + i);
-      const dStr = d.toISOString().split('T')[0];
+      const dStr = formatLocalDate(d);
       const match = attRecords.find(r => r._id === dStr);
 
       let present = match ? match.present : 0;

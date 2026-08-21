@@ -202,6 +202,12 @@ const ManagerDashboard = () => {
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [showAvailabilityDrawer, setShowAvailabilityDrawer] = useState(false);
   const [availabilitySearch, setAvailabilitySearch] = useState('');
+  const [liveTime, setLiveTime] = useState(new Date());
+
+  useEffect(() => {
+    const clockInterval = setInterval(() => setLiveTime(new Date()), 1000);
+    return () => clearInterval(clockInterval);
+  }, []);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -496,9 +502,15 @@ const ManagerDashboard = () => {
             Here's what's happening with your team today.
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-white dark:bg-[#161311] border border-gray-200 dark:border-[#28251e] px-4 py-2 rounded-xl shadow-xs">
-          <CalendarIcon size={18} className="text-gray-500 dark:text-gray-400" />
-          <span className="font-semibold text-sm text-gray-700 dark:text-gray-200">{fmtDate()}</span>
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 bg-white dark:bg-[#161311] border border-gray-200 dark:border-[#28251e] px-3.5 py-2 rounded-xl shadow-xs font-mono text-xs font-bold text-gray-700 dark:text-gray-200 tabular-nums">
+            <Clock size={16} className="text-[#00a76b] shrink-0 animate-pulse" />
+            <span>{liveTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span>
+          </div>
+          <div className="flex items-center gap-1.5 bg-white dark:bg-[#161311] border border-gray-200 dark:border-[#28251e] px-3.5 py-2 rounded-xl shadow-xs text-xs font-semibold text-gray-700 dark:text-gray-200">
+            <CalendarIcon size={16} className="text-[#00a76b] shrink-0" />
+            <span>{fmtDate()}</span>
+          </div>
         </div>
       </div>
 

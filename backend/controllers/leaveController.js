@@ -865,6 +865,10 @@ exports.getMyLeaveQuotas = async (req, res) => {
       if (b.otherLeaves) quotas.otherLeaves += b.otherLeaves;
     });
 
+    Object.keys(quotas).forEach(k => {
+      quotas[k] = Math.round(quotas[k]);
+    });
+
     res.json(quotas);
   } catch (error) {
     res.status(500).json({ message: error.message });

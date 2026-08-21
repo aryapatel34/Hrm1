@@ -104,6 +104,7 @@ const HRDashboard = () => {
   // Dropdown states
   const [attPeriod, setAttPeriod] = useState('This Week');
   const [leavePeriod, setLeavePeriod] = useState('This Month');
+  const [recruitmentPeriod, setRecruitmentPeriod] = useState('This Month');
   const [payrollPeriod, setPayrollPeriod] = useState(new Date().toLocaleString('default', { month: 'long', year: 'numeric' }));
   const [selectedLeaveApproval, setSelectedLeaveApproval] = useState(null);
   const [hoveredStatCard, setHoveredStatCard] = useState(null);
@@ -165,11 +166,11 @@ const HRDashboard = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(!dashboardData);
   }, [attPeriod, leavePeriod]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (showSkeleton = false) => {
+    if (showSkeleton) setLoading(true);
     setError(null);
     try {
       const token = sessionStorage.getItem('token');
@@ -177,7 +178,7 @@ const HRDashboard = () => {
 
       // Profile and dashboard summary are independent, so fetch them together
       const [profRes, dashRes] = await Promise.all([
-        axios.get('/api/auth/me', { headers }),
+        profile ? Promise.resolve({ data: profile }) : axios.get('/api/auth/me', { headers }),
         axios.get('/api/hr-dashboard/summary', { headers, params: { attPeriod, leavePeriod } })
       ]);
       setProfile(profRes.data?.data || profRes.data);
@@ -193,7 +194,11 @@ const HRDashboard = () => {
     } catch (err) {
       console.error('Failed to fetch HR dashboard data:', err);
       const errMsg = err.response?.data?.message || err.message || 'Unknown error';
-      setError(`Unable to load dashboard data. Details: ${errMsg}`);
+      if (showSkeleton) {
+        setError(`Unable to load dashboard data. Details: ${errMsg}`);
+      } else {
+        toast.error(`Failed to update chart: ${errMsg}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -326,10 +331,14 @@ const HRDashboard = () => {
             <span className="inline-flex items-center">👋</span>
           </h1>
         </div>
-        <div className="flex flex-wrap md:flex-nowrap items-center gap-4 mt-4 md:mt-0">
-          <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-[#161311] px-4 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-[#28251e] font-medium">
-            <Calendar size={18} className="mr-2 text-[#00a76b] shrink-0" />
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-2.5 mt-4 md:mt-0">
+          <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-[#161311] px-3.5 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-[#28251e] font-semibold text-xs font-mono tabular-nums">
+            <Clock size={16} className="mr-2 text-[#00a76b] shrink-0 animate-pulse" />
+            <span>{liveTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span>
+          </div>
+          <div className="flex items-center whitespace-nowrap text-gray-600 dark:text-gray-300 bg-white dark:bg-[#161311] px-3.5 py-2 rounded-xl shadow-sm border border-gray-100 dark:border-[#28251e] font-semibold text-xs">
+            <Calendar size={16} className="mr-2 text-[#00a76b] shrink-0" />
+            <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
           </div>
         </div>
       </div>
@@ -592,7 +601,7 @@ const HRDashboard = () => {
         <Card className="p-6 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-gray-900 dark:text-white">Leave Overview</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white">Team Leave Overview</h3>
               <CustomDropdown
                 value={leavePeriod}
                 onChange={setLeavePeriod}
@@ -667,8 +676,9 @@ const HRDashboard = () => {
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-gray-900 dark:text-white">Recruitment Overview</h3>
               <CustomDropdown
-                value="This Month"
-                options={['This Month', 'Last Month', 'This Year']}
+                value={recruitmentPeriod}
+                onChange={setRecruitmentPeriod}
+                options={['This Month', 'Last Month', 'This Year', 'All Time']}
               />
             </div>
             <div className="space-y-2">

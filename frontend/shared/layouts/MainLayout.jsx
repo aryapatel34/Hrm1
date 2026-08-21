@@ -445,7 +445,7 @@ const MainLayout = ({ children, navItems, userRole, userName, onLogout }) => {
           { name: 'Daily Tasks Board', path: `/${currentRole}/tasks`, icon: CheckSquare },
           { name: 'Events Management', path: `/${currentRole}/events`, icon: Calendar },
           // { name: 'Task Management', path: `/${currentRole}/task-management`, icon: ClipboardList },
-          { name: 'Apply Leave', path: `/${currentRole}/leave`, icon: ClipboardList },
+          { name: 'Team Leave', path: `/${currentRole}/leave`, icon: ClipboardList },
           { name: 'Attendance', path: `/${currentRole}/attendance`, icon: Calendar },
           { name: 'Global Chat', path: `/${currentRole}/chat`, icon: MessageSquare },
           { name: 'Payroll', path: `/${currentRole}/payroll`, icon: Wallet },

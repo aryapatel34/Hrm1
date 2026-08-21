@@ -171,8 +171,10 @@ const QuickActionsRow = ({ role = 'admin', title = 'Quick Actions' }) => {
 
   const routes = getRoutes();
 
+  const leaveLabel = role === 'admin' ? 'View Team Leave' : 'Apply Leave';
+
   const actions = [
-    { icon: <CalendarPlus size={20} />, label: 'Apply Leave', color: '#3b82f6', border: '#3b82f6', darkBorder: '#3b82f6', bgHover: '#eff6ff', darkBgHover: 'rgba(59, 130, 246, 0.18)', to: routes.leave },
+    { icon: <CalendarPlus size={20} />, label: leaveLabel, color: '#3b82f6', border: '#3b82f6', darkBorder: '#3b82f6', bgHover: '#eff6ff', darkBgHover: 'rgba(59, 130, 246, 0.18)', to: routes.leave },
     { icon: <Briefcase size={20} />, label: 'My Tasks', color: '#8b5cf6', border: '#8b5cf6', darkBorder: '#8b5cf6', bgHover: '#f5f3ff', darkBgHover: 'rgba(139, 92, 246, 0.18)', to: routes.tasks },
     { icon: <Clock size={20} />, label: 'Time Tracker', color: '#f59e0b', border: '#f59e0b', darkBorder: '#f59e0b', bgHover: '#fffbeb', darkBgHover: 'rgba(245, 158, 11, 0.18)', to: routes.timeTracker },
     { icon: <FileText size={20} />, label: 'Payslip', color: '#ec4899', border: '#ec4899', darkBorder: '#ec4899', bgHover: '#fdf2f8', darkBgHover: 'rgba(236, 72, 153, 0.18)', to: routes.payroll },
